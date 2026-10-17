@@ -12,7 +12,7 @@ namespace GameOfLife
     {
         const int AdvanceBudget = 128;
         const int EditBudget = 2048;
-        const int CollectionBudget = 4096;
+        const int CollectionBudget = 1024;
         const int FirstCollection = 262144;
         static readonly long FrameBudgetTicks = Stopwatch.Frequency / 500;
 
@@ -90,14 +90,15 @@ namespace GameOfLife
 
             if (Simulation.IsCollecting)
             {
+                long collectionDeadline = state.IsRunning || Simulation.IsAdvancing || commands.Length != 0
+                    ? Stopwatch.GetTimestamp() + FrameBudgetTicks / 4
+                    : deadline;
                 bool collected;
                 do
                     collected = Simulation.ContinueCollection(CollectionBudget);
-                while (!collected && Stopwatch.GetTimestamp() < deadline);
+                while (!collected && Stopwatch.GetTimestamp() < collectionDeadline);
                 if (collected)
                     nextCollection = Math.Max(FirstCollection, Simulation.NodeCount * 2);
-                EntityManager.SetComponentData(board, state);
-                return;
             }
 
             if (Simulation.IsAdvancing)
@@ -234,6 +235,7 @@ namespace GameOfLife
 
         bool DrawStroke(LifeCommand command, ref int remaining, long deadline)
         {
+            int initialRemaining = remaining;
             int2 distance = math.abs(command.End - command.Position);
             int2 direction = new int2(command.Position.x < command.End.x ? 1 : -1,
                 command.Position.y < command.End.y ? 1 : -1);
@@ -248,7 +250,8 @@ namespace GameOfLife
                     remaining--;
                 }
             }
-            while (remaining > 0 && Stopwatch.GetTimestamp() < deadline && math.any(strokePosition != command.End))
+            while (remaining > 0 && math.any(strokePosition != command.End)
+                && (remaining == initialRemaining || Stopwatch.GetTimestamp() < deadline))
             {
                 int doubled = strokeError * 2;
                 if (doubled > -distance.y)

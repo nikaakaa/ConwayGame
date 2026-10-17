@@ -250,10 +250,11 @@ namespace GameOfLife
             public LifeShape AdvanceShape;
             public int Editing;
             public int Advancing;
-            public int LastResult;
+            public int PendingResult;
             public int CollectionPhase;
             public int CollectionEpoch;
             public int SweepCursor;
+            public int SweepLimit;
             public int NodeCount;
             public long CacheHits;
             public long CacheMisses;
@@ -442,22 +443,26 @@ namespace GameOfLife
 
             int Allocate(LifeNode node)
             {
+                bool collecting = State.CollectionPhase != 0;
+                int mark = collecting ? State.CollectionEpoch : 0;
                 int id;
                 if (FreeNodes.Length != 0)
                 {
                     id = FreeNodes[FreeNodes.Length - 1];
                     FreeNodes.RemoveAt(FreeNodes.Length - 1);
                     Nodes[id] = node;
-                    Marks[id] = 0;
+                    Marks[id] = mark;
                 }
                 else
                 {
                     id = Nodes.Length;
                     Nodes.Add(node);
-                    Marks.Add(0);
+                    Marks.Add(mark);
                 }
                 State.NodeCount++;
-                Track(id);
+                if (collecting && node.Level > 4)
+                    for (int child = 0; child < 4; child++)
+                        Mark(node.Children[child]);
                 return id;
             }
 
@@ -474,15 +479,37 @@ namespace GameOfLife
             public void Track(int id)
             {
                 if (State.CollectionPhase != 0)
-                    Mark(id);
+                    Mark(id, true);
             }
 
-            public void Mark(int id)
+            public void Mark(int id, bool acquired = false)
             {
                 if (Marks[id] == State.CollectionEpoch)
                     return;
+                if (acquired && State.CollectionPhase >= 2)
+                {
+                    LifeNode node = Nodes[id];
+                    if (node.Level > 4)
+                    {
+                        // 弱驻留节点重新取得时，旧缓存可能引用本轮已清扫的结果。
+                        RemoveCachedResults(id, ref node);
+                        Nodes[id] = node;
+                    }
+                }
                 Marks[id] = State.CollectionEpoch;
                 MarkStack.Add(id);
+            }
+
+            void RemoveCachedResults(int id, ref LifeNode node)
+            {
+                ulong exponents = node.CachedExponents;
+                while (exponents != 0)
+                {
+                    int exponent = math.tzcnt(exponents);
+                    exponents &= exponents - 1;
+                    Cache.Remove(new AdvanceKey { Node = id, Exponent = exponent });
+                }
+                node.CachedExponents = 0;
             }
 
             public LifeBits ReadTile(LifeShape shape, long x, long y)
@@ -728,6 +755,7 @@ namespace GameOfLife
             public void BeginAdvance(int exponent)
             {
                 Frames.Clear();
+                State.PendingResult = -1;
                 LifeShape input = State.Shape;
                 // 输出只保留中心一半，空边必须覆盖本次传播距离。
                 int minimumLevel = math.max(Nodes[input.Root].Level + 2, exponent + 3);
@@ -743,6 +771,7 @@ namespace GameOfLife
             public void CancelAdvance()
             {
                 Frames.Clear();
+                State.PendingResult = -1;
                 State.Advancing = 0;
             }
 
@@ -754,8 +783,9 @@ namespace GameOfLife
                     return;
                 LifeShape input = State.AdvanceShape;
                 long offset = 1L << (Nodes[input.Root].Level - 2);
-                State.Shape = Shrink(new LifeShape { Root = State.LastResult, X = input.X + offset, Y = input.Y + offset });
+                State.Shape = Shrink(new LifeShape { Root = State.PendingResult, X = input.X + offset, Y = input.Y + offset });
                 Track(State.Shape.Root);
+                State.PendingResult = -1;
                 State.Advancing = 0;
             }
 
@@ -809,7 +839,8 @@ namespace GameOfLife
                     return;
                 }
 
-                frame.Results.Add(State.LastResult);
+                frame.Results.Add(State.PendingResult);
+                State.PendingResult = -1;
                 frame.Index++;
                 if (frame.Stage == 1)
                 {
@@ -841,19 +872,19 @@ namespace GameOfLife
 
             void Finish(int result)
             {
-                State.LastResult = result;
+                State.PendingResult = result;
                 Track(result);
                 Frames.RemoveAt(Frames.Length - 1);
             }
 
             void StoreResult(AdvanceKey key, int result)
             {
+                Track(key.Node);
+                Track(result);
                 Cache.Add(key, result);
                 LifeNode node = Nodes[key.Node];
                 node.CachedExponents |= 1UL << key.Exponent;
                 Nodes[key.Node] = node;
-                Track(key.Node);
-                Track(result);
             }
 
             void MakeOverlaps(ref AdvanceFrame frame)
@@ -954,13 +985,18 @@ namespace GameOfLife
                 State.CollectionEpoch++;
                 State.CollectionPhase = 1;
                 State.SweepCursor = 0;
+                State.SweepLimit = Nodes.Length;
                 MarkStack.Clear();
                 RetiredNodes.Clear();
                 Mark(State.Shape.Root);
                 if (State.Editing != 0)
                     Mark(State.EditShape.Root);
                 if (State.Advancing != 0)
+                {
                     Mark(State.AdvanceShape.Root);
+                    if (State.PendingResult != -1)
+                        Mark(State.PendingResult);
+                }
                 for (int level = 4; level < EmptyNodes.Length; level++)
                     Mark(EmptyNodes[level]);
                 for (int i = 0; i < Frames.Length; i++)
@@ -1004,7 +1040,7 @@ namespace GameOfLife
                     }
                     if (State.CollectionPhase == 2)
                     {
-                        if (State.SweepCursor < Nodes.Length)
+                        if (State.SweepCursor < State.SweepLimit)
                         {
                             int id = State.SweepCursor++;
                             LifeNode node = Nodes[id];
@@ -1015,13 +1051,7 @@ namespace GameOfLife
                                 else
                                 {
                                     Branches.Remove(node.Children);
-                                    ulong exponents = node.CachedExponents;
-                                    while (exponents != 0)
-                                    {
-                                        int exponent = math.tzcnt(exponents);
-                                        exponents &= exponents - 1;
-                                        Cache.Remove(new AdvanceKey { Node = id, Exponent = exponent });
-                                    }
+                                    RemoveCachedResults(id, ref node);
                                 }
                                 Nodes[id] = new LifeNode { Level = -1 };
                                 RetiredNodes.Add(id);
