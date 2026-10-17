@@ -73,7 +73,11 @@ namespace GameOfLife
                         break;
                     case LifeCommandKind.SetCell:
                         Pause(ref state);
-                        SetCell(command.Position, command.Alive, ref state, cells);
+                        var end = i + 1;
+                        while (end < commands.Length && commands[end].Kind == LifeCommandKind.SetCell)
+                            end++;
+                        ApplyEdits(commands, i, end, ref state, cells);
+                        i = end - 1;
                         break;
                 }
             }
@@ -110,28 +114,32 @@ namespace GameOfLife
             state.Accumulator = 0f;
         }
 
-        private static void SetCell(int2 position, bool alive, ref LifeState state, DynamicBuffer<AliveCell> cells)
+        private void ApplyEdits(DynamicBuffer<LifeCommand> commands, int start, int end,
+            ref LifeState state, DynamicBuffer<AliveCell> cells)
         {
-            var existingIndex = -1;
+            _aliveLookup.Clear();
+            var capacity = cells.Length + end - start;
+            if (_aliveLookup.Capacity < capacity)
+                _aliveLookup.Capacity = capacity;
             for (var i = 0; i < cells.Length; i++)
-            {
-                if (math.all(cells[i].Position == position))
-                {
-                    existingIndex = i;
-                    break;
-                }
-            }
+                _aliveLookup.Add(cells[i].Position);
 
-            if (alive && existingIndex == -1)
+            var changed = false;
+            for (var i = start; i < end; i++)
             {
-                cells.Add(new AliveCell { Position = position });
-                state.Revision++;
+                var command = commands[i];
+                changed |= command.Alive
+                    ? _aliveLookup.Add(command.Position)
+                    : _aliveLookup.Remove(command.Position);
             }
-            else if (!alive && existingIndex != -1)
-            {
-                cells.RemoveAtSwapBack(existingIndex);
-                state.Revision++;
-            }
+            if (!changed)
+                return;
+
+            cells.ResizeUninitialized(_aliveLookup.Count());
+            var writeIndex = 0;
+            foreach (var position in _aliveLookup)
+                cells[writeIndex++] = new AliveCell { Position = position };
+            state.Revision++;
         }
 
         private void Advance(ref SystemState systemState, ref LifeState state, DynamicBuffer<AliveCell> cells)

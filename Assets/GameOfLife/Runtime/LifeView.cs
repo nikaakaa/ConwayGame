@@ -19,7 +19,6 @@ namespace GameOfLife
         public int VisibleCells { get; private set; } = 128;
 
         const int TextureSize = 1024;
-        NativeArray<Color32> pixels;
         Texture2D texture;
         EntityManager manager;
         Entity boardEntity;
@@ -37,7 +36,6 @@ namespace GameOfLife
 
         void Awake()
         {
-            pixels = new NativeArray<Color32>(TextureSize * TextureSize, Allocator.Persistent);
             ghost = new NativeList<int2>(16, Allocator.Persistent);
             texture = new Texture2D(TextureSize, TextureSize, TextureFormat.RGBA32, false)
             {
@@ -64,7 +62,7 @@ namespace GameOfLife
             new RenderPixelsJob
             {
                 Cells = manager.GetBuffer<AliveCell>(boardEntity, true).AsNativeArray(),
-                Pixels = pixels,
+                Pixels = texture.GetRawTextureData<Color32>(),
                 Origin = Origin,
                 VisibleCells = VisibleCells,
                 Ghost = ghost.AsArray(),
@@ -74,7 +72,6 @@ namespace GameOfLife
                 SelectionMin = selectionMin,
                 SelectionMax = selectionMax
             }.Run();
-            texture.SetPixelData(pixels, 0);
             texture.Apply(false, false);
             renderedRevision = state.Revision;
             windowChanged = false;
@@ -135,6 +132,8 @@ namespace GameOfLife
 
         public void Pan(int2 offset)
         {
+            if (math.all(offset == 0))
+                return;
             Origin += offset;
             windowChanged = true;
         }
@@ -151,6 +150,8 @@ namespace GameOfLife
             if (!TryGetNormalized(position, eventCamera, out float2 normalized))
                 return;
             int nextSize = math.clamp(zoomIn ? VisibleCells / 2 : VisibleCells * 2, MinVisibleCells, MaxVisibleCells);
+            if (nextSize == VisibleCells)
+                return;
             int2 anchor = Origin + (int2)math.floor(normalized * VisibleCells);
             Origin = anchor - (int2)math.floor(normalized * nextSize);
             VisibleCells = nextSize;
@@ -159,7 +160,6 @@ namespace GameOfLife
 
         void OnDestroy()
         {
-            pixels.Dispose();
             ghost.Dispose();
             Destroy(texture);
         }

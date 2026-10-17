@@ -183,8 +183,10 @@ namespace GameOfLife
             if (!HasSelection)
                 return;
             List<int2> cells = CollectTargetCells();
+            DynamicBuffer<LifeCommand> commands = manager.GetBuffer<LifeCommand>(boardEntity);
+            commands.EnsureCapacity(commands.Length + cells.Count);
             for (int i = 0; i < cells.Count; i++)
-                Submit(new LifeCommand { Kind = LifeCommandKind.SetCell, Position = cells[i], Alive = false });
+                commands.Add(new LifeCommand { Kind = LifeCommandKind.SetCell, Position = cells[i], Alive = false });
         }
 
         public void CopyToClipboard()
@@ -232,10 +234,12 @@ namespace GameOfLife
 
         public void ResetPattern()
         {
-            Clear();
             int2[] cells = SelectedPattern.Cells;
+            DynamicBuffer<LifeCommand> commands = manager.GetBuffer<LifeCommand>(boardEntity);
+            commands.EnsureCapacity(commands.Length + cells.Length + 1);
+            commands.Add(new LifeCommand { Kind = LifeCommandKind.Clear });
             for (int i = 0; i < cells.Length; i++)
-                Submit(new LifeCommand { Kind = LifeCommandKind.SetCell, Position = cells[i], Alive = true });
+                commands.Add(new LifeCommand { Kind = LifeCommandKind.SetCell, Position = cells[i], Alive = true });
             View.ResetWindow();
             hasPreviousCell = false;
         }
@@ -336,15 +340,20 @@ namespace GameOfLife
                 hasPreviousCell = false;
                 return;
             }
+            DynamicBuffer<LifeCommand> commands = manager.GetBuffer<LifeCommand>(boardEntity);
+            int samples = hasPreviousCell ? math.cmax(math.abs(cell - previousCell)) : 1;
+            int cellsPerSample = activeButton == PointerEventData.InputButton.Right || Brush == LifeBrushMode.Cell
+                ? 1 : SelectedPattern.Cells.Length;
+            commands.EnsureCapacity(commands.Length + samples * cellsPerSample);
             if (!hasPreviousCell)
-                ApplyBrush(cell);
+                ApplyBrush(cell, commands);
             else if (math.any(cell != previousCell))
-                PaintLine(previousCell, cell);
+                PaintLine(previousCell, cell, commands);
             previousCell = cell;
             hasPreviousCell = true;
         }
 
-        void PaintLine(int2 from, int2 to)
+        void PaintLine(int2 from, int2 to, DynamicBuffer<LifeCommand> commands)
         {
             int2 distance = math.abs(to - from);
             int2 direction = new int2(from.x < to.x ? 1 : -1, from.y < to.y ? 1 : -1);
@@ -362,21 +371,21 @@ namespace GameOfLife
                     error += distance.x;
                     from.y += direction.y;
                 }
-                ApplyBrush(from);
+                ApplyBrush(from, commands);
             }
         }
 
-        void ApplyBrush(int2 cell)
+        void ApplyBrush(int2 cell, DynamicBuffer<LifeCommand> commands)
         {
             if (activeButton == PointerEventData.InputButton.Right)
-                Submit(new LifeCommand { Kind = LifeCommandKind.SetCell, Position = cell, Alive = false });
+                commands.Add(new LifeCommand { Kind = LifeCommandKind.SetCell, Position = cell, Alive = false });
             else if (Brush == LifeBrushMode.Cell)
-                Submit(new LifeCommand { Kind = LifeCommandKind.SetCell, Position = cell, Alive = true });
+                commands.Add(new LifeCommand { Kind = LifeCommandKind.SetCell, Position = cell, Alive = true });
             else
             {
                 int2[] pattern = SelectedPattern.Cells;
                 for (int i = 0; i < pattern.Length; i++)
-                    Submit(new LifeCommand { Kind = LifeCommandKind.SetCell, Position = cell + pattern[i], Alive = true });
+                    commands.Add(new LifeCommand { Kind = LifeCommandKind.SetCell, Position = cell + pattern[i], Alive = true });
             }
         }
 
