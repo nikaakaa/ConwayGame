@@ -1,3 +1,67 @@
+const int gcAllocationSampleCapacity = 4096;
+Unity.Profiling.ProfilerRecorder StartGcAllocationRecording() =>
+    Unity.Profiling.ProfilerRecorder.StartNew(
+        Unity.Profiling.ProfilerCategory.Internal, "GC.Alloc", gcAllocationSampleCapacity,
+        Unity.Profiling.ProfilerRecorderOptions.CollectOnlyOnCurrentThread);
+
+(bool recorderValid, bool wasRunning, int? events, int? capacity, bool bufferSaturated, bool wrappedAround, bool measurementValid)
+StopGcAllocationRecording(Unity.Profiling.ProfilerRecorder recorder)
+{
+    bool recorderValid = recorder.Valid;
+    if (!recorderValid)
+        return (false, false, null, null, false, false, false);
+    bool wasRunning = recorder.IsRunning;
+    recorder.Stop();
+    int events = recorder.Count;
+    int capacity = recorder.Capacity;
+    bool wrappedAround = recorder.WrappedAround;
+    bool bufferSaturated = events >= capacity;
+    return (recorderValid, wasRunning, events, capacity, bufferSaturated, wrappedAround,
+        wasRunning && !bufferSaturated && !wrappedAround);
+}
+
+using (var warmRecorder = StartGcAllocationRecording())
+{
+    GC.KeepAlive(new byte[16]);
+    StopGcAllocationRecording(warmRecorder);
+}
+using var positiveRecorder = StartGcAllocationRecording();
+var positiveControl = new byte[1048576];
+GC.KeepAlive(positiveControl);
+var positiveGc = StopGcAllocationRecording(positiveRecorder);
+using var emptyRecorder = StartGcAllocationRecording();
+var emptyGc = StopGcAllocationRecording(emptyRecorder);
+var gcAllocationCalibration = new
+{
+    marker = "GC.Alloc",
+    thread = "current main thread",
+    options = "CollectOnlyOnCurrentThread; no frame aggregation; no wraparound",
+    positiveControlBytes = 1048576,
+    positive = new
+    {
+        positiveGc.recorderValid, positiveGc.wasRunning, positiveGc.events,
+        positiveGc.capacity, positiveGc.bufferSaturated, positiveGc.wrappedAround
+    },
+    empty = new
+    {
+        emptyGc.recorderValid, emptyGc.wasRunning, emptyGc.events,
+        emptyGc.capacity, emptyGc.bufferSaturated, emptyGc.wrappedAround
+    },
+    passed = positiveGc.measurementValid && positiveGc.events > 0
+        && emptyGc.measurementValid && emptyGc.events == 0
+};
+
+object ReadGcAllocationResult(Unity.Profiling.ProfilerRecorder recorder)
+{
+    var measurement = StopGcAllocationRecording(recorder);
+    return new
+    {
+        measurement.events, measurement.capacity, measurement.recorderValid,
+        measurement.wasRunning, measurement.bufferSaturated, measurement.wrappedAround,
+        measurementValid = gcAllocationCalibration.passed && measurement.measurementValid
+    };
+}
+
 var results = new List<object>();
 const int repetitions = 5;
 const int budget = 128;
@@ -86,7 +150,7 @@ foreach (var item in cases)
             var batchWatch = new System.Diagnostics.Stopwatch();
             double maxBatchMs = 0;
             int batches = 0;
-            long allocated = GC.GetAllocatedBytesForCurrentThread();
+            using var gcRecorder = StartGcAllocationRecording();
             stopwatch.Start();
             world.BeginAdvance(item.exponent);
             bool complete;
@@ -99,7 +163,7 @@ foreach (var item in cases)
                 batches++;
             } while (!complete && stopwatch.Elapsed.TotalSeconds < limitSeconds);
             stopwatch.Stop();
-            allocated = GC.GetAllocatedBytesForCurrentThread() - allocated;
+            var gcAllocations = ReadGcAllocationResult(gcRecorder);
 
             bool sameAsCold = true;
             if (cache == 0)
@@ -126,7 +190,7 @@ foreach (var item in cases)
                 initialPopulation = item.pattern.Population, actualPopulation = world.Population,
                 requestedGenerations = 1L << item.exponent,
                 milliseconds = stopwatch.Elapsed.TotalMilliseconds, maxBatchMs, batches, budget,
-                allocatedBytes = allocated, nodes = world.NodeCount, cacheEntries = world.CacheCount,
+                gcAllocations, nodes = world.NodeCount, cacheEntries = world.CacheCount,
                 cacheHits = world.CacheHits - hits, cacheMisses = world.CacheMisses - misses,
                 complete, sameAsCold, expectedPopulation, gliderPosition, valid
             });
@@ -147,7 +211,7 @@ for (int run = 0; run < repetitions; run++)
     long generations = 0;
     int batches = 0;
     bool complete = true;
-    long allocated = GC.GetAllocatedBytesForCurrentThread();
+    using var gcRecorder = StartGcAllocationRecording();
     stopwatch.Start();
     for (int phase = 0; phase < 16; phase++)
     {
@@ -169,7 +233,7 @@ for (int run = 0; run < repetitions; run++)
         generations += 8;
     }
     stopwatch.Stop();
-    allocated = GC.GetAllocatedBytesForCurrentThread() - allocated;
+    var gcAllocations = ReadGcAllocationResult(gcRecorder);
     if (run == 0)
         sequentialPopulation = world.Population;
     bool valid = complete && generations == 128 && world.Population == sequentialPopulation;
@@ -177,7 +241,7 @@ for (int run = 0; run < repetitions; run++)
         failures++;
     results.Add(new {
         operation = "sequential", name = "chaos-128-generations", run,
-        milliseconds = stopwatch.Elapsed.TotalMilliseconds, allocatedBytes = allocated,
+        milliseconds = stopwatch.Elapsed.TotalMilliseconds, gcAllocations,
         actualPopulation = world.Population, generations, maxBatchMs, batches,
         nodes = world.NodeCount, cacheHits = world.CacheHits, cacheMisses = world.CacheMisses, valid
     });
@@ -203,7 +267,7 @@ using (var entityWorld = new Unity.Entities.World("Life input benchmark", Unity.
             End = new Unity.Mathematics.int2(511, -4096),
             Alive = true
         });
-        long allocated = GC.GetAllocatedBytesForCurrentThread();
+        using var gcRecorder = StartGcAllocationRecording();
         int frames = 0;
         stopwatch.Restart();
         do
@@ -213,7 +277,7 @@ using (var entityWorld = new Unity.Entities.World("Life input benchmark", Unity.
         } while (manager.GetBuffer<GameOfLife.LifeCommand>(board, true).Length != 0
             && stopwatch.Elapsed.TotalSeconds < limitSeconds);
         stopwatch.Stop();
-        allocated = GC.GetAllocatedBytesForCurrentThread() - allocated;
+        var gcAllocations = ReadGcAllocationResult(gcRecorder);
         bool valid = system.Simulation.Population == blocks.Population + 1024
             && manager.GetBuffer<GameOfLife.LifeCommand>(board, true).Length == 0;
         if (!valid)
@@ -221,7 +285,7 @@ using (var entityWorld = new Unity.Entities.World("Life input benchmark", Unity.
         if (run >= 0)
             results.Add(new {
                 operation = "stroke", name = "1024-cells-on-1048576", run,
-                milliseconds = stopwatch.Elapsed.TotalMilliseconds, allocatedBytes = allocated,
+                milliseconds = stopwatch.Elapsed.TotalMilliseconds, gcAllocations,
                 actualPopulation = system.Simulation.Population, frames, valid
             });
     }
@@ -241,11 +305,11 @@ using (var stack = new Unity.Collections.NativeList<GameOfLife.LifeDrawTask>(256
                 Origin = new Unity.Mathematics.int2(-visible / 2, -visible / 2), VisibleCells = visible
             };
             var stopwatch = new System.Diagnostics.Stopwatch();
-            long allocated = GC.GetAllocatedBytesForCurrentThread();
+            using var gcRecorder = StartGcAllocationRecording();
             stopwatch.Start();
             Unity.Jobs.IJobExtensions.Run(job);
             stopwatch.Stop();
-            allocated = GC.GetAllocatedBytesForCurrentThread() - allocated;
+            var gcAllocations = ReadGcAllocationResult(gcRecorder);
             double rasterMs = stopwatch.Elapsed.TotalMilliseconds;
             stopwatch.Restart();
             texture.Apply(false, false);
@@ -261,14 +325,20 @@ using (var stack = new Unity.Collections.NativeList<GameOfLife.LifeDrawTask>(256
                 results.Add(new {
                     operation = "raster", name = "1048576-cells", run, visible,
                     milliseconds = rasterMs, uploadCpuMilliseconds = stopwatch.Elapsed.TotalMilliseconds,
-                    allocatedBytes = allocated, whitePixels, valid
+                    gcAllocations, whitePixels, valid
                 });
         }
     }
     UnityEngine.Object.DestroyImmediate(texture);
 }
-return new {
+var result = new {
+    completedAtUtc = DateTime.UtcNow.ToString("O"),
     unity = Application.unityVersion, burstEnabled = Unity.Burst.BurstCompiler.IsEnabled,
     processor = SystemInfo.processorType, logicalProcessors = SystemInfo.processorCount,
-    repetitions, budget, limitSeconds, failures, results
+    repetitions, budget, limitSeconds, gcAllocationCalibration, failures, results
 };
+System.IO.Directory.CreateDirectory("Temp/LifeBenchmarks");
+System.IO.File.WriteAllText("Temp/LifeBenchmarks/MeasureLife-result.json",
+    Newtonsoft.Json.JsonConvert.SerializeObject(result, Newtonsoft.Json.Formatting.Indented),
+    new System.Text.UTF8Encoding(false));
+return result;

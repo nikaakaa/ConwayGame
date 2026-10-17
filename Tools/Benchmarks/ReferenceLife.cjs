@@ -12,10 +12,7 @@ const centerY = bounds.bottom - Math.floor((bounds.bottom - bounds.top + 1) / 2)
 life.move_field(pattern.field_x, pattern.field_y, -centerX, -centerY);
 life.setup_field(pattern.field_x, pattern.field_y);
 const initialPopulation = life.root.population;
-for (const exponent of [15, 11, 9]) {
-    life.step = exponent;
-    life.next_generation(true);
-}
+const macroSteps = Number(process.argv[3] ?? 1);
 let sum = 0n, xor = 0n;
 function visit(node, x, y) {
     if (!node.population) return;
@@ -34,8 +31,21 @@ function visit(node, x, y) {
     visit(node.sw, x, y + half);
     visit(node.se, x + half, y + half);
 }
-const offset = -(2 ** (life.root.level - 1));
-visit(life.root, offset, offset);
-console.log(JSON.stringify({ input: process.argv[2], initialPopulation, generation: life.generation,
-    population: life.root.population, sum: sum.toString(16).padStart(16, '0'),
-    xor: xor.toString(16).padStart(16, '0'), bounds: life.get_root_bounds() }));
+function snapshot() {
+    sum = 0n;
+    xor = 0n;
+    const offset = -(2 ** (life.root.level - 1));
+    visit(life.root, offset, offset);
+    return { generation: life.generation, population: life.root.population,
+        sum: sum.toString(16).padStart(16, '0'), xor: xor.toString(16).padStart(16, '0') };
+}
+const snapshots = [snapshot()];
+for (let step = 0; step < macroSteps; step++) {
+    for (const exponent of [15, 11, 9]) {
+        life.step = exponent;
+        life.next_generation(true);
+    }
+    snapshots.push(snapshot());
+}
+console.log(JSON.stringify({ input: process.argv[2], initialPopulation,
+    ...snapshots[snapshots.length - 1], bounds: life.get_root_bounds(), snapshots }));
