@@ -1033,14 +1033,9 @@ namespace GameOfLife
                         continue;
                     }
                     // 整轮清扫结束后才复用 ID，避免旧驻留键引用被重用的子节点。
-                    if (RetiredNodes.Length != 0)
-                    {
-                        int last = RetiredNodes.Length - 1;
-                        FreeNodes.Add(RetiredNodes[last]);
-                        RetiredNodes.RemoveAt(last);
-                    }
-                    else
-                        State.CollectionPhase = 0;
+                    FreeNodes.AddRange(RetiredNodes.AsArray());
+                    RetiredNodes.Clear();
+                    State.CollectionPhase = 0;
                 }
             }
         }
