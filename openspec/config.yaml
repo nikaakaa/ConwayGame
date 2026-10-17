@@ -1,0 +1,9 @@
+schema: spec-driven
+
+context: |
+  所有文档正文使用简体中文。
+  OpenSpec 要求的结构标题及 SHALL/MUST 等固定格式关键字保留英文。
+
+rules:
+  tasks:
+    - 只记录实施任务，不设置测试、手动验证或用户验收任务。
