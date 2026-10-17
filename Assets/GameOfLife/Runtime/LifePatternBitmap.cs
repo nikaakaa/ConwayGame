@@ -25,16 +25,21 @@ namespace GameOfLife
 
         public void Draw(Texture2D texture, int2 origin, int2 canvas, int scale)
         {
+            Draw(texture.GetRawTextureData<Color32>(), texture.width, origin, canvas, scale);
+            texture.Apply(false, false);
+        }
+
+        public void Draw(NativeArray<Color32> pixels, int width, int2 origin, int2 canvas, int scale)
+        {
             new DrawJob
             {
                 Tiles = tiles,
-                Pixels = texture.GetRawTextureData<Color32>(),
+                Pixels = pixels,
                 Origin = origin,
                 Canvas = canvas,
                 Scale = scale,
-                Width = texture.width
+                Width = width
             }.Run();
-            texture.Apply(false, false);
         }
 
         public void Dispose() => tiles.Dispose();
