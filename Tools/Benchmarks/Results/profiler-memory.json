@@ -1,0 +1,186 @@
+{
+  "collectedAtUtc": "2026-10-17T17:57:13.8420281Z",
+  "projectPath": "D:/Unity_Project/麦吉太文笔试",
+  "recordingBefore": true,
+  "recordingAfter": false,
+  "allocatedBefore": 1946065767,
+  "reservedBefore": 2956988416,
+  "allocatedAfter": 1166049824,
+  "reservedAfter": 2600472576,
+  "privateMiBBefore": 6842.1,
+  "privateMiBAfter": 5792.1,
+  "privateMeasurementScope": "Separate OS snapshots; allocated and reserved counters were sampled directly around clearing Profiler history.",
+  "warningEntries": [
+    {
+      "seq": 21,
+      "timestampUtc": "2026-10-17T17:35:50.7111831Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 22,
+      "timestampUtc": "2026-10-17T17:36:03.0440391Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 31,
+      "timestampUtc": "2026-10-17T17:43:28.7442724Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 32,
+      "timestampUtc": "2026-10-17T17:45:16.8789501Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 33,
+      "timestampUtc": "2026-10-17T17:46:17.7396959Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 34,
+      "timestampUtc": "2026-10-17T17:47:35.4515651Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 35,
+      "timestampUtc": "2026-10-17T17:47:53.9373774Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 36,
+      "timestampUtc": "2026-10-17T17:48:11.4851988Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 37,
+      "timestampUtc": "2026-10-17T17:48:28.5066979Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 40,
+      "timestampUtc": "2026-10-17T17:48:49.3753761Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 41,
+      "timestampUtc": "2026-10-17T17:49:05.6136873Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 42,
+      "timestampUtc": "2026-10-17T17:49:25.0086142Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 43,
+      "timestampUtc": "2026-10-17T17:50:03.2483561Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 44,
+      "timestampUtc": "2026-10-17T17:55:13.0633683Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 45,
+      "timestampUtc": "2026-10-17T17:55:15.369689Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 46,
+      "timestampUtc": "2026-10-17T17:55:27.9904332Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 47,
+      "timestampUtc": "2026-10-17T17:55:38.9706293Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 48,
+      "timestampUtc": "2026-10-17T17:55:43.3654047Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    },
+    {
+      "seq": 49,
+      "timestampUtc": "2026-10-17T17:55:50.2396001Z",
+      "level": "warn",
+      "logType": "Warning",
+      "message": "Dropping Profiler frames data to reduce memory pressure.\nThe system is running out of memory. Please close applications to free memory or free up space on the partition where the pagefile is located.",
+      "stackTrace": "",
+      "seeded": false
+    }
+  ]
+}
