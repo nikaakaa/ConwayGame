@@ -1,241 +1,287 @@
-using Unity.Burst;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Jobs;
 using Unity.Mathematics;
 
 namespace GameOfLife
 {
     [UpdateInGroup(typeof(SimulationSystemGroup))]
-    public partial struct LifeSimulationSystem : ISystem
+    public partial class LifeSimulationSystem : SystemBase
     {
-        private Entity _board;
-        private NativeParallelHashSet<int2> _aliveLookup;
-        private NativeParallelHashSet<int2> _candidateSet;
-        private NativeList<int2> _candidates;
-        private NativeParallelHashSet<int2> _nextAlive;
+        const int AdvanceBudget = 128;
+        const int EditBudget = 2048;
+        const int CollectionBudget = 4096;
+        const int FirstCollection = 262144;
+        static readonly long FrameBudgetTicks = Stopwatch.Frequency / 500;
 
-        public void OnCreate(ref SystemState systemState)
+        public LifeWorld Simulation { get; private set; }
+        public LifeShape CellShape { get; private set; }
+
+        Entity board;
+        readonly Dictionary<LifePattern, LifeShape> patternShapes = new Dictionary<LifePattern, LifeShape>();
+        readonly List<LifeShape> retainedPatterns = new List<LifeShape>();
+        NativeList<LifeShape> collectionRoots;
+        int nextCollection = FirstCollection;
+        long advanceAmount;
+        bool explicitStep;
+        bool strokeStarted;
+        int2 strokePosition;
+        int strokeError;
+
+        protected override void OnCreate()
         {
-            _aliveLookup = new NativeParallelHashSet<int2>(64, Allocator.Persistent);
-            _candidateSet = new NativeParallelHashSet<int2>(64, Allocator.Persistent);
-            _candidates = new NativeList<int2>(64, Allocator.Persistent);
-            _nextAlive = new NativeParallelHashSet<int2>(64, Allocator.Persistent);
+            Simulation = new LifeWorld();
+            collectionRoots = new NativeList<LifeShape>(64, Allocator.Persistent);
+            LifeBits bit = default;
+            bit.Set(0, 0, true);
+            CellShape = Simulation.BuildShape(new[] { new LifeTile { Position = int2.zero, Bits = bit } });
+            LoadPatterns(LifePatterns.Items);
+            Simulation.BeginEdit();
+            Simulation.Stamp(PatternShape(LifePatterns.Items[0]), int2.zero);
+            Simulation.EndEdit();
 
-            var entityManager = systemState.EntityManager;
-            _board = entityManager.CreateEntity(
-                typeof(LifeSettings), typeof(LifeState), typeof(AliveCell), typeof(LifeCommand));
-            entityManager.SetName(_board, "Conway Board");
-            entityManager.SetComponentData(_board, new LifeSettings { GenerationsPerSecond = 10f });
-
-            var cells = entityManager.GetBuffer<AliveCell>(_board);
-            var initialCells = LifePatterns.Items[0].Cells;
-            cells.EnsureCapacity(initialCells.Length);
-            for (var i = 0; i < initialCells.Length; i++)
-                cells.Add(new AliveCell { Position = initialCells[i] });
-            entityManager.SetComponentData(_board, new LifeState { Revision = 1 });
+            board = EntityManager.CreateEntity(typeof(LifeSettings), typeof(LifeState), typeof(LifeCommand));
+            EntityManager.SetName(board, "Conway Board");
+            EntityManager.SetComponentData(board, new LifeSettings { GenerationsPerSecond = 10f });
+            EntityManager.SetComponentData(board, new LifeState { Revision = 1 });
         }
 
-        public void OnUpdate(ref SystemState systemState)
+        public void LoadPatterns(IReadOnlyList<LifePattern> patterns)
         {
-            systemState.Dependency.Complete();
-
-            var entityManager = systemState.EntityManager;
-            var state = entityManager.GetComponentData<LifeState>(_board);
-            var settings = entityManager.GetComponentData<LifeSettings>(_board);
-            var cells = entityManager.GetBuffer<AliveCell>(_board);
-            var commands = entityManager.GetBuffer<LifeCommand>(_board);
-
-            for (var i = 0; i < commands.Length; i++)
+            while (Simulation.IsCollecting)
+                Simulation.ContinueCollection(CollectionBudget);
+            patternShapes.Clear();
+            retainedPatterns.Clear();
+            retainedPatterns.Add(CellShape);
+            for (int i = 0; i < patterns.Count; i++)
             {
-                var command = commands[i];
+                LifePattern pattern = patterns[i];
+                LifeShape shape = Simulation.BuildShape(pattern.Tiles);
+                patternShapes.Add(pattern, shape);
+                retainedPatterns.Add(shape);
+            }
+        }
+
+        public LifeShape PatternShape(LifePattern pattern) => patternShapes[pattern];
+
+        protected override void OnUpdate()
+        {
+            Dependency.Complete();
+            long deadline = Stopwatch.GetTimestamp() + FrameBudgetTicks;
+            LifeState state = EntityManager.GetComponentData<LifeState>(board);
+            LifeSettings settings = EntityManager.GetComponentData<LifeSettings>(board);
+            DynamicBuffer<LifeCommand> commands = EntityManager.GetBuffer<LifeCommand>(board);
+            if (state.IsRunning)
+                state.Accumulator = Math.Min(state.Accumulator + World.Time.DeltaTime * settings.GenerationsPerSecond,
+                    settings.GenerationsPerSecond);
+
+            if (!Simulation.IsCollecting && Simulation.NodeCount >= nextCollection)
+            {
+                collectionRoots.Clear();
+                for (int i = 0; i < retainedPatterns.Count; i++)
+                    collectionRoots.Add(retainedPatterns[i]);
+                for (int i = 0; i < commands.Length; i++)
+                    if (commands[i].Kind == LifeCommandKind.PatternStroke)
+                        collectionRoots.Add(commands[i].Shape);
+                Simulation.BeginCollection(collectionRoots.AsArray());
+            }
+
+            if (Simulation.IsCollecting)
+            {
+                bool collected;
+                do
+                    collected = Simulation.ContinueCollection(CollectionBudget);
+                while (!collected && Stopwatch.GetTimestamp() < deadline);
+                if (collected)
+                    nextCollection = Math.Max(FirstCollection, Simulation.NodeCount * 2);
+                EntityManager.SetComponentData(board, state);
+                return;
+            }
+
+            if (Simulation.IsAdvancing)
+            {
+                if (explicitStep || commands.Length == 0)
+                {
+                    ContinueAdvance(ref state, deadline);
+                    EntityManager.SetComponentData(board, state);
+                    return;
+                }
+                Simulation.CancelAdvance();
+            }
+
+            int consumed = 0;
+            int editsRemaining = EditBudget;
+            bool editing = false;
+            LifeShape beforeEdit = default;
+            while (consumed < commands.Length)
+            {
+                LifeCommand command = commands[consumed];
+                if (command.Kind == LifeCommandKind.CellStroke || command.Kind == LifeCommandKind.PatternStroke)
+                {
+                    Pause(ref state);
+                    if (!editing)
+                    {
+                        beforeEdit = Simulation.Shape;
+                        Simulation.BeginEdit();
+                        editing = true;
+                    }
+                    if (!DrawStroke(command, ref editsRemaining, deadline))
+                        break;
+                    consumed++;
+                    if (editsRemaining == 0 || Stopwatch.GetTimestamp() >= deadline)
+                        break;
+                    continue;
+                }
+
+                if (editing)
+                {
+                    FinishEdits(beforeEdit, ref state);
+                    editing = false;
+                }
+                consumed++;
                 switch (command.Kind)
                 {
                     case LifeCommandKind.Play:
                         state.IsRunning = true;
+                        state.Accumulator = 0;
                         break;
                     case LifeCommandKind.Pause:
                         Pause(ref state);
                         break;
                     case LifeCommandKind.Step:
                         Pause(ref state);
-                        Advance(ref systemState, ref state, cells);
-                        break;
+                        explicitStep = true;
+                        advanceAmount = 1;
+                        Simulation.BeginAdvance(0);
+                        ContinueAdvance(ref state, deadline);
+                        commands.RemoveRange(0, consumed);
+                        EntityManager.SetComponentData(board, state);
+                        return;
                     case LifeCommandKind.SetSpeed:
                         settings.GenerationsPerSecond = command.Speed;
-                        state.Accumulator = 0f;
+                        state.Accumulator = 0;
+                        EntityManager.SetComponentData(board, settings);
                         break;
                     case LifeCommandKind.Clear:
                         Pause(ref state);
-                        cells.Clear();
+                        beforeEdit = Simulation.Shape;
+                        Simulation.Clear();
                         state.Generation = 0;
-                        state.Revision++;
+                        if (Changed(beforeEdit, Simulation.Shape))
+                            state.Revision++;
                         break;
-                    case LifeCommandKind.SetCell:
+                    case LifeCommandKind.ClearArea:
                         Pause(ref state);
-                        var end = i + 1;
-                        while (end < commands.Length && commands[end].Kind == LifeCommandKind.SetCell)
-                            end++;
-                        ApplyEdits(commands, i, end, ref state, cells);
-                        i = end - 1;
+                        beforeEdit = Simulation.Shape;
+                        Simulation.ClearArea(command.Position, command.End);
+                        if (Changed(beforeEdit, Simulation.Shape))
+                            state.Revision++;
                         break;
                 }
             }
+            if (editing)
+                FinishEdits(beforeEdit, ref state);
+            if (consumed > 0)
+                commands.RemoveRange(0, consumed);
 
-            commands.Clear();
-
-            if (state.IsRunning)
+            if (commands.Length == 0 && state.IsRunning && state.Accumulator >= 1)
             {
-                state.Accumulator += SystemAPI.Time.DeltaTime;
-                var interval = 1f / settings.GenerationsPerSecond;
-                while (state.Accumulator >= interval)
-                {
-                    Advance(ref systemState, ref state, cells);
-                    state.Accumulator -= interval;
-                }
+                int exponent = 0;
+                while (exponent < 30 && (1L << (exponent + 1)) <= state.Accumulator)
+                    exponent++;
+                advanceAmount = 1L << exponent;
+                explicitStep = false;
+                Simulation.BeginAdvance(exponent);
+                ContinueAdvance(ref state, deadline);
             }
-
-            entityManager.SetComponentData(_board, settings);
-            entityManager.SetComponentData(_board, state);
+            EntityManager.SetComponentData(board, state);
         }
 
-        public void OnDestroy(ref SystemState systemState)
+        void ContinueAdvance(ref LifeState state, long deadline)
         {
-            systemState.Dependency.Complete();
-            _aliveLookup.Dispose();
-            _candidateSet.Dispose();
-            _candidates.Dispose();
-            _nextAlive.Dispose();
+            LifeShape before = Simulation.Shape;
+            bool complete;
+            do
+                complete = Simulation.ContinueAdvance(AdvanceBudget);
+            while (!complete && Stopwatch.GetTimestamp() < deadline);
+            if (!complete)
+                return;
+            state.Generation += advanceAmount;
+            if (Changed(before, Simulation.Shape))
+                state.Revision++;
+            if (!explicitStep)
+                state.Accumulator -= advanceAmount;
+            explicitStep = false;
         }
 
-        private static void Pause(ref LifeState state)
+        static void Pause(ref LifeState state)
         {
             state.IsRunning = false;
-            state.Accumulator = 0f;
+            state.Accumulator = 0;
         }
 
-        private void ApplyEdits(DynamicBuffer<LifeCommand> commands, int start, int end,
-            ref LifeState state, DynamicBuffer<AliveCell> cells)
+        void FinishEdits(LifeShape before, ref LifeState state)
         {
-            _aliveLookup.Clear();
-            var capacity = cells.Length + end - start;
-            if (_aliveLookup.Capacity < capacity)
-                _aliveLookup.Capacity = capacity;
-            for (var i = 0; i < cells.Length; i++)
-                _aliveLookup.Add(cells[i].Position);
-
-            var changed = false;
-            for (var i = start; i < end; i++)
-            {
-                var command = commands[i];
-                changed |= command.Alive
-                    ? _aliveLookup.Add(command.Position)
-                    : _aliveLookup.Remove(command.Position);
-            }
-            if (!changed)
-                return;
-
-            cells.ResizeUninitialized(_aliveLookup.Count());
-            var writeIndex = 0;
-            foreach (var position in _aliveLookup)
-                cells[writeIndex++] = new AliveCell { Position = position };
-            state.Revision++;
+            Simulation.EndEdit();
+            if (Changed(before, Simulation.Shape))
+                state.Revision++;
         }
 
-        private void Advance(ref SystemState systemState, ref LifeState state, DynamicBuffer<AliveCell> cells)
+        static bool Changed(LifeShape before, LifeShape after) =>
+            before.Root != after.Root || before.X != after.X || before.Y != after.Y;
+
+        bool DrawStroke(LifeCommand command, ref int remaining, long deadline)
         {
-            _aliveLookup.Clear();
-            _candidateSet.Clear();
-            _candidates.Clear();
-            _nextAlive.Clear();
-
-            var aliveCount = cells.Length;
-            var candidateCapacity = aliveCount * 9;
-            if (_aliveLookup.Capacity < aliveCount)
-                _aliveLookup.Capacity = aliveCount;
-            if (_candidateSet.Capacity < candidateCapacity)
-                _candidateSet.Capacity = candidateCapacity;
-            if (_candidates.Capacity < candidateCapacity)
-                _candidates.Capacity = candidateCapacity;
-
-            new CollectCandidatesJob
+            int2 distance = math.abs(command.End - command.Position);
+            int2 direction = new int2(command.Position.x < command.End.x ? 1 : -1,
+                command.Position.y < command.End.y ? 1 : -1);
+            if (!strokeStarted)
             {
-                Cells = cells.AsNativeArray(),
-                AliveLookup = _aliveLookup,
-                CandidateSet = _candidateSet,
-                Candidates = _candidates
-            }.Run();
-
-            if (_nextAlive.Capacity < _candidates.Length)
-                _nextAlive.Capacity = _candidates.Length;
-
-            systemState.Dependency = new EvolveJob
-            {
-                Candidates = _candidates.AsArray(),
-                AliveLookup = _aliveLookup,
-                NextAlive = _nextAlive.AsParallelWriter()
-            }.Schedule(_candidates.Length, 64, systemState.Dependency);
-            systemState.Dependency.Complete();
-
-            cells.Clear();
-            cells.EnsureCapacity(_nextAlive.Count());
-            foreach (var position in _nextAlive)
-                cells.Add(new AliveCell { Position = position });
-
-            state.Generation++;
-            state.Revision++;
-        }
-
-        [BurstCompile]
-        private struct CollectCandidatesJob : IJob
-        {
-            [ReadOnly] public NativeArray<AliveCell> Cells;
-            public NativeParallelHashSet<int2> AliveLookup;
-            public NativeParallelHashSet<int2> CandidateSet;
-            public NativeList<int2> Candidates;
-
-            public void Execute()
-            {
-                for (var i = 0; i < Cells.Length; i++)
+                strokeStarted = true;
+                strokePosition = command.Position;
+                strokeError = distance.x - distance.y;
+                if (!command.SkipFirst)
                 {
-                    var position = Cells[i].Position;
-                    AliveLookup.Add(position);
-                    for (var y = -1; y <= 1; y++)
-                    {
-                        for (var x = -1; x <= 1; x++)
-                        {
-                            var candidate = position + new int2(x, y);
-                            if (CandidateSet.Add(candidate))
-                                Candidates.AddNoResize(candidate);
-                        }
-                    }
+                    Paint(command, strokePosition);
+                    remaining--;
                 }
             }
+            while (remaining > 0 && Stopwatch.GetTimestamp() < deadline && math.any(strokePosition != command.End))
+            {
+                int doubled = strokeError * 2;
+                if (doubled > -distance.y)
+                {
+                    strokeError -= distance.y;
+                    strokePosition.x += direction.x;
+                }
+                if (doubled < distance.x)
+                {
+                    strokeError += distance.x;
+                    strokePosition.y += direction.y;
+                }
+                Paint(command, strokePosition);
+                remaining--;
+            }
+            bool complete = math.all(strokePosition == command.End);
+            if (complete)
+                strokeStarted = false;
+            return complete;
         }
 
-        [BurstCompile]
-        private struct EvolveJob : IJobParallelFor
+        void Paint(LifeCommand command, int2 position)
         {
-            [ReadOnly] public NativeArray<int2> Candidates;
-            [ReadOnly] public NativeParallelHashSet<int2> AliveLookup;
-            public NativeParallelHashSet<int2>.ParallelWriter NextAlive;
+            if (command.Kind == LifeCommandKind.PatternStroke)
+                Simulation.Stamp(command.Shape, position);
+            else
+                Simulation.SetCell(position, command.Alive);
+        }
 
-            public void Execute(int index)
-            {
-                var position = Candidates[index];
-                var neighbours = 0;
-                for (var y = -1; y <= 1; y++)
-                {
-                    for (var x = -1; x <= 1; x++)
-                    {
-                        if ((x != 0 || y != 0) && AliveLookup.Contains(position + new int2(x, y)))
-                            neighbours++;
-                    }
-                }
-
-                if (neighbours == 3 || (neighbours == 2 && AliveLookup.Contains(position)))
-                    NextAlive.Add(position);
-            }
+        protected override void OnDestroy()
+        {
+            collectionRoots.Dispose();
+            Simulation.Dispose();
         }
     }
 }

@@ -12,14 +12,8 @@ namespace GameOfLife
     {
         public bool IsRunning;
         public long Generation;
-        public float Accumulator;
+        public double Accumulator;
         public uint Revision;
-    }
-
-    [InternalBufferCapacity(0)]
-    public struct AliveCell : IBufferElementData
-    {
-        public int2 Position;
     }
 
     public enum LifeCommandKind : byte
@@ -29,7 +23,9 @@ namespace GameOfLife
         Step,
         SetSpeed,
         Clear,
-        SetCell
+        CellStroke,
+        PatternStroke,
+        ClearArea
     }
 
     [InternalBufferCapacity(0)]
@@ -38,6 +34,9 @@ namespace GameOfLife
         public LifeCommandKind Kind;
         public float Speed;
         public int2 Position;
+        public int2 End;
+        public LifeShape Shape;
         public bool Alive;
+        public bool SkipFirst;
     }
 }

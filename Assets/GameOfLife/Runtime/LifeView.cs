@@ -1,4 +1,3 @@
-using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -13,21 +12,21 @@ namespace GameOfLife
         public RawImage BoardImage;
 
         public const int MinVisibleCells = 8;
-        public const int MaxVisibleCells = 16384;
+        public const int MaxVisibleCells = 67108864;
 
         public int2 Origin { get; private set; } = new int2(-64, -64);
         public int VisibleCells { get; private set; } = 128;
 
-        const int TextureSize = 1024;
+        public const int TextureSize = 1024;
         Texture2D texture;
         EntityManager manager;
         Entity boardEntity;
+        LifeWorld simulation;
+        NativeList<LifeDrawTask> drawStack;
         uint renderedRevision;
         bool windowChanged = true;
-
-        // 盖章预览（洋葱皮）与选区，只影响显示。
-        NativeList<int2> ghost;
-        int2[] ghostSource;
+        LifeShape ghost;
+        bool hasGhost;
         bool hovering;
         int2 hoverCell;
         bool hasSelection;
@@ -36,7 +35,7 @@ namespace GameOfLife
 
         void Awake()
         {
-            ghost = new NativeList<int2>(16, Allocator.Persistent);
+            drawStack = new NativeList<LifeDrawTask>(256, Allocator.Persistent);
             texture = new Texture2D(TextureSize, TextureSize, TextureFormat.RGBA32, false)
             {
                 name = "Life board",
@@ -47,10 +46,11 @@ namespace GameOfLife
             BoardImage.uvRect = new Rect(0, 0, 1, 1);
         }
 
-        public void Bind(EntityManager entityManager, Entity entity)
+        public void Bind(EntityManager entityManager, Entity entity, LifeWorld world)
         {
             manager = entityManager;
             boardEntity = entity;
+            simulation = world;
         }
 
         void LateUpdate()
@@ -58,16 +58,19 @@ namespace GameOfLife
             LifeState state = manager.GetComponentData<LifeState>(boardEntity);
             if (!windowChanged && renderedRevision == state.Revision)
                 return;
-
-            new RenderPixelsJob
+            LifeShape preview = ghost;
+            preview.X += hoverCell.x;
+            preview.Y += hoverCell.y;
+            new LifeRasterJob
             {
-                Cells = manager.GetBuffer<AliveCell>(boardEntity, true).AsNativeArray(),
+                Nodes = simulation.Nodes,
+                Shape = simulation.Shape,
                 Pixels = texture.GetRawTextureData<Color32>(),
+                Stack = drawStack,
                 Origin = Origin,
                 VisibleCells = VisibleCells,
-                Ghost = ghost.AsArray(),
-                ShowGhost = hovering && ghostSource != null,
-                HoverCell = hoverCell,
+                Ghost = preview,
+                ShowGhost = hovering && hasGhost,
                 HasSelection = hasSelection,
                 SelectionMin = selectionMin,
                 SelectionMax = selectionMax
@@ -89,25 +92,14 @@ namespace GameOfLife
             RectTransform rect = BoardImage.rectTransform;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(rect, screenPosition, eventCamera, out Vector2 local);
             Rect bounds = rect.rect;
-            if (!bounds.Contains(local))
-            {
-                normalized = default;
-                return false;
-            }
             normalized = new float2((local.x - bounds.xMin) / bounds.width, (local.y - bounds.yMin) / bounds.height);
-            return true;
+            return bounds.Contains(local);
         }
 
-        /// <summary>设置跟随鼠标的半透明预览；传 null 关闭。</summary>
-        public void SetGhost(int2[] cells)
+        public void SetGhost(bool visible, LifeShape shape)
         {
-            if (cells == ghostSource)
-                return;
-            ghostSource = cells;
-            ghost.Clear();
-            if (cells != null)
-                for (int i = 0; i < cells.Length; i++)
-                    ghost.Add(cells[i]);
+            hasGhost = visible;
+            ghost = shape;
             windowChanged |= hovering;
         }
 
@@ -117,7 +109,7 @@ namespace GameOfLife
                 return;
             hovering = visible;
             hoverCell = cell;
-            windowChanged |= ghostSource != null;
+            windowChanged |= hasGhost;
         }
 
         public void SetSelection(bool visible, int2 minimum, int2 maximum)
@@ -160,114 +152,8 @@ namespace GameOfLife
 
         void OnDestroy()
         {
-            ghost.Dispose();
+            drawStack.Dispose();
             Destroy(texture);
-        }
-
-        [BurstCompile]
-        struct RenderPixelsJob : IJob
-        {
-            [ReadOnly] public NativeArray<AliveCell> Cells;
-            public NativeArray<Color32> Pixels;
-            public int2 Origin;
-            public int VisibleCells;
-            [ReadOnly] public NativeArray<int2> Ghost;
-            public bool ShowGhost;
-            public int2 HoverCell;
-            public bool HasSelection;
-            public int2 SelectionMin;
-            public int2 SelectionMax;
-
-            static readonly Color32 Black = new Color32(0, 0, 0, 255);
-            static readonly Color32 White = new Color32(255, 255, 255, 255);
-            static readonly Color32 SelectionFill = new Color32(22, 22, 22, 255);
-            static readonly Color32 GhostColor = new Color32(78, 78, 78, 255);
-            static readonly Color32 DashDim = new Color32(110, 110, 110, 255);
-            const int DashLength = 6;
-
-            public void Execute()
-            {
-                for (int i = 0; i < Pixels.Length; i++)
-                    Pixels[i] = Black;
-
-                int2 selectionLow = SelectionMin - Origin;
-                int2 selectionHigh = SelectionMax + 1 - Origin;
-                int2 selectionBegin = default;
-                int2 selectionEnd = default;
-                if (HasSelection)
-                {
-                    selectionBegin = ToPixelBegin(selectionLow);
-                    selectionEnd = ToPixelEnd(selectionHigh);
-                    Fill(selectionBegin, selectionEnd, SelectionFill);
-                }
-
-                // 预览先画，已有活细胞随后覆盖为白色，与盖章不翻转已有细胞一致。
-                if (ShowGhost)
-                    for (int i = 0; i < Ghost.Length; i++)
-                        FillCell(HoverCell + Ghost[i] - Origin, GhostColor);
-
-                for (int i = 0; i < Cells.Length; i++)
-                    FillCell(Cells[i].Position - Origin, White);
-
-                // 选区延伸到窗口外时，只画真正落在窗口内的边。
-                if (HasSelection)
-                    DrawDashedBorder(selectionBegin, selectionEnd,
-                        selectionLow >= 0 & selectionLow <= VisibleCells,
-                        selectionHigh >= 0 & selectionHigh <= VisibleCells);
-            }
-
-            void FillCell(int2 cell, Color32 color)
-            {
-                if (math.all(cell >= 0) && math.all(cell < VisibleCells))
-                    Fill(ToPixelBegin(cell), ToPixelEnd(cell + 1), color);
-            }
-
-            /// <summary>窗口相对格坐标转纹理像素：起点向下取整、终点向上取整，远景每格至少一像素。
-            /// 先夹紧，避免远处选区乘法溢出。</summary>
-            int2 ToPixelBegin(int2 cell)
-            {
-                cell = math.clamp(cell, 0, VisibleCells);
-                return cell * TextureSize / VisibleCells;
-            }
-
-            int2 ToPixelEnd(int2 cell)
-            {
-                cell = math.clamp(cell, 0, VisibleCells);
-                return (cell * TextureSize + VisibleCells - 1) / VisibleCells;
-            }
-
-            void Fill(int2 begin, int2 end, Color32 color)
-            {
-                for (int y = begin.y; y < end.y; y++)
-                    for (int x = begin.x; x < end.x; x++)
-                        Pixels[y * TextureSize + x] = color;
-            }
-
-            void DrawDashedBorder(int2 begin, int2 end, bool2 lowVisible, bool2 highVisible)
-            {
-                if (begin.x >= end.x || begin.y >= end.y)
-                    return;
-                int2 last = end - 1;
-                for (int x = begin.x; x <= last.x; x++)
-                {
-                    if (lowVisible.y)
-                        Dash(x, begin.y, x);
-                    if (highVisible.y)
-                        Dash(x, last.y, x);
-                }
-                for (int y = begin.y; y <= last.y; y++)
-                {
-                    if (lowVisible.x)
-                        Dash(begin.x, y, y);
-                    if (highVisible.x)
-                        Dash(last.x, y, y);
-                }
-            }
-
-            void Dash(int x, int y, int along)
-            {
-                Pixels[y * TextureSize + x] = (along / DashLength & 1) == 0 ? White : DashDim;
-            }
         }
     }
 }

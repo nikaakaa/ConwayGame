@@ -22,14 +22,14 @@ namespace GameOfLife
         public LifeView View;
 
         public const float MinSpeed = 1f;
-        public const float MaxSpeed = 1000f;
+        public const float MaxSpeed = 1073741824f;
         public bool KeyboardShortcutsEnabled { get; set; } = true;
 
         public LifeBrushMode Brush { get; private set; } = LifeBrushMode.Cell;
         public LifePattern SelectedPattern { get; private set; } = LifePatterns.Items[0];
         public LifeState State => manager.GetComponentData<LifeState>(boardEntity);
         public float Speed => manager.GetComponentData<LifeSettings>(boardEntity).GenerationsPerSecond;
-        public DynamicBuffer<AliveCell> Cells => manager.GetBuffer<AliveCell>(boardEntity, true);
+        public long Population => simulation.Simulation.Population;
         public LifePatternStore Store { get; private set; }
         public string PatternsDirectory { get; private set; }
         public string PatternName { get; set; } = "新结构";
@@ -41,11 +41,11 @@ namespace GameOfLife
 
         /// <summary>需要提示用户的结果，例如复制成功或剪贴板无法识别。</summary>
         public event Action<string> Notified;
-        /// <summary>结构列表增加了新结构。</summary>
         public event Action PatternsChanged;
 
         EntityManager manager;
         Entity boardEntity;
+        LifeSimulationSystem simulation;
         PointerEventData.InputButton activeButton;
         bool hasPreviousCell;
         int2 previousCell;
@@ -56,7 +56,6 @@ namespace GameOfLife
         int2 selectionEnd;
         bool selectionMoved;
         readonly List<int2> scratch = new List<int2>();
-        static readonly int2[] SingleCell = { int2.zero };
 
         void Awake()
         {
@@ -67,10 +66,12 @@ namespace GameOfLife
         void Start()
         {
             manager = World.DefaultGameObjectInjectionWorld.EntityManager;
+            simulation = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<LifeSimulationSystem>();
             EntityQuery query = manager.CreateEntityQuery(ComponentType.ReadOnly<LifeState>());
             boardEntity = query.GetSingletonEntity();
             query.Dispose();
-            View.Bind(manager, boardEntity);
+            simulation.LoadPatterns(Store.Patterns);
+            View.Bind(manager, boardEntity, simulation.Simulation);
             SetBrush(Brush);
         }
 
@@ -137,9 +138,8 @@ namespace GameOfLife
                 ClearSelection();
             Brush = brush;
             hasPreviousCell = false;
-            // 单格与盖章显示半透明预览，框选不显示。
-            View.SetGhost(brush == LifeBrushMode.Cell ? SingleCell
-                : brush == LifeBrushMode.Pattern ? SelectedPattern.Cells : null);
+            View.SetGhost(brush != LifeBrushMode.Select, brush == LifeBrushMode.Pattern
+                ? simulation.PatternShape(SelectedPattern) : simulation.CellShape);
         }
 
         public void ClearSelection()
@@ -151,16 +151,7 @@ namespace GameOfLife
         /// <summary>有选区时取框内活细胞，否则取整个棋盘。</summary>
         List<int2> CollectTargetCells()
         {
-            scratch.Clear();
-            DynamicBuffer<AliveCell> cells = Cells;
-            int2 minimum = SelectionMin;
-            int2 maximum = SelectionMax;
-            for (int i = 0; i < cells.Length; i++)
-            {
-                int2 position = cells[i].Position;
-                if (!HasSelection || math.all(position >= minimum) && math.all(position <= maximum))
-                    scratch.Add(position);
-            }
+            simulation.Simulation.CollectCells(scratch, HasSelection, SelectionMin, SelectionMax);
             return scratch;
         }
 
@@ -173,6 +164,7 @@ namespace GameOfLife
                 return;
             }
             LifePattern pattern = Store.Save(PatternName, cells);
+            simulation.LoadPatterns(Store.Patterns);
             PatternsChanged?.Invoke();
             SelectPattern(pattern);
             Notify("已保存 " + pattern.Name);
@@ -182,11 +174,7 @@ namespace GameOfLife
         {
             if (!HasSelection)
                 return;
-            List<int2> cells = CollectTargetCells();
-            DynamicBuffer<LifeCommand> commands = manager.GetBuffer<LifeCommand>(boardEntity);
-            commands.EnsureCapacity(commands.Length + cells.Count);
-            for (int i = 0; i < cells.Count; i++)
-                commands.Add(new LifeCommand { Kind = LifeCommandKind.SetCell, Position = cells[i], Alive = false });
+            Submit(new LifeCommand { Kind = LifeCommandKind.ClearArea, Position = SelectionMin, End = SelectionMax });
         }
 
         public void CopyToClipboard()
@@ -203,12 +191,13 @@ namespace GameOfLife
 
         public void PasteFromClipboard()
         {
-            if (!LifePatternText.TryParse(GUIUtility.systemCopyBuffer, "导入", out LifePattern parsed))
+            if (!LifePatternText.TryParse(GUIUtility.systemCopyBuffer, "导入", out LifePattern parsed, out string error))
             {
-                Notify("剪贴板里没有可识别的图案");
+                Notify(error);
                 return;
             }
             LifePattern pattern = Store.Import(parsed);
+            simulation.LoadPatterns(Store.Patterns);
             PatternsChanged?.Invoke();
             SelectPattern(pattern);
             Notify("已导入 " + pattern.Name);
@@ -216,7 +205,16 @@ namespace GameOfLife
 
         public void ReloadPatterns()
         {
-            Store.Reload();
+            try
+            {
+                Store.Reload();
+            }
+            catch (FormatException exception)
+            {
+                Notify(exception.Message);
+                return;
+            }
+            simulation.LoadPatterns(Store.Patterns);
             PatternsChanged?.Invoke();
             SelectPattern(Store.Patterns[0]);
         }
@@ -234,12 +232,11 @@ namespace GameOfLife
 
         public void ResetPattern()
         {
-            int2[] cells = SelectedPattern.Cells;
             DynamicBuffer<LifeCommand> commands = manager.GetBuffer<LifeCommand>(boardEntity);
-            commands.EnsureCapacity(commands.Length + cells.Length + 1);
+            commands.EnsureCapacity(commands.Length + 2);
             commands.Add(new LifeCommand { Kind = LifeCommandKind.Clear });
-            for (int i = 0; i < cells.Length; i++)
-                commands.Add(new LifeCommand { Kind = LifeCommandKind.SetCell, Position = cells[i], Alive = true });
+            commands.Add(new LifeCommand { Kind = LifeCommandKind.PatternStroke,
+                Shape = simulation.PatternShape(SelectedPattern) });
             View.ResetWindow();
             hasPreviousCell = false;
         }
@@ -340,53 +337,21 @@ namespace GameOfLife
                 hasPreviousCell = false;
                 return;
             }
-            DynamicBuffer<LifeCommand> commands = manager.GetBuffer<LifeCommand>(boardEntity);
-            int samples = hasPreviousCell ? math.cmax(math.abs(cell - previousCell)) : 1;
-            int cellsPerSample = activeButton == PointerEventData.InputButton.Right || Brush == LifeBrushMode.Cell
-                ? 1 : SelectedPattern.Cells.Length;
-            commands.EnsureCapacity(commands.Length + samples * cellsPerSample);
-            if (!hasPreviousCell)
-                ApplyBrush(cell, commands);
-            else if (math.any(cell != previousCell))
-                PaintLine(previousCell, cell, commands);
+            if (!hasPreviousCell || math.any(cell != previousCell))
+            {
+                bool stamp = activeButton != PointerEventData.InputButton.Right && Brush == LifeBrushMode.Pattern;
+                Submit(new LifeCommand
+                {
+                    Kind = stamp ? LifeCommandKind.PatternStroke : LifeCommandKind.CellStroke,
+                    Position = hasPreviousCell ? previousCell : cell,
+                    End = cell,
+                    SkipFirst = hasPreviousCell,
+                    Alive = activeButton != PointerEventData.InputButton.Right,
+                    Shape = stamp ? simulation.PatternShape(SelectedPattern) : default
+                });
+            }
             previousCell = cell;
             hasPreviousCell = true;
-        }
-
-        void PaintLine(int2 from, int2 to, DynamicBuffer<LifeCommand> commands)
-        {
-            int2 distance = math.abs(to - from);
-            int2 direction = new int2(from.x < to.x ? 1 : -1, from.y < to.y ? 1 : -1);
-            int error = distance.x - distance.y;
-            while (math.any(from != to))
-            {
-                int doubled = error * 2;
-                if (doubled > -distance.y)
-                {
-                    error -= distance.y;
-                    from.x += direction.x;
-                }
-                if (doubled < distance.x)
-                {
-                    error += distance.x;
-                    from.y += direction.y;
-                }
-                ApplyBrush(from, commands);
-            }
-        }
-
-        void ApplyBrush(int2 cell, DynamicBuffer<LifeCommand> commands)
-        {
-            if (activeButton == PointerEventData.InputButton.Right)
-                commands.Add(new LifeCommand { Kind = LifeCommandKind.SetCell, Position = cell, Alive = false });
-            else if (Brush == LifeBrushMode.Cell)
-                commands.Add(new LifeCommand { Kind = LifeCommandKind.SetCell, Position = cell, Alive = true });
-            else
-            {
-                int2[] pattern = SelectedPattern.Cells;
-                for (int i = 0; i < pattern.Length; i++)
-                    commands.Add(new LifeCommand { Kind = LifeCommandKind.SetCell, Position = cell + pattern[i], Alive = true });
-            }
         }
 
         public void OnPointerMove(PointerEventData eventData)

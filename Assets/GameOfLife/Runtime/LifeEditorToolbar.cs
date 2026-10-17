@@ -29,15 +29,15 @@ namespace GameOfLife
         Button delete;
         Button run;
         Button save;
-        Label generationValue;
-        Label populationValue;
+        LifeNumber generationValue;
+        LifeNumber populationValue;
         Label toast;
         readonly List<VisualElement[]> gliders = new List<VisualElement[]>();
         Font font;
         Font monoFont;
         bool editingSpeed;
         long shownGeneration = -1;
-        int shownPopulation = -1;
+        long shownPopulation = -1;
         int shownPhase = -1;
         float toastHideTime;
 
@@ -135,9 +135,9 @@ namespace GameOfLife
 
         VisualElement Row() => Add(toolbar, new VisualElement(), "life-row");
 
-        Label Mono(VisualElement parent, string className)
+        LifeNumber Mono(VisualElement parent, string className)
         {
-            Label label = Add(parent, new Label("0"), className);
+            LifeNumber label = Add(parent, new LifeNumber(), className);
             label.style.unityFontDefinition = FontDefinition.FromFont(monoFont);
             return label;
         }
@@ -188,7 +188,7 @@ namespace GameOfLife
         void LateUpdate()
         {
             LifeState state = Controller.State;
-            int population = Controller.Cells.Length;
+            long population = Controller.Population;
 
             cellBrush.EnableInClassList(OnClass, Controller.Brush == LifeBrushMode.Cell);
             patternBrush.EnableInClassList(OnClass, Controller.Brush == LifeBrushMode.Pattern);
@@ -201,16 +201,15 @@ namespace GameOfLife
             if (!editingSpeed)
                 speed.SetValueWithoutNotify(Controller.Speed);
 
-            // 数字只在变化时重建字符串，避免每帧分配。
             if (state.Generation != shownGeneration)
             {
                 shownGeneration = state.Generation;
-                generationValue.text = shownGeneration.ToString();
+                generationValue.SetValue(shownGeneration);
             }
             if (population != shownPopulation)
             {
                 shownPopulation = population;
-                populationValue.text = population.ToString();
+                populationValue.SetValue(population);
             }
 
             int phase = (int)(state.Generation & 3);

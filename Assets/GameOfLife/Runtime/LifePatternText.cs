@@ -1,19 +1,24 @@
+using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Text;
 using Unity.Mathematics;
 using UnityEngine;
 
 namespace GameOfLife
 {
-    /// <summary>
-    /// 结构的文本格式转换：导出 RLE，导入 RLE、Plaintext（.cells）或本工程的 JSON。
-    /// RLE 与 Plaintext 的行自上而下，本工程 y 向上，转换时翻转 y。
-    /// </summary>
     public static class LifePatternText
     {
         const int RleLineLength = 70;
 
-        /// <summary>按包围盒中心把世界坐标转成相对坐标，与保存结构使用同一规则。</summary>
+        struct RowBits
+        {
+            public int X;
+            public int Y;
+            public ushort Bits;
+        }
+
         public static int2[] ToRelative(IReadOnlyList<int2> cells)
         {
             int2 minimum = cells[0];
@@ -23,8 +28,7 @@ namespace GameOfLife
                 minimum = math.min(minimum, cells[i]);
                 maximum = math.max(maximum, cells[i]);
             }
-
-            int2 origin = minimum + (maximum - minimum + 1) / 2;
+            int2 origin = LifePatternBuilder.Center(minimum, maximum);
             var relative = new int2[cells.Count];
             for (int i = 0; i < relative.Length; i++)
                 relative[i] = cells[i] - origin;
@@ -33,63 +37,84 @@ namespace GameOfLife
 
         public static string ToRle(string name, IReadOnlyList<int2> cells)
         {
-            int2 minimum = cells[0];
-            int2 maximum = minimum;
-            var alive = new HashSet<int2>();
-            for (int i = 0; i < cells.Count; i++)
+            return WriteRle(name, LifePatternBuilder.Pack(cells));
+        }
+
+        public static string ToRle(LifePattern pattern)
+        {
+            return WriteRle(pattern.Name, pattern.Tiles);
+        }
+
+        static string WriteRle(string name, LifeTile[] tiles)
+        {
+            var rows = new List<RowBits>();
+            int minimumX = int.MaxValue;
+            int maximumX = int.MinValue;
+            for (int i = 0; i < tiles.Length; i++)
+                for (int y = 0; y < 16; y++)
+                {
+                    ushort bits = tiles[i].Bits.GetRow(y);
+                    if (bits == 0)
+                        continue;
+                    int x = tiles[i].Position.x;
+                    minimumX = math.min(minimumX, x + math.tzcnt((uint)bits));
+                    maximumX = math.max(maximumX, x + 31 - math.lzcnt((uint)bits));
+                    rows.Add(new RowBits { X = x, Y = tiles[i].Position.y + y, Bits = bits });
+                }
+            rows.Sort((left, right) =>
             {
-                minimum = math.min(minimum, cells[i]);
-                maximum = math.max(maximum, cells[i]);
-                alive.Add(cells[i]);
-            }
+                int vertical = right.Y.CompareTo(left.Y);
+                return vertical != 0 ? vertical : left.X.CompareTo(right.X);
+            });
 
             var text = new StringBuilder();
             if (!string.IsNullOrWhiteSpace(name))
-                text.Append("#N ").Append(name.Trim()).Append('\n');
-            text.Append("x = ").Append(maximum.x - minimum.x + 1)
-                .Append(", y = ").Append(maximum.y - minimum.y + 1)
+                text.Append("#N ").Append(name.Trim().Replace('\r', ' ').Replace('\n', ' ')).Append('\n');
+            text.Append("x = ").Append((long)maximumX - minimumX + 1)
+                .Append(", y = ").Append((long)rows[0].Y - rows[rows.Count - 1].Y + 1)
                 .Append(", rule = B3/S23\n");
 
             var body = new StringBuilder();
-            int pendingRows = 0;
-            for (int y = maximum.y; y >= minimum.y; y--)
+            int previousY = rows[0].Y;
+            int index = 0;
+            while (index < rows.Count)
             {
-                // 行尾的死细胞省略；空行累积为一个带计数的 $。
-                int lastAlive = int.MinValue;
-                for (int x = maximum.x; x >= minimum.x; x--)
-                    if (alive.Contains(new int2(x, y)))
+                int y = rows[index].Y;
+                if (index != 0)
+                    AppendRun(body, (long)previousY - y, '$');
+                long cursor = minimumX;
+                long liveRun = 0;
+                while (index < rows.Count && rows[index].Y == y)
+                {
+                    RowBits row = rows[index++];
+                    uint bits = row.Bits;
+                    while (bits != 0)
                     {
-                        lastAlive = x;
-                        break;
+                        int first = math.tzcnt(bits);
+                        int length = math.tzcnt(~(bits >> first));
+                        long start = (long)row.X + first;
+                        if (start != cursor)
+                        {
+                            if (liveRun != 0)
+                                AppendRun(body, liveRun, 'o');
+                            AppendRun(body, start - cursor, 'b');
+                            liveRun = 0;
+                        }
+                        liveRun += length;
+                        cursor = start + length;
+                        bits &= ~(((1u << length) - 1u) << first);
                     }
-                if (lastAlive == int.MinValue)
-                {
-                    pendingRows++;
-                    continue;
                 }
-                if (body.Length != 0)
-                    AppendRun(body, pendingRows + 1, '$');
-                pendingRows = 0;
-
-                int x0 = minimum.x;
-                while (x0 <= lastAlive)
-                {
-                    bool state = alive.Contains(new int2(x0, y));
-                    int run = 1;
-                    while (x0 + run <= lastAlive && alive.Contains(new int2(x0 + run, y)) == state)
-                        run++;
-                    AppendRun(body, run, state ? 'o' : 'b');
-                    x0 += run;
-                }
+                AppendRun(body, liveRun, 'o');
+                previousY = y;
             }
             body.Append('!');
 
-            // RLE 约定每行不超过 70 个字符，只在记号之间换行。
             int lineStart = 0;
             int tokenStart = 0;
             for (int i = 0; i < body.Length; i++)
             {
-                if (char.IsDigit(body[i]))
+                if (body[i] >= '0' && body[i] <= '9')
                     continue;
                 if (i + 1 - lineStart > RleLineLength && tokenStart > lineStart)
                 {
@@ -102,144 +127,334 @@ namespace GameOfLife
             return text.ToString();
         }
 
-        static void AppendRun(StringBuilder body, int count, char tag)
+        static void AppendRun(StringBuilder body, long count, char tag)
         {
             if (count > 1)
                 body.Append(count);
             body.Append(tag);
         }
 
-        /// <summary>识别 RLE、Plaintext 或 JSON，成功时返回相对坐标结构。</summary>
-        public static bool TryParse(string text, string fallbackName, out LifePattern pattern)
+        public static bool TryParse(string text, string fallbackName, out LifePattern pattern, out string error)
         {
             pattern = null;
             if (string.IsNullOrWhiteSpace(text))
+            {
+                error = "没有可导入的结构文本";
                 return false;
+            }
 
             string trimmed = text.Trim();
             string name = fallbackName;
-            List<int2> cells;
+            var builder = new LifePatternBuilder();
+            bool parsed;
             if (trimmed[0] == '{')
-                cells = ParseJson(trimmed, ref name);
+                parsed = ReadJson(trimmed, ref name, builder, out error);
             else if (LooksLikeRle(trimmed))
-                cells = ParseRle(trimmed, ref name);
+                parsed = ReadRle(trimmed, ref name, builder, out error);
             else
-                cells = ParsePlaintext(trimmed, ref name);
-
-            if (cells == null || cells.Count == 0)
+                parsed = ReadPlaintext(text, ref name, builder, out error);
+            if (!parsed)
                 return false;
-            pattern = new LifePattern(name, "自定义", 0, int2.zero, ToRelative(cells), "从剪贴板导入的结构");
+            if (builder.IsEmpty)
+            {
+                error = "结构中没有活细胞";
+                return false;
+            }
+            pattern = new LifePattern(name, "自定义", 0, int2.zero, builder.Build(true), "导入的自定义结构");
+            error = string.Empty;
             return true;
         }
 
         static bool LooksLikeRle(string text)
         {
-            foreach (string raw in text.Split('\n'))
+            using var reader = new StringReader(text);
+            string raw;
+            while ((raw = reader.ReadLine()) != null)
             {
                 string line = raw.Trim();
                 if (line.Length == 0 || line[0] == '#')
                     continue;
+                if (line[0] == '!')
+                    return false;
                 if (line[0] == 'x' || line[0] == 'X')
                     return true;
-                // 没有头部时，只要出现 RLE 专用记号也按 RLE 处理。
-                return line.IndexOf('$') >= 0 || line.IndexOf('!') >= 0 && line.IndexOf('o') >= 0;
+                for (int i = 0; i < line.Length; i++)
+                    if (line[i] == '$' || line[i] == '!' || line[i] == 'b' || line[i] >= '0' && line[i] <= '9')
+                        return true;
             }
             return false;
         }
 
-        static List<int2> ParseJson(string text, ref string name)
+        static bool ReadJson(string text, ref string name, LifePatternBuilder builder, out string error)
         {
             LifePatternData data;
             try
             {
                 data = JsonUtility.FromJson<LifePatternData>(text);
             }
-            catch (System.ArgumentException)
+            catch (ArgumentException exception)
             {
-                return null;
+                error = "JSON 无法解析：" + exception.Message;
+                return false;
             }
-            if (data == null || data.cells == null)
-                return null;
+            if (data.cells == null)
+            {
+                error = "JSON 缺少 cells 坐标数组";
+                return false;
+            }
             if (!string.IsNullOrWhiteSpace(data.name))
                 name = data.name.Trim();
-            return new List<int2>(data.cells);
+            for (int i = 0; i < data.cells.Length; i++)
+                builder.AddRun(data.cells[i].x, data.cells[i].y, 1);
+            error = string.Empty;
+            return true;
         }
 
-        static List<int2> ParseRle(string text, ref string name)
+        static bool ReadRle(string text, ref string name, LifePatternBuilder builder, out string error)
         {
-            var cells = new List<int2>();
+            int width = 0;
+            int height = 0;
             int x = 0;
-            int y = 0;
-            int count = 0;
-            foreach (string raw in text.Split('\n'))
+            int row = 0;
+            bool bodyStarted = false;
+            int lineNumber = 0;
+            using var reader = new StringReader(text);
+            string raw;
+            while ((raw = reader.ReadLine()) != null)
             {
+                lineNumber++;
                 string line = raw.Trim();
                 if (line.Length == 0)
                     continue;
                 if (line[0] == '#')
                 {
                     if (line.Length > 2 && (line[1] == 'N' || line[1] == 'n'))
-                        name = line.Substring(2).Trim();
+                    {
+                        string title = line.Substring(2).Trim();
+                        if (title.Length != 0)
+                            name = title;
+                    }
+                    if (line.Length > 1 && line[1] == 'r' && !IsLifeRule(line.Substring(2).Trim()))
+                    {
+                        error = $"RLE 第 {lineNumber} 行指定了不支持的规则，仅支持 B3/S23";
+                        return false;
+                    }
                     continue;
                 }
-                if (line[0] == 'x' || line[0] == 'X')
-                    continue;
-
-                foreach (char c in line)
+                if ((line[0] == 'x' || line[0] == 'X') && line.IndexOf('=') >= 0)
                 {
+                    if (bodyStarted || width != 0)
+                    {
+                        error = $"RLE 第 {lineNumber} 行的头部位置不正确或重复";
+                        return false;
+                    }
+                    if (!ReadHeader(line, out width, out height, out error))
+                        return false;
+                    continue;
+                }
+
+                bodyStarted = true;
+                int count = 0;
+                bool hasCount = false;
+                for (int i = 0; i < line.Length; i++)
+                {
+                    char c = line[i];
                     if (c >= '0' && c <= '9')
                     {
-                        count = count * 10 + (c - '0');
+                        int digit = c - '0';
+                        if (count > (int.MaxValue - digit) / 10)
+                        {
+                            error = $"RLE 第 {lineNumber} 行的游程次数超过整数坐标范围";
+                            return false;
+                        }
+                        count = count * 10 + digit;
+                        hasCount = true;
                         continue;
                     }
-                    int run = count == 0 ? 1 : count;
-                    count = 0;
+                    if (char.IsWhiteSpace(c))
+                    {
+                        if (!hasCount)
+                            continue;
+                        error = $"RLE 第 {lineNumber} 行的游程次数和标记之间不能插入空白";
+                        return false;
+                    }
                     if (c == '!')
-                        return cells;
+                    {
+                        if (!hasCount)
+                        {
+                            error = string.Empty;
+                            return true;
+                        }
+                        error = $"RLE 第 {lineNumber} 行的结束标记不能带次数";
+                        return false;
+                    }
+
+                    int run = hasCount ? count : 1;
+                    count = 0;
+                    hasCount = false;
+                    if (run == 0)
+                    {
+                        error = $"RLE 第 {lineNumber} 行的游程次数必须大于零";
+                        return false;
+                    }
                     if (c == '$')
                     {
-                        y -= run;
+                        long next = (long)row + run;
+                        if (next > int.MaxValue || height != 0 && next > height)
+                        {
+                            error = $"RLE 第 {lineNumber} 行的换行超出声明高度或整数坐标范围";
+                            return false;
+                        }
+                        row = (int)next;
                         x = 0;
+                        continue;
                     }
-                    else if (c == 'b' || c == '.')
-                        x += run;
-                    else if (c == 'o' || c >= 'A' && c <= 'X')
+
+                    bool alive = c == 'o' || c == 'O';
+                    if (!alive && c != 'b' && c != '.')
                     {
-                        for (int i = 0; i < run; i++)
-                            cells.Add(new int2(x + i, y));
-                        x += run;
+                        error = $"RLE 第 {lineNumber} 行含有不支持的标记“{c}”，仅支持二状态图案";
+                        return false;
                     }
-                    else if (!char.IsWhiteSpace(c))
-                        return null;
+                    long end = (long)x + run;
+                    if (end > int.MaxValue || width != 0 && (end > width || row >= height))
+                    {
+                        error = $"RLE 第 {lineNumber} 行的细胞超出声明尺寸或整数坐标范围";
+                        return false;
+                    }
+                    if (alive)
+                        builder.AddRun(x, -row, run);
+                    x = (int)end;
+                }
+                if (hasCount)
+                {
+                    error = $"RLE 第 {lineNumber} 行的次数后缺少 b、o 或 $ 标记";
+                    return false;
                 }
             }
-            return cells;
+            error = "RLE 缺少结束标记 !";
+            return false;
         }
 
-        static List<int2> ParsePlaintext(string text, ref string name)
+        static bool ReadHeader(string line, out int width, out int height, out string error)
         {
-            var cells = new List<int2>();
-            int y = 0;
-            foreach (string raw in text.Split('\n'))
+            width = 0;
+            height = 0;
+            string rule = null;
+            foreach (string field in line.Split(','))
             {
-                string line = raw.TrimEnd('\r', ' ', '\t');
-                if (line.StartsWith("!"))
+                int separator = field.IndexOf('=');
+                if (separator <= 0)
                 {
-                    if (line.StartsWith("!Name:"))
-                        name = line.Substring(6).Trim();
+                    error = "RLE 头部必须使用 x = 宽度, y = 高度, rule = B3/S23";
+                    return false;
+                }
+                string key = field.Substring(0, separator).Trim();
+                string value = field.Substring(separator + 1).Trim();
+                if (key.Equals("rule", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (rule != null)
+                    {
+                        error = "RLE 头部重复指定 rule";
+                        return false;
+                    }
+                    rule = value;
+                    if (!IsLifeRule(rule))
+                    {
+                        error = "RLE 规则“" + rule + "”不受支持，仅支持 B3/S23";
+                        return false;
+                    }
                     continue;
                 }
-                for (int x = 0; x < line.Length; x++)
+                if (!key.Equals("x", StringComparison.OrdinalIgnoreCase) && !key.Equals("y", StringComparison.OrdinalIgnoreCase))
+                {
+                    error = "RLE 头部含有未知字段“" + key + "”";
+                    return false;
+                }
+                if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int dimension) || dimension <= 0)
+                {
+                    error = "RLE 宽高必须是 1 至 2147483647 的整数";
+                    return false;
+                }
+                if (key.Equals("x", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (width != 0)
+                    {
+                        error = "RLE 头部重复指定 x";
+                        return false;
+                    }
+                    width = dimension;
+                }
+                else
+                {
+                    if (height != 0)
+                    {
+                        error = "RLE 头部重复指定 y";
+                        return false;
+                    }
+                    height = dimension;
+                }
+            }
+            if (width == 0 || height == 0)
+            {
+                error = "RLE 头部缺少 x 或 y";
+                return false;
+            }
+            error = string.Empty;
+            return true;
+        }
+
+        static bool IsLifeRule(string rule)
+        {
+            return rule.Equals("B3/S23", StringComparison.OrdinalIgnoreCase)
+                || rule.Equals("S23/B3", StringComparison.OrdinalIgnoreCase)
+                || rule == "23/3"
+                || rule.Equals("Life", StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool ReadPlaintext(string text, ref string name, LifePatternBuilder builder, out string error)
+        {
+            int y = 0;
+            int lineNumber = 0;
+            using var reader = new StringReader(text);
+            string raw;
+            while ((raw = reader.ReadLine()) != null)
+            {
+                lineNumber++;
+                string line = raw.TrimEnd('\r', ' ', '\t');
+                if (line.StartsWith("!", StringComparison.Ordinal))
+                {
+                    if (line.StartsWith("!Name:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string title = line.Substring(6).Trim();
+                        if (title.Length != 0)
+                            name = title;
+                    }
+                    continue;
+                }
+                int x = 0;
+                while (x < line.Length)
                 {
                     char c = line[x];
                     if (c == 'O' || c == 'o' || c == '*')
-                        cells.Add(new int2(x, y));
-                    else if (c != '.' && c != ' ')
-                        return null;
+                    {
+                        int start = x++;
+                        while (x < line.Length && (line[x] == 'O' || line[x] == 'o' || line[x] == '*'))
+                            x++;
+                        builder.AddRun(start, y, x - start);
+                    }
+                    else if (c == '.' || c == ' ')
+                        x++;
+                    else
+                    {
+                        error = $"Plaintext 第 {lineNumber} 行含有无效字符“{c}”，活细胞使用 O，死亡使用 .";
+                        return false;
+                    }
                 }
                 y--;
             }
-            return cells;
+            error = string.Empty;
+            return true;
         }
     }
 }
