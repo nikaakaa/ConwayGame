@@ -1,0 +1,6 @@
+* text=auto
+*.cs text diff=csharp
+*.meta text
+*.unity text
+*.prefab text
+*.asset text
