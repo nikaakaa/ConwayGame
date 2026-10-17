@@ -1,0 +1,24 @@
+{
+  "source_url": "https://copy.sh/life/examples/metapixel-galaxy.mc",
+  "source_sha256": "d575767a38e381f2899d6684013685c7fa2b32f2f6f572b820a4a7f361af0b29",
+  "source_node_count": 5536,
+  "root_square_size": 32768,
+  "generation": 0,
+  "population": 7408195,
+  "root_relative_bounds_inclusive": [
+    0,
+    0,
+    30719,
+    30719
+  ],
+  "golly_origin": [
+    -16384,
+    -16383
+  ],
+  "width": 30720,
+  "height": 30720,
+  "bitmap_sha256": "795a7c3e9be816efc05bbaebdf5c85bc74f1b8af9b769d4c0d1a0c58e0107609",
+  "output": "Temp\\LifeBenchmarks\\Data\\metapixel-galaxy.rle",
+  "output_bytes": 18474689,
+  "output_sha256": "7c12715d6da0d69c9a715536dbe97ae967fc9f34120e709c16cd2c72480170e1"
+}

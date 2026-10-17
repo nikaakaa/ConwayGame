@@ -1,0 +1,71 @@
+{
+  "coreCommit": "3e90150",
+  "coreAndSingleOTCABeforeQueueFix": [
+    {
+      "Path": "D:\\Unity_Project\\麦吉太文笔试\\Assets\\GameOfLife\\Runtime\\LifeWorld.cs",
+      "Hash": "33C09DC4DAE9AF36FC21C77A7FE3C010EF011C5CE5E07B5CD7DDF23D2138CA1C"
+    },
+    {
+      "Path": "D:\\Unity_Project\\麦吉太文笔试\\Assets\\GameOfLife\\Runtime\\LifeSimulationSystem.cs",
+      "Hash": "F19A1312BA0BFF9BB8C1482A7FCE2476A6954183CC98454AF9493459CA9F43B2"
+    },
+    {
+      "Path": "D:\\Unity_Project\\麦吉太文笔试\\Assets\\GameOfLife\\Runtime\\LifeRasterJob.cs",
+      "Hash": "4800F037F44F6A18928290BD18387384056817F0F0B79FECB650ACBBB1EBBD3F"
+    },
+    {
+      "Path": "D:\\Unity_Project\\麦吉太文笔试\\Temp\\LifeBenchmarks\\Data\\otcametapixel.rle",
+      "Hash": "195BAA8FCA5F9AECCF421BF181709ED38B9D8B8CEB93AF6CBA01BC7EAB09011E"
+    }
+  ],
+  "galaxyAndSchedulerAfterQueueFix": [
+    {
+      "Path": "D:\\Unity_Project\\麦吉太文笔试\\Assets\\GameOfLife\\Runtime\\LifeWorld.cs",
+      "Hash": "33C09DC4DAE9AF36FC21C77A7FE3C010EF011C5CE5E07B5CD7DDF23D2138CA1C"
+    },
+    {
+      "Path": "D:\\Unity_Project\\麦吉太文笔试\\Assets\\GameOfLife\\Runtime\\LifeSimulationSystem.cs",
+      "Hash": "66A9F401BB96101F094EEBE0035034E063E878FFDA7E7195237480AA454397A9"
+    },
+    {
+      "Path": "D:\\Unity_Project\\麦吉太文笔试\\Assets\\GameOfLife\\Runtime\\LifeRasterJob.cs",
+      "Hash": "4800F037F44F6A18928290BD18387384056817F0F0B79FECB650ACBBB1EBBD3F"
+    },
+    {
+      "Path": "D:\\Unity_Project\\麦吉太文笔试\\Tools\\Benchmarks\\MeasureLife.cs",
+      "Hash": "4C121F30B4FAD24F51B49C8768107B447E5BB9D7F5807B7225F46B554E5134D7"
+    },
+    {
+      "Path": "D:\\Unity_Project\\麦吉太文笔试\\Tools\\Benchmarks\\MeasureLifeInLife.cs",
+      "Hash": "76FB28971EC37E38765CD1A80DF9EBA6A5BA696F91F06B26910074A64F966347"
+    },
+    {
+      "Path": "D:\\Unity_Project\\麦吉太文笔试\\Tools\\Benchmarks\\MeasureLifeScheduler.cs",
+      "Hash": "C88BBCF64EBBDF10D9F063534F6D51C435E77A758A9E72FBB5E356C4450FBFDB"
+    },
+    {
+      "Path": "D:\\Unity_Project\\麦吉太文笔试\\Tools\\Benchmarks\\PrepareLifeInLife.py",
+      "Hash": "2CA380FD9BE509B0B748C3599F83063D97CFECA2DAD300FFAEA6798F57F488A6"
+    },
+    {
+      "Path": "D:\\Unity_Project\\麦吉太文笔试\\Tools\\Benchmarks\\ReferenceLife.cjs",
+      "Hash": "F948BAC07F500677C393DB98572F4F47F85EF8BEB4F10F030B581BF1F1962435"
+    },
+    {
+      "Path": "D:\\Unity_Project\\麦吉太文笔试\\Temp\\LifeBenchmarks\\Data\\metapixel-galaxy.mc",
+      "Hash": "D575767A38E381F2899D6684013685C7FA2B32F2F6F572B820A4A7F361AF0B29"
+    },
+    {
+      "Path": "D:\\Unity_Project\\麦吉太文笔试\\Temp\\LifeBenchmarks\\Data\\metapixel-galaxy.rle",
+      "Hash": "7C12715D6DA0D69C9A715536DBE97AE967FC9F34120E709C16CD2C72480170E1"
+    },
+    {
+      "Path": "D:\\Unity_Project\\麦吉太文笔试\\Temp\\LifeBenchmarks\\life-reference.js",
+      "Hash": "638CABC197B4B36601A08BB24A10F1B68431F3443D59648F742B4A829996DA43"
+    },
+    {
+      "Path": "D:\\Unity_Project\\麦吉太文笔试\\Temp\\LifeBenchmarks\\formats-reference.js",
+      "Hash": "537D15B7BB3C64C0B3423AD8B610FBDD3B1A5F4BC1D3414728EEDDB15F584819"
+    }
+  ]
+}
