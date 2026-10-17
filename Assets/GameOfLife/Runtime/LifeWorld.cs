@@ -766,14 +766,14 @@ namespace GameOfLife
                 if (frame.Stage == 0)
                 {
                     var key = new AdvanceKey { Node = frame.Node, Exponent = frame.Exponent };
-                    if (Cache.TryGetValue(key, out int cached))
+                    LifeNode node = Nodes[frame.Node];
+                    if ((node.CachedExponents & (1UL << frame.Exponent)) != 0)
                     {
                         State.CacheHits++;
-                        Finish(cached);
+                        Finish(Cache[key]);
                         return;
                     }
                     State.CacheMisses++;
-                    LifeNode node = Nodes[frame.Node];
                     if (node.Population == 0)
                     {
                         int empty = Empty(node.Level - 1);
@@ -849,6 +849,9 @@ namespace GameOfLife
             void StoreResult(AdvanceKey key, int result)
             {
                 Cache.Add(key, result);
+                LifeNode node = Nodes[key.Node];
+                node.CachedExponents |= 1UL << key.Exponent;
+                Nodes[key.Node] = node;
                 Track(key.Node);
                 Track(result);
             }
@@ -984,9 +987,13 @@ namespace GameOfLife
                         {
                             for (int child = 0; child < 4; child++)
                                 Mark(node.Children[child]);
-                            for (int exponent = 0; exponent <= node.Level - 2; exponent++)
-                                if (Cache.TryGetValue(new AdvanceKey { Node = id, Exponent = exponent }, out int result))
-                                    Mark(result);
+                            ulong exponents = node.CachedExponents;
+                            while (exponents != 0)
+                            {
+                                int exponent = math.tzcnt(exponents);
+                                exponents &= exponents - 1;
+                                Mark(Cache[new AdvanceKey { Node = id, Exponent = exponent }]);
+                            }
                         }
                         continue;
                     }
@@ -1008,8 +1015,13 @@ namespace GameOfLife
                                 else
                                 {
                                     Branches.Remove(node.Children);
-                                    for (int exponent = 0; exponent <= node.Level - 2; exponent++)
+                                    ulong exponents = node.CachedExponents;
+                                    while (exponents != 0)
+                                    {
+                                        int exponent = math.tzcnt(exponents);
+                                        exponents &= exponents - 1;
                                         Cache.Remove(new AdvanceKey { Node = id, Exponent = exponent });
+                                    }
                                 }
                                 Nodes[id] = new LifeNode { Level = -1 };
                                 RetiredNodes.Add(id);

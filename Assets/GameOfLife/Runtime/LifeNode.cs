@@ -23,5 +23,7 @@ namespace GameOfLife
         [FieldOffset(8)] public long Population;
         [FieldOffset(16)] public int4 Children;
         [FieldOffset(16)] public LifeBits Bits;
+        // 分支缓存使用叶子位图的闲置空间，叶节点不读取此字段。
+        [FieldOffset(32)] public ulong CachedExponents;
     }
 }
