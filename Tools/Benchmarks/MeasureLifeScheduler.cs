@@ -69,6 +69,17 @@ bool parsed = GameOfLife.LifePatternText.TryParse(input, "Life-in-Life", out var
 if (!parsed)
     return new { parsed, parseError, gcAllocationCalibration };
 
+ulong CellHash(long x, long y)
+{
+    unchecked
+    {
+        ulong key = ((ulong)(uint)x << 32) | (uint)y;
+        key = (key ^ (key >> 30)) * 0xbf58476d1ce4e5b9UL;
+        key = (key ^ (key >> 27)) * 0x94d049bb133111ebUL;
+        return key ^ (key >> 31);
+    }
+}
+
 (string sum, string xor) Fingerprint(GameOfLife.LifeWorld world)
 {
     ulong sum = 0, xor = 0;
@@ -94,10 +105,7 @@ if (!parsed)
                 row &= row - 1;
                 unchecked
                 {
-                    ulong key = ((ulong)(uint)(x + column) << 32) | (uint)(y + rowIndex);
-                    key = (key ^ (key >> 30)) * 0xbf58476d1ce4e5b9UL;
-                    key = (key ^ (key >> 27)) * 0x94d049bb133111ebUL;
-                    key ^= key >> 31;
+                    ulong key = CellHash(x + column, y + rowIndex);
                     sum += key;
                     xor ^= key;
                 }
@@ -109,6 +117,7 @@ if (!parsed)
 }
 
 var results = new List<object>();
+var inputLatencyResults = new List<object>();
 int failures = 0;
 const int requestedGenerations = 35328;
 const int generationsPerSecond = requestedGenerations * 30;
@@ -167,11 +176,83 @@ for (int run = 0; run < repetitions; run++)
         generation = state.Generation, population = system.Simulation.Population,
         fingerprint.sum, fingerprint.xor, referenceMatches, complete, valid
     });
+
+    world.SetTime(new Unity.Core.TimeData(initialDeltaTime * 2, initialDeltaTime));
+    system.Update();
+    world.SetTime(new Unity.Core.TimeData(initialDeltaTime * 2, 0));
+    using var inputRoots = new Unity.Collections.NativeArray<GameOfLife.LifeShape>(
+        new[] { system.CellShape, system.PatternShape(pattern) }, Unity.Collections.Allocator.Temp);
+    if (!system.Simulation.IsCollecting)
+        system.Simulation.BeginCollection(inputRoots);
+    bool advancingAtSubmit = system.Simulation.IsAdvancing;
+    bool collectingAtSubmit = system.Simulation.IsCollecting;
+    var beforeInput = manager.GetComponentData<GameOfLife.LifeState>(board);
+    long populationBeforeInput = system.Simulation.Population;
+    const int brushLength = 64;
+    var brushStart = new Unity.Mathematics.int2(1000000, 1000000);
+    manager.GetBuffer<GameOfLife.LifeCommand>(board).Add(new GameOfLife.LifeCommand {
+        Kind = GameOfLife.LifeCommandKind.CellStroke, Position = brushStart,
+        End = brushStart + new Unity.Mathematics.int2(brushLength - 1, 0), Alive = true
+    });
+    int inputUpdates = 0;
+    double maximumInputUpdateMs = 0;
+    using var inputGcRecorder = StartGcAllocationRecording();
+    watch.Restart();
+    do
+    {
+        long updateStart = System.Diagnostics.Stopwatch.GetTimestamp();
+        system.Update();
+        maximumInputUpdateMs = Math.Max(maximumInputUpdateMs,
+            (System.Diagnostics.Stopwatch.GetTimestamp() - updateStart) * 1000d / System.Diagnostics.Stopwatch.Frequency);
+        inputUpdates++;
+    }
+    while (manager.GetBuffer<GameOfLife.LifeCommand>(board).Length != 0 && watch.Elapsed.TotalSeconds < 60);
+    watch.Stop();
+    double inputMilliseconds = watch.Elapsed.TotalMilliseconds;
+    var inputGcAllocations = ReadGcAllocationResult(inputGcRecorder);
+    bool consumed = manager.GetBuffer<GameOfLife.LifeCommand>(board).Length == 0;
+    bool collectingAtConsumption = system.Simulation.IsCollecting;
+    var afterInput = manager.GetComponentData<GameOfLife.LifeState>(board);
+    int cleanupUpdates = 0;
+    var cleanupWatch = System.Diagnostics.Stopwatch.StartNew();
+    while (system.Simulation.IsCollecting && cleanupWatch.Elapsed.TotalSeconds < 60)
+    {
+        system.Update();
+        cleanupUpdates++;
+    }
+    bool cellsAlive = true;
+    ulong expectedSum = ulong.Parse(fingerprint.sum, System.Globalization.NumberStyles.HexNumber);
+    ulong expectedXor = ulong.Parse(fingerprint.xor, System.Globalization.NumberStyles.HexNumber);
+    for (int cell = 0; cell < brushLength; cell++)
+    {
+        var position = brushStart + new Unity.Mathematics.int2(cell, 0);
+        cellsAlive &= system.Simulation.GetCell(position);
+        ulong hash = CellHash(position.x, position.y);
+        unchecked { expectedSum += hash; }
+        expectedXor ^= hash;
+    }
+    var editedFingerprint = Fingerprint(system.Simulation);
+    bool editedMatches = editedFingerprint.sum == expectedSum.ToString("x16")
+        && editedFingerprint.xor == expectedXor.ToString("x16");
+    bool inputValid = advancingAtSubmit && collectingAtSubmit && consumed && collectingAtConsumption
+        && !afterInput.IsRunning && !system.Simulation.IsAdvancing && !system.Simulation.IsCollecting
+        && beforeInput.Generation == requestedGenerations && afterInput.Generation == beforeInput.Generation
+        && system.Simulation.Population == populationBeforeInput + brushLength && cellsAlive && editedMatches;
+    if (!inputValid)
+        failures++;
+    inputLatencyResults.Add(new {
+        run, brushLength, advancingAtSubmit, collectingAtSubmit, collectingAtConsumption,
+        consumed, inputUpdates, inputMilliseconds, maximumInputUpdateMs, inputGcAllocations,
+        cleanupUpdates, generationBefore = beforeInput.Generation, generationAfter = afterInput.Generation,
+        populationBeforeInput, population = system.Simulation.Population, cellsAlive, editedMatches,
+        editedFingerprint.sum, editedFingerprint.xor, valid = inputValid
+    });
 }
 var result = new {
     completedAtUtc = DateTime.UtcNow.ToString("O"),
     unity = Application.unityVersion, inputPath = request[0], repetitions,
     requestedGenerations, generationsPerSecond, initialDeltaTime, gcAllocationCalibration, failures, results,
+    inputLatencyResults,
     scope = "Production System updates with synthetic time; excludes raster, UI, actual frame pacing and input preparation."
 };
 System.IO.Directory.CreateDirectory("Temp/LifeBenchmarks");

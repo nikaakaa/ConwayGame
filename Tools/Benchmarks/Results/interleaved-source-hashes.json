@@ -1,0 +1,64 @@
+{
+  "collectedAtUtc": "2026-10-17T18:27:09.136911+00:00",
+  "baseCommit": "4a1a174ba37e06b79b733d53f133869955cda362",
+  "scope": "实际采样工作区字节。LifeSimulationSystem 含 UI 方已有的两帧欠账上限，Controller 与工具栏也有另一方未提交改动；不是纯净 checkout。连续演化采样后仅调整 System 的续画最少服务一个锚点，正式调度和 Play 均在该调整编译后测量。",
+  "files": [
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeWorld.cs",
+      "sha256": "6635bcba0e096d2a474194b56871f2b1e2d46614dba92e08e59648ea5435032e"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeSimulationSystem.cs",
+      "sha256": "7601ed0f8d621ada40efd859a9847ee81927be619b31930bf73d14e7c8e2b347"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeNode.cs",
+      "sha256": "3b8b15bad926e0401867c1dea08771df94e4c141d523f030aa81b277e5c9f814"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeBits.cs",
+      "sha256": "8aa42aba9b8368094a1d096c8165bddb18fbf703c4910a4b76c097adcbdc5556"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeComponents.cs",
+      "sha256": "717fccb3e81e8c6813edf55878a5ef8620670e9eb2ecd8ed5b944d9aa137607c"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeController.cs",
+      "sha256": "edd52367e2dbc74efa23b0f86f1034060f3e059e2702636fc90f88859e673733"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeView.cs",
+      "sha256": "927f8e01f7d4de0ae784b4a761a4af4ee978a227f61f634240f4a9fe6fa0befe"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeRasterJob.cs",
+      "sha256": "4800f037f44f6a18928290bd18387384056817f0f0b79fecb650acbbb1ebbd3f"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeEditorToolbar.cs",
+      "sha256": "baca633b438c4f83f6a4889566d735800a43e5dcc9fe37f3fb20d79caed9d51e"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeContinuity.cs",
+      "sha256": "dacd6e9b001ebbcf82a20847ad6b3c0e729f50af89974586fdfabe40056ba6eb"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeScheduler.cs",
+      "sha256": "04f6af639e9d7d0715b7080ca1de8f4d9136c19c5da29d468d5313911f94aff9"
+    },
+    {
+      "path": "Tools/Benchmarks/ObserveLifeFrames.cs",
+      "sha256": "d647d8dc8b8ecce0f6c2a27f726b12c738e174ec68fac0b133a710a3a3f6cfea"
+    },
+    {
+      "path": "Assets/StreamingAssets/LifePatterns/metapixel-galaxy.rle",
+      "sha256": "c93b83ed4b56cf992bc653db4b460cb996bdbaedbafa308bd262e212ccc88f99"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/galaxy-eight-reference.json",
+      "sha256": "c47f900576dfd982f0e4ca54b1cb8430bde57f6bdfd373d44b99980571562f8b"
+    }
+  ],
+  "coreCommit": "dc32d9d4e45682fec4dba8cf925b80afe450d2be"
+}

@@ -136,7 +136,7 @@ var initialFingerprint = Fingerprint(world);
 long initialPopulation = world.Population;
 var finalFingerprint = initialFingerprint;
 
-void RecordSnapshot(int macroStep, bool complete, double? milliseconds, object gcAllocations, int batches, int collections, int peakNodes, (string sum, string xor) actual)
+void RecordSnapshot(int macroStep, bool complete, double? milliseconds, object gcAllocations, int batches, int collections, int collectionBatches, int advanceBatchesDuringCollection, int peakNodes, (string sum, string xor) actual)
 {
     var expected = snapshots[macroStep];
     long expectedGeneration = (long)expected["generation"];
@@ -158,19 +158,21 @@ void RecordSnapshot(int macroStep, bool complete, double? milliseconds, object g
         actual.sum, actual.xor, expectedSum, expectedXor,
         generationMatches, populationMatches, fingerprintMatches,
         sameAsInitial = world.Population == initialPopulation && actual == initialFingerprint,
-        milliseconds, gcAllocations, batches, collections, peakNodes,
+        milliseconds, gcAllocations, batches, collections, collectionBatches, advanceBatchesDuringCollection, peakNodes,
         nodes = world.NodeCount, cacheEntries = world.CacheCount,
         cacheHits = world.CacheHits, cacheMisses = world.CacheMisses
     });
 }
 
-RecordSnapshot(0, true, null, null, 0, 0, world.NodeCount, initialFingerprint);
+RecordSnapshot(0, true, null, null, 0, 0, 0, 0, world.NodeCount, initialFingerprint);
 var watch = new System.Diagnostics.Stopwatch();
 for (int macroStep = 1; macroStep <= macroSteps; macroStep++)
 {
     bool complete = true;
     int batches = 0;
     int collections = 0;
+    int collectionBatches = 0;
+    int advanceBatchesDuringCollection = 0;
     int peakNodes = world.NodeCount;
     using var gcRecorder = StartGcAllocationRecording();
     watch.Restart();
@@ -188,15 +190,14 @@ for (int macroStep = 1; macroStep <= macroSteps; macroStep++)
             if (world.IsCollecting)
             {
                 bool collected = world.ContinueCollection(collectionBudget);
+                collectionBatches++;
                 if (collected)
                     nextCollection = Math.Max(262144, world.NodeCount * 2);
-                finished = false;
             }
-            else
-            {
-                finished = world.ContinueAdvance(advanceBudget);
-                batches++;
-            }
+            if (world.IsCollecting)
+                advanceBatchesDuringCollection++;
+            finished = world.ContinueAdvance(advanceBudget);
+            batches++;
             peakNodes = Math.Max(peakNodes, world.NodeCount);
         }
         while (!finished && watch.Elapsed.TotalSeconds < limitSecondsPerMacro);
@@ -218,7 +219,7 @@ for (int macroStep = 1; macroStep <= macroSteps; macroStep++)
     var gcAllocations = ReadGcAllocationResult(gcRecorder);
     if (complete)
         completedMacroSteps++;
-    RecordSnapshot(macroStep, complete, watch.Elapsed.TotalMilliseconds, gcAllocations, batches, collections, peakNodes, Fingerprint(world));
+    RecordSnapshot(macroStep, complete, watch.Elapsed.TotalMilliseconds, gcAllocations, batches, collections, collectionBatches, advanceBatchesDuringCollection, peakNodes, Fingerprint(world));
     if (!complete)
         break;
 }
@@ -233,6 +234,7 @@ var result = new
     inputPath, referencePath, parsed,
     initialPopulation, tileCount = pattern.Tiles.Length,
     macroSteps, generationsPerMacro, advanceBudget, collectionBudget, limitSecondsPerMacro,
+    interleaveCollectionAndAdvance = true,
     completedMacroSteps, generation, complete = allComplete, valid = allComplete && failures == 0,
     gcAllocationCalibration, failures, returnsToInitial, results,
     scope = "同一 LifeWorld 只摆放一次，连续推进 8 个宏步；每步核对独立参考的全部细胞指纹、人口与累计代数。GC.Alloc 事件计数只包含主线程推进和回收，排除输入读取、解析、建树、初始摆放、指纹遍历和结果记录，不表示分配字节；本工具不验证实际帧率，也不把 8 步称为已完成底层周期。"
