@@ -48,21 +48,20 @@ namespace GameOfLife
 
         public LifeShape BuildShape(LifeTile[] tiles)
         {
-            Core kernel = ReadCore();
-            var shape = new LifeShape { Root = kernel.Empty(5), X = -16, Y = -16 };
-            for (int i = 0; i < tiles.Length; i++)
+            using (var input = new NativeArray<LifeTile>(tiles, Allocator.TempJob))
+            using (var entries = new NativeArray<BuildEntry>(tiles.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory))
+            using (var output = new NativeArray<LifeShape>(1, Allocator.TempJob, NativeArrayOptions.UninitializedMemory))
             {
-                int leaf = kernel.InternLeaf(tiles[i].Bits);
-                kernel.Overlay(ref shape, new LifeShape
+                new BuildJob
                 {
-                    Root = leaf,
-                    X = tiles[i].Position.x,
-                    Y = tiles[i].Position.y
-                });
+                    Kernel = core,
+                    State = state,
+                    Tiles = input,
+                    Entries = entries,
+                    Output = output
+                }.Run();
+                return output[0];
             }
-            shape = kernel.Shrink(shape);
-            state[0] = kernel.State;
-            return shape;
         }
 
         public void BeginEdit()
@@ -280,6 +279,31 @@ namespace GameOfLife
             public FixedList64Bytes<int> Results;
         }
 
+        struct BuildEntry : IComparable<BuildEntry>
+        {
+            public ulong Morton;
+            public int Node;
+
+            public int CompareTo(BuildEntry other) => Morton.CompareTo(other.Morton);
+        }
+
+        [BurstCompile]
+        struct BuildJob : IJob
+        {
+            public Core Kernel;
+            public NativeArray<WorldState> State;
+            [ReadOnly] public NativeArray<LifeTile> Tiles;
+            public NativeArray<BuildEntry> Entries;
+            public NativeArray<LifeShape> Output;
+
+            public void Execute()
+            {
+                Kernel.State = State[0];
+                Output[0] = Kernel.BuildShape(Tiles, Entries);
+                State[0] = Kernel.State;
+            }
+        }
+
         [BurstCompile]
         struct AdvanceJob : IJob
         {
@@ -324,6 +348,68 @@ namespace GameOfLife
             public NativeList<int> MarkStack;
             public NativeList<AdvanceFrame> Frames;
             public NativeParallelHashMap<int2, LifeBits> EditedTiles;
+
+            public LifeShape BuildShape(NativeArray<LifeTile> tiles, NativeArray<BuildEntry> entries)
+            {
+                if (tiles.Length == 0)
+                    return new LifeShape { Root = Empty(5), X = -16, Y = -16 };
+
+                long minX = tiles[0].Position.x;
+                long minY = tiles[0].Position.y;
+                for (int i = 1; i < tiles.Length; i++)
+                {
+                    minX = math.min(minX, tiles[i].Position.x);
+                    minY = math.min(minY, tiles[i].Position.y);
+                }
+                for (int i = 0; i < tiles.Length; i++)
+                {
+                    LifeTile tile = tiles[i];
+                    uint x = (uint)(((long)tile.Position.x - minX) >> 4);
+                    uint y = (uint)(((long)tile.Position.y - minY) >> 4);
+                    entries[i] = new BuildEntry
+                    {
+                        Morton = Interleave(x) | (Interleave(y) << 1),
+                        Node = InternLeaf(tile.Bits)
+                    };
+                }
+                entries.Sort();
+
+                int count = entries.Length;
+                int level = 4;
+                do
+                {
+                    int empty = Empty(level);
+                    int read = 0;
+                    int write = 0;
+                    while (read < count)
+                    {
+                        ulong parent = entries[read].Morton >> 2;
+                        int4 children = new int4(empty);
+                        do
+                        {
+                            BuildEntry entry = entries[read++];
+                            children[(int)(entry.Morton & 3)] = entry.Node;
+                        }
+                        while (read < count && (entries[read].Morton >> 2) == parent);
+                        entries[write++] = new BuildEntry { Morton = parent, Node = InternBranch(children) };
+                    }
+                    count = write;
+                    level++;
+                }
+                while (count > 1);
+
+                return Shrink(new LifeShape { Root = entries[0].Node, X = minX, Y = minY });
+            }
+
+            static ulong Interleave(uint value)
+            {
+                ulong bits = value;
+                bits = (bits | (bits << 16)) & 0x0000ffff0000ffffUL;
+                bits = (bits | (bits << 8)) & 0x00ff00ff00ff00ffUL;
+                bits = (bits | (bits << 4)) & 0x0f0f0f0f0f0f0f0fUL;
+                bits = (bits | (bits << 2)) & 0x3333333333333333UL;
+                return (bits | (bits << 1)) & 0x5555555555555555UL;
+            }
 
             public int InternLeaf(LifeBits bits)
             {
