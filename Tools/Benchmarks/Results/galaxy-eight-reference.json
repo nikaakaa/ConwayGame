@@ -1,0 +1,63 @@
+{
+  "input": "Assets/StreamingAssets/LifePatterns/metapixel-galaxy.rle",
+  "initialPopulation": 7408195,
+  "provenance": "从旧版连续演化记录中保留的独立 copy/life 参考字段恢复快照；没有用当前核心生成参考值。",
+  "source": "Tools/Benchmarks/Results/galaxy-continuity-before-memo.json",
+  "sourceSha256": "c7520b6d71d972981b9d8505a2907a8aa3d91bc3df8a7d79a0d4ad28e67a500c",
+  "snapshots": [
+    {
+      "generation": 0,
+      "population": 7408195,
+      "sum": "773b7fb0b3d78db4",
+      "xor": "38872d151af0f54e"
+    },
+    {
+      "generation": 35328,
+      "population": 7070723,
+      "sum": "f2c01c6befc06876",
+      "xor": "147baceed955b16a"
+    },
+    {
+      "generation": 70656,
+      "population": 6732299,
+      "sum": "bad14c12f0afe40a",
+      "xor": "79787c9abde122e6"
+    },
+    {
+      "generation": 105984,
+      "population": 7748311,
+      "sum": "4e4910827330c925",
+      "xor": "397c3f1139c10793"
+    },
+    {
+      "generation": 141312,
+      "population": 6563287,
+      "sum": "d8f187b611677e4b",
+      "xor": "9eeb4768ca417a33"
+    },
+    {
+      "generation": 176640,
+      "population": 6563055,
+      "sum": "3e1f1c68bb3edd2d",
+      "xor": "de2ef7e60afb928f"
+    },
+    {
+      "generation": 211968,
+      "population": 6901631,
+      "sum": "fd289526902ccaff",
+      "xor": "f3ceff375f66885d"
+    },
+    {
+      "generation": 247296,
+      "population": 6224667,
+      "sum": "def158186aadd597",
+      "xor": "59c5b510fc7c895f"
+    },
+    {
+      "generation": 282624,
+      "population": 6393451,
+      "sum": "c8fbb5e041915d7c",
+      "xor": "2424f6908e5475e4"
+    }
+  ]
+}

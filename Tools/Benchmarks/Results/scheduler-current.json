@@ -1,0 +1,61 @@
+{
+  "completedAtUtc": "2026-10-17T17:49:59.0062052Z",
+  "unity": "6000.3.3f1",
+  "inputPath": "D:/Unity_Project/麦吉太文笔试/Assets/StreamingAssets/LifePatterns/metapixel-galaxy.rle",
+  "repetitions": 1,
+  "requestedGenerations": 35328,
+  "generationsPerSecond": 1059840,
+  "initialDeltaTime": 0.0333333351,
+  "gcAllocationCalibration": {
+    "marker": "GC.Alloc",
+    "thread": "current main thread",
+    "options": "CollectOnlyOnCurrentThread; no frame aggregation; no wraparound",
+    "positiveControlBytes": 1048576,
+    "positive": {
+      "recorderValid": true,
+      "wasRunning": true,
+      "events": 1,
+      "capacity": 4096,
+      "bufferSaturated": false,
+      "wrappedAround": false
+    },
+    "empty": {
+      "recorderValid": true,
+      "wasRunning": true,
+      "events": 0,
+      "capacity": 4096,
+      "bufferSaturated": false,
+      "wrappedAround": false
+    },
+    "passed": true
+  },
+  "failures": 0,
+  "results": [
+    {
+      "run": 0,
+      "prepareMs": 83.569,
+      "updates": 2276,
+      "maximumUpdateMs": 8.1235,
+      "milliseconds": 4690.258,
+      "gcAllocations": {
+        "events": 1,
+        "capacity": 4096,
+        "recorderValid": true,
+        "wasRunning": true,
+        "bufferSaturated": false,
+        "wrappedAround": false,
+        "measurementValid": true
+      },
+      "peakNodes": 263017,
+      "nodes": 225817,
+      "generation": 35328,
+      "population": 7070723,
+      "sum": "f2c01c6befc06876",
+      "xor": "147baceed955b16a",
+      "referenceMatches": true,
+      "complete": true,
+      "valid": true
+    }
+  ],
+  "scope": "Production System updates with synthetic time; excludes raster, UI, actual frame pacing and input preparation."
+}

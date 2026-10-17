@@ -1,0 +1,141 @@
+{
+  "before": {
+    "completedAtUtc": "2026-10-17T17:23:20.7813728Z",
+    "sampleCount": 1939,
+    "generationStart": 78222,
+    "generationEnd": 97144,
+    "metrics": {
+      "gapMs": {
+        "median": 9.5477,
+        "p99": 18.2946,
+        "maximum": 1048.9261
+      },
+      "simulationMs": {
+        "median": 2.0161,
+        "p99": 2.5019,
+        "maximum": 2.9965
+      },
+      "gcCollectMs": {
+        "median": 0.0,
+        "p99": 0.0,
+        "maximum": 6.7419
+      },
+      "playerLoopMs": {
+        "median": 4.5194,
+        "p99": 12.0163,
+        "maximum": 17.8226
+      }
+    },
+    "collectionSpans": [
+      {
+        "frames": 21,
+        "durationMs": 196.9303,
+        "generationStart": 80206,
+        "generationEnd": 80206
+      },
+      {
+        "frames": 21,
+        "durationMs": 186.6051,
+        "generationStart": 84046,
+        "generationEnd": 84046
+      },
+      {
+        "frames": 23,
+        "durationMs": 240.3934,
+        "generationStart": 87310,
+        "generationEnd": 87310
+      },
+      {
+        "frames": 22,
+        "durationMs": 206.1929,
+        "generationStart": 90510,
+        "generationEnd": 90510
+      },
+      {
+        "frames": 22,
+        "durationMs": 208.448,
+        "generationStart": 93454,
+        "generationEnd": 93454
+      },
+      {
+        "frames": 22,
+        "durationMs": 309.2867,
+        "generationStart": 96590,
+        "generationEnd": 96590
+      }
+    ]
+  },
+  "after": {
+    "completedAtUtc": "2026-10-17T17:47:58.3268549Z",
+    "sampleCount": 1817,
+    "generationStart": 14272,
+    "generationEnd": 47072,
+    "metrics": {
+      "gapMs": {
+        "median": 10.4,
+        "p99": 17.2068,
+        "maximum": 526.0308
+      },
+      "simulationMs": {
+        "median": 2.0238,
+        "p99": 2.2982,
+        "maximum": 3.0252
+      },
+      "gcCollectMs": {
+        "median": 0.0,
+        "p99": 0.0,
+        "maximum": 6.7046
+      },
+      "playerLoopMs": {
+        "median": 5.0849,
+        "p99": 8.2338,
+        "maximum": 13.2618
+      }
+    },
+    "collectionSpans": [
+      {
+        "frames": 11,
+        "durationMs": 113.8837,
+        "generationStart": 18304,
+        "generationEnd": 18304
+      },
+      {
+        "frames": 10,
+        "durationMs": 96.5286,
+        "generationStart": 23040,
+        "generationEnd": 23040
+      },
+      {
+        "frames": 9,
+        "durationMs": 88.0881,
+        "generationStart": 27232,
+        "generationEnd": 27232
+      },
+      {
+        "frames": 11,
+        "durationMs": 114.5757,
+        "generationStart": 32064,
+        "generationEnd": 32064
+      },
+      {
+        "frames": 11,
+        "durationMs": 122.8436,
+        "generationStart": 37504,
+        "generationEnd": 37504
+      },
+      {
+        "frames": 13,
+        "durationMs": 152.0159,
+        "generationStart": 42176,
+        "generationEnd": 42176
+      },
+      {
+        "frames": 11,
+        "durationMs": 123.385,
+        "generationStart": 46880,
+        "generationEnd": 46880
+      }
+    ]
+  },
+  "scope": "Sequential observations of different generations, not an A/B speedup comparison. Editor gaps include waiting. After used temporary Application.runInBackground=true, restored to false after capture. Native job marker zeros are not measured zero cost. Two invalid captures contained only one frame and are retained separately."
+}

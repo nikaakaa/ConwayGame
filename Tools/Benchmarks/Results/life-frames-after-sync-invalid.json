@@ -1,0 +1,47 @@
+{
+  "completedAtUtc": "2026-10-17T17:47:29.3466268Z",
+  "reason": "completed",
+  "markersValid": true,
+  "elapsedSeconds": 29.261627899999997,
+  "warmupSeconds": 2.0,
+  "speed": 5120.0,
+  "population": 7408195,
+  "sampleCount": 1,
+  "frames": [
+    {
+      "frame": 7,
+      "gapMs": 29229.9143,
+      "generation": 0,
+      "running": true,
+      "nodes": 3710,
+      "cacheEntries": 18,
+      "collecting": false,
+      "advancing": true,
+      "playerLoopMs": 0.0007,
+      "simulationMs": 0.0,
+      "advanceMs": 0.0,
+      "collectionMs": 0.0,
+      "rasterMs": 0.0,
+      "behavioursMs": 0.0,
+      "lateBehavioursMs": 0.0,
+      "gcCollectMs": 0.0,
+      "uiRenderMs": 0.0,
+      "uiLayoutMs": 0.0,
+      "gcAllocationEvents": 427
+    }
+  ],
+  "markerSamples": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "scope": "目标 Editor 当前 Play 的被动主线程采样；帧间隔包含 Editor 等待，Profiler 指标对应最近完成帧，可能与状态读数相差一帧。GC.Alloc 仅记录事件数，不表示字节；此工具不改变棋盘或速度。"
+}

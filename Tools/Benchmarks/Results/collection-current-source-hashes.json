@@ -1,0 +1,47 @@
+{
+  "collectedAtUtc": "2026-10-17T17:48:02.160654+00:00",
+  "coreCommit": "c28307f84d0956cd52d887de2f4b707f95ec0730",
+  "scope": "Current workspace after cache exponent index and bulk free-ID return. LifeSimulationSystem and UI contain separate in-progress UI changes; hashes identify measured bytes, not a clean checkout.",
+  "files": [
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeNode.cs",
+      "sha256": "3b8b15bad926e0401867c1dea08771df94e4c141d523f030aa81b277e5c9f814"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeWorld.cs",
+      "sha256": "ca4b5dc459435d6ad60710dcc77a3235615dc12e333a672130f7d661e454562e"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeSimulationSystem.cs",
+      "sha256": "3fe371d8924ac3ea105a8467aef52ecb4b3c8296aca418230a4d5ddc934bc4d1"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifePatternBitmap.cs",
+      "sha256": "c68cf37d9ba92b0465287770255cf783364ba5f278316e043f073e83e966b27b"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLife.cs",
+      "sha256": "c184688937dfb014cfc633a48031d8d45c3813bf98470d195879975ced3675e5"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeInLife.cs",
+      "sha256": "a3f2b6e8ba1f76bba7c5f405787434f494427a915d5a08a699d5ea741f307893"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeContinuity.cs",
+      "sha256": "24306ab38441663acbce215bc5430517b7b01da304a512d3b1f2abd67f19217d"
+    },
+    {
+      "path": "Tools/Benchmarks/ObserveLifeFrames.cs",
+      "sha256": "d647d8dc8b8ecce0f6c2a27f726b12c738e174ec68fac0b133a710a3a3f6cfea"
+    },
+    {
+      "path": "Assets/StreamingAssets/LifePatterns/metapixel-galaxy.rle",
+      "sha256": "c93b83ed4b56cf992bc653db4b460cb996bdbaedbafa308bd262e212ccc88f99"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeScheduler.cs",
+      "sha256": "b6378fce4775ffc1d1950eb756e16ea29533831ae4884c8ac68537cf16915c67"
+    }
+  ]
+}
