@@ -13,8 +13,8 @@ public static class RestoreLifeInteraction
             "Tools/Benchmarks/Work/interaction-restore.json", System.Text.Encoding.UTF8));
         Application.runInBackground = true;
         var controller = UnityEngine.Object.FindFirstObjectByType<LifeController>();
-        var save = controller.Worlds.FindSave(Path.GetFullPath((string)metadata["savePath"]));
-        var loaded = await controller.Worlds.LoadAsync(save);
+        var save = controller.Session.Worlds.FindSave(Path.GetFullPath((string)metadata["savePath"]));
+        var loaded = await controller.Session.Worlds.LoadAsync(save);
         controller.LoadWorld(loaded.World, loaded.Anchor, save);
         RectTransform rect = controller.View.BoardImage.rectTransform;
         Vector2 center = RectTransformUtility.WorldToScreenPoint(null, rect.TransformPoint(rect.rect.center));
@@ -29,9 +29,6 @@ public static class RestoreLifeInteraction
         query.Dispose();
         while (manager.GetBuffer<LifeCommand>(board).Length != 0)
             await Task.Delay(1);
-        var toolbar = UnityEngine.Object.FindFirstObjectByType<LifeEditorToolbar>();
-        typeof(LifeEditorToolbar).GetMethod("HideStart",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Invoke(toolbar, null);
         if (resumeRunning)
         {
             if ((bool)metadata["wasRunning"]) controller.ToggleRunning();

@@ -17,6 +17,8 @@ namespace GameOfLife
 
         public LifeWorld Simulation { get; private set; }
         public LifeShape CellShape { get; private set; }
+        public LifeSession Session { get; private set; }
+        public Entity Board => board;
 
         Entity board;
         readonly Dictionary<LifePattern, LifeShape> patternShapes = new Dictionary<LifePattern, LifeShape>();
@@ -36,11 +38,6 @@ namespace GameOfLife
             LifeBits bit = default;
             bit.Set(0, 0, true);
             CellShape = Simulation.BuildShape(new[] { new LifeTile { Position = int2.zero, Bits = bit } });
-            LoadPatterns(LifePatterns.Items);
-            Simulation.BeginEdit();
-            Simulation.Stamp(PatternShape(LifePatterns.Items[0]), int2.zero);
-            Simulation.EndEdit();
-
             board = EntityManager.CreateEntity(typeof(LifeSettings), typeof(LifeState), typeof(LifeViewport), typeof(LifeCommand));
             EntityManager.SetName(board, "Conway Board");
             EntityManager.SetComponentData(board, new LifeSettings { GenerationsPerSecond = 10f });
@@ -49,6 +46,7 @@ namespace GameOfLife
             {
                 Origin = new int2(-64, -64), VisibleCells = 128, FrameSeconds = 1.0 / 60
             });
+            Session = new LifeSession(this, EntityManager, board);
         }
 
         public void LoadPatterns(IReadOnlyList<LifePattern> patterns)
@@ -286,6 +284,7 @@ namespace GameOfLife
 
         protected override void OnDestroy()
         {
+            Session.Worlds.ReleasePreviews();
             collectionRoots.Dispose();
             Simulation.Dispose();
         }

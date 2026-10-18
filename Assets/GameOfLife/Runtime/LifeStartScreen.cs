@@ -19,10 +19,7 @@ namespace GameOfLife
         const int Height = 108;
         const string GunRle = "24bo$22bobo$12b2o6b2o12b2o$11bo3bo4b2o12b2o$2o8bo5bo3b2o$2o8bo3bob2o4bobo$10bo5bo7bo$11bo3bo$12b2o!";
 
-        public bool IsVisible => overlay.parent != null;
         public bool IsLoading { get; private set; }
-        // 编辑界面保存时临时盖上开始界面，结束后再移除。
-        bool addedForLoading;
 
         public event Action NewWorldRequested;
         public event Action ContinueRequested;
@@ -111,24 +108,17 @@ namespace GameOfLife
                 labels.Add(label);
             }
             Select(0);
-            // 盖在编辑界面之上；之后打开的存档、地图浮层再加到根节点末尾，盖在开始界面上。
-            if (!IsVisible)
-                root.Add(overlay);
+            root.Add(overlay);
             overlay.BringToFront();
         }
 
-        public void Hide() => overlay.RemoveFromHierarchy();
-
-        /// <summary>菜单换成一行提示并停止接收输入，盖在所有浮层之上；编辑界面中调用时临时盖上。</summary>
+        /// <summary>菜单换成一行提示并停止接收输入，盖在存档与地图浮层之上。</summary>
         public void ShowLoading(string text = "载入中")
         {
             IsLoading = true;
             loading.text = text;
             menu.style.display = DisplayStyle.None;
             loading.style.display = DisplayStyle.Flex;
-            addedForLoading = !IsVisible;
-            if (addedForLoading)
-                root.Add(overlay);
             overlay.BringToFront();
         }
 
@@ -137,9 +127,6 @@ namespace GameOfLife
             IsLoading = false;
             menu.style.display = DisplayStyle.Flex;
             loading.style.display = DisplayStyle.None;
-            if (addedForLoading)
-                Hide();
-            addedForLoading = false;
         }
 
         void Select(int index)
@@ -152,8 +139,6 @@ namespace GameOfLife
         /// <summary>由宿主每帧调用；acceptInput 为 false 时只推进背景，resumeWithEscape 决定 Esc 是否继续当前世界。</summary>
         public void Tick(bool acceptInput, bool resumeWithEscape)
         {
-            if (!IsVisible)
-                return;
             if (acceptInput && !IsLoading)
                 HandleKeyboard(resumeWithEscape);
 
@@ -258,7 +243,7 @@ namespace GameOfLife
 
         public void Dispose()
         {
-            Hide();
+            overlay.RemoveFromHierarchy();
             UnityEngine.Object.Destroy(texture);
         }
     }

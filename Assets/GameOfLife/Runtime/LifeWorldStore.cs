@@ -43,7 +43,6 @@ namespace GameOfLife
         {
             public string Path;
             public bool IsSave;
-            public Texture2D Preview;
         }
 
         [Serializable]
@@ -82,7 +81,14 @@ namespace GameOfLife
         public bool IsSave(LifePattern entry) => files.TryGetValue(entry, out WorldFile file) && file.IsSave;
 
         /// <summary>预生成的缩略图；没有时返回 null，由列表按图标生成。</summary>
-        public Texture2D Preview(LifePattern entry) => files.TryGetValue(entry, out WorldFile file) ? file.Preview : null;
+        public Texture2D Preview(LifePattern entry) => LoadPreview(StemPath(files[entry].Path) + ".png");
+
+        public void ReleasePreviews()
+        {
+            foreach (Texture2D texture in previewCache.Values)
+                UnityEngine.Object.Destroy(texture);
+            previewCache.Clear();
+        }
 
         /// <summary>重新列出存档：只读目录、名称文件与缩略图，不读世界文件。</summary>
         public void ReloadSaves()
@@ -141,8 +147,7 @@ namespace GameOfLife
             files.Add(entry, new WorldFile
             {
                 Path = filePath,
-                IsSave = isSave,
-                Preview = LoadPreview(StemPath(filePath) + ".png")
+                IsSave = isSave
             });
             return entry;
         }

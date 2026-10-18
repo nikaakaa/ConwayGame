@@ -71,6 +71,7 @@ namespace GameOfLife
         float deleteArmedUntil;
         bool renaming;
         float stepTimer;
+        Task<LifePattern> pendingStore;
 
         sealed class Tile
         {
@@ -353,24 +354,10 @@ namespace GameOfLife
         // ---------- 增、删、改 ----------
 
         /// <summary>存入选区（无选区时为整个棋盘）并进入改名；选区操作条的“存入”也走这里。</summary>
-        public async void StoreNew()
+        public void StoreNew()
         {
             storeButton.SetEnabled(false);
-            LifePattern pattern;
-            try
-            {
-                pattern = await StoreRequested(DefaultName);
-            }
-            finally
-            {
-                storeButton.SetEnabled(true);
-            }
-            if (pattern == null)
-                return;
-            search.SetValueWithoutNotify(string.Empty);
-            Refresh(pattern);
-            // 新结构以默认名存入，立即进入改名，回车确认。
-            BeginRename();
+            pendingStore = StoreRequested(DefaultName);
         }
 
         void Import()
@@ -447,6 +434,19 @@ namespace GameOfLife
         /// <summary>由宿主每帧调用：处理键盘并推进可见缩略图的演化。</summary>
         public void Tick()
         {
+            if (pendingStore != null && pendingStore.IsCompleted)
+            {
+                Task<LifePattern> completed = pendingStore;
+                pendingStore = null;
+                storeButton.SetEnabled(true);
+                LifePattern pattern = completed.GetAwaiter().GetResult();
+                if (pattern != null)
+                {
+                    search.SetValueWithoutNotify(string.Empty);
+                    Refresh(pattern);
+                    BeginRename();
+                }
+            }
             if (!IsOpen)
                 return;
             HandleKeyboard();

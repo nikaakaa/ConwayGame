@@ -58,7 +58,6 @@ public static class MeasureLifeInteraction
         readonly PointerEventData pointer;
         readonly ProfilerRecorder[] recorders;
         Task<string> saving;
-        LifeController.SaveTicket ticket;
         bool prepared;
         int warmup, count, lastFrame = -1;
         long previous;
@@ -126,7 +125,7 @@ public static class MeasureLifeInteraction
                 if (controller.State.IsRunning || system.Simulation.IsAdvancing || !system.Simulation.IsViewCurrent) return;
                 if (capture)
                 {
-                    if (saving == null) saving = controller.SaveWorldAsync(out ticket);
+                    if (saving == null) saving = controller.Session.SaveWorldAsync();
                     if (!saving.IsCompleted)
                     {
                         long deadline = Stopwatch.GetTimestamp() + Stopwatch.Frequency / 250;
@@ -135,7 +134,6 @@ public static class MeasureLifeInteraction
                         return;
                     }
                     savePath = saving.GetAwaiter().GetResult();
-                    controller.CompleteSave(ticket, savePath);
                     File.WriteAllText("Tools/Benchmarks/Work/interaction-restore.json",
                         Newtonsoft.Json.JsonConvert.SerializeObject(new {
                             savePath, originX, originY, size, speed, wasRunning, sourceGeneration, oldBackground, oldHistory

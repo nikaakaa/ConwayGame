@@ -1,9 +1,9 @@
-using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
@@ -14,27 +14,26 @@ namespace GameOfLife.Editor
     public static class LifeSceneBuilder
     {
         const string ScenePath = "Assets/GameOfLife/Scenes/GameOfLife.unity";
+        const string MainMenuPath = "Assets/GameOfLife/Scenes/MainMenu.unity";
         const string PanelSettingsPath = "Assets/GameOfLife/UI/LifeEditorPanel.asset";
         const string ThemePath = "Assets/GameOfLife/UI/LifeEditorTheme.tss";
+        const string InputActionsPath = "Assets/InputSystem_Actions.inputactions";
 
-        [MenuItem("Tools/Game of Life/Create Demo Scene")]
-        public static void CreateDemoScene()
+        [MenuItem("Tools/Game of Life/Create Demo Scenes")]
+        public static void CreateDemoScenes()
         {
             Directory.CreateDirectory("Assets/GameOfLife/Scenes");
-            var previousScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
-            UnityEngine.SceneManagement.SceneManager.SetActiveScene(scene);
+            CreatePanelSettings();
+            var menu = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            CreateCamera();
+            CreateEventSystem();
+            var menuObject = new GameObject("Main Menu", typeof(UIDocument), typeof(LifeMainMenu));
+            menuObject.GetComponent<UIDocument>().panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(PanelSettingsPath);
+            EditorSceneManager.SaveScene(menu, MainMenuPath);
 
-            var cameraObject = new GameObject("Main Camera", typeof(Camera), typeof(UniversalAdditionalCameraData));
-            cameraObject.tag = "MainCamera";
-            cameraObject.transform.position = new Vector3(0, 0, -10);
-            Camera camera = cameraObject.GetComponent<Camera>();
-            camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = Color.black;
-            camera.cullingMask = 0;
-
-            var eventSystem = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
-            eventSystem.GetComponent<InputSystemUIInputModule>().AssignDefaultActions();
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            CreateCamera();
+            CreateEventSystem();
 
             var canvasObject = new GameObject("Life Canvas", typeof(RectTransform), typeof(Canvas), typeof(GraphicRaycaster));
             canvasObject.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
@@ -55,24 +54,56 @@ namespace GameOfLife.Editor
             controller.View = view;
 
             var editorObject = new GameObject("Life Editor", typeof(UIDocument));
-            editorObject.GetComponent<UIDocument>().panelSettings = CreatePanelSettings();
+            editorObject.GetComponent<UIDocument>().panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(PanelSettingsPath);
             LifeEditorToolbar toolbar = editorObject.AddComponent<LifeEditorToolbar>();
             toolbar.Controller = controller;
             toolbar.View = view;
 
             EditorSceneManager.SaveScene(scene, ScenePath);
-            var buildScenes = new List<EditorBuildSettingsScene> { new EditorBuildSettingsScene(ScenePath, true) };
-            foreach (EditorBuildSettingsScene item in EditorBuildSettings.scenes)
-                if (item.path != ScenePath)
-                    buildScenes.Add(item);
-            EditorBuildSettings.scenes = buildScenes.ToArray();
+            EditorBuildSettings.scenes = new[]
+            {
+                new EditorBuildSettingsScene(MainMenuPath, true),
+                new EditorBuildSettingsScene(ScenePath, true)
+            };
             AssetDatabase.SaveAssets();
-            UnityEngine.SceneManagement.SceneManager.SetActiveScene(previousScene);
-            EditorSceneManager.CloseScene(scene, true);
-            Debug.Log("Game of Life 场景已保存：" + ScenePath);
+            EditorSceneManager.OpenScene(MainMenuPath, OpenSceneMode.Single);
+            EditorApplication.ExecuteMenuItem("File/Save Project");
+            Debug.Log("Game of Life 主菜单与游戏场景已保存");
         }
 
-        static PanelSettings CreatePanelSettings()
+        static void CreateCamera()
+        {
+            var cameraObject = new GameObject("Main Camera", typeof(Camera), typeof(UniversalAdditionalCameraData));
+            cameraObject.tag = "MainCamera";
+            cameraObject.transform.position = new Vector3(0, 0, -10);
+            Camera camera = cameraObject.GetComponent<Camera>();
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = Color.black;
+            camera.cullingMask = 0;
+        }
+
+        static void CreateEventSystem()
+        {
+            var eventSystem = new GameObject("EventSystem");
+            eventSystem.SetActive(false);
+            eventSystem.AddComponent<EventSystem>();
+            InputSystemUIInputModule input = eventSystem.AddComponent<InputSystemUIInputModule>();
+            InputActionAsset actions = AssetDatabase.LoadAssetAtPath<InputActionAsset>(InputActionsPath);
+            input.point = InputActionReference.Create(actions.FindAction("UI/Point", true));
+            input.leftClick = InputActionReference.Create(actions.FindAction("UI/Click", true));
+            input.rightClick = InputActionReference.Create(actions.FindAction("UI/RightClick", true));
+            input.middleClick = InputActionReference.Create(actions.FindAction("UI/MiddleClick", true));
+            input.scrollWheel = InputActionReference.Create(actions.FindAction("UI/ScrollWheel", true));
+            input.move = InputActionReference.Create(actions.FindAction("UI/Navigate", true));
+            input.submit = InputActionReference.Create(actions.FindAction("UI/Submit", true));
+            input.cancel = InputActionReference.Create(actions.FindAction("UI/Cancel", true));
+            input.trackedDevicePosition = InputActionReference.Create(actions.FindAction("UI/TrackedDevicePosition", true));
+            input.trackedDeviceOrientation = InputActionReference.Create(actions.FindAction("UI/TrackedDeviceOrientation", true));
+            input.actionsAsset = actions;
+            eventSystem.SetActive(true);
+        }
+
+        static void CreatePanelSettings()
         {
             Directory.CreateDirectory("Assets/GameOfLife/UI");
             PanelSettings settings;
@@ -91,7 +122,6 @@ namespace GameOfLife.Editor
             settings.clearColor = false;
             settings.colorClearValue = Color.clear;
             EditorUtility.SetDirty(settings);
-            return settings;
         }
     }
 }

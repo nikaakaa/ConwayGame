@@ -47,13 +47,6 @@ namespace GameOfLife
         VisualElement selectionBar;
         VisualElement help;
         LifePatternLibrary library;
-        LifePatternLibrary savesLibrary;
-        LifePatternLibrary mapsLibrary;
-        LifeStartScreen startScreen;
-        // 视觉树重建时恢复开始界面；首次构建时显示。
-        bool startVisible = true;
-        bool startCanResume;
-        bool saving;
 
         DockItem glider;
         DockItem playItem;
@@ -67,8 +60,7 @@ namespace GameOfLife
         DockItem editSelect;
         DockItem editStamp;
 
-        Font font;
-        Font monoFont;
+        LifeUiResources resources;
         bool expanded;
         bool hoveringGlider;
         float toastHideTime;
@@ -81,30 +73,13 @@ namespace GameOfLife
         LifeBrushMode shownBrush = (LifeBrushMode)(-1);
         bool shownRunning;
         readonly Vector3[] boardCorners = new Vector3[4];
-        PanelSettings panelSettings;
-        int scaledHeight;
 
         void Start()
         {
-            font = Font.CreateDynamicFontFromOSFont("Microsoft YaHei", 14);
-            monoFont = Font.CreateDynamicFontFromOSFont("Consolas", 14);
+            resources = new LifeUiResources(GetComponent<UIDocument>());
             expanded = PlayerPrefs.GetInt(ExpandedKey, 1) != 0;
             Controller.Notified += ShowToast;
-            // 运行时副本，缩放修改不写回资源。
-            UIDocument document = GetComponent<UIDocument>();
-            panelSettings = Instantiate(document.panelSettings);
-            document.panelSettings = panelSettings;
-            UpdateScale();
             Build();
-        }
-
-        /// <summary>以 1080 像素高为 1 倍，窗口更高时等比放大；小窗口保持 1 倍，图标不缩小到难以点击。</summary>
-        void UpdateScale()
-        {
-            if (Screen.height == scaledHeight)
-                return;
-            scaledHeight = Screen.height;
-            panelSettings.scale = math.max(1f, Screen.height / 1080f);
         }
 
         /// <summary>UIDocument 重建视觉树（例如编辑器内样式热重载）后，界面需要重新创建。</summary>
@@ -112,11 +87,9 @@ namespace GameOfLife
         {
             root = GetComponent<UIDocument>().rootVisualElement;
             root.pickingMode = PickingMode.Ignore;
-            root.style.unityFontDefinition = FontDefinition.FromFont(font);
+            root.style.unityFontDefinition = FontDefinition.FromFont(resources.Font);
             library?.Dispose();
-            savesLibrary?.Dispose();
-            mapsLibrary?.Dispose();
-            startScreen?.Dispose();
+            root.Clear();
             subItems.Clear();
             openParent = null;
             shownGeneration = -1;
@@ -142,14 +115,14 @@ namespace GameOfLife
 
             // 状态与操作反馈都在图标行末尾：悬停滑翔机看代数和人口，操作后短暂显示结果。
             status = Add(dock, new VisualElement(), "life-dock__status");
-            status.style.unityFontDefinition = FontDefinition.FromFont(monoFont);
+            status.style.unityFontDefinition = FontDefinition.FromFont(resources.MonoFont);
             Add(status, new Label("GEN"), "life-dock__status-key");
             generationValue = Add(status, new LifeNumber(), "life-dock__status-value");
             Add(status, new Label("POP~"), "life-dock__status-key");
             populationValue = Add(status, new LifeNumber(), "life-dock__status-value");
             toast = Add(dock, new Label(), "life-dock__toast");
             hint = Add(dock, new Label(), "life-dock__hint");
-            hint.style.unityFontDefinition = FontDefinition.FromFont(monoFont);
+            hint.style.unityFontDefinition = FontDefinition.FromFont(resources.MonoFont);
             hint.pickingMode = PickingMode.Ignore;
 
             sub = Add(root, new VisualElement(), "life-dock__sub");
@@ -158,7 +131,7 @@ namespace GameOfLife
             BuildSelectionBar();
             BuildHelp();
 
-            library = new LifePatternLibrary(root, monoFont, () => Controller.Store.Patterns, Controller.Store.CanDelete)
+            library = new LifePatternLibrary(root, resources.MonoFont, () => Controller.Store.Patterns, Controller.Store.CanDelete)
             {
                 Title = "结构",
                 StoreRequested = Controller.StoreCellsAsync,
@@ -166,54 +139,18 @@ namespace GameOfLife
                 RenameRequested = Controller.RenamePattern,
                 DeleteRequested = Controller.DeletePattern,
                 CopyRequested = Controller.CopyPattern,
-                FolderRequested = () => Application.OpenURL(new Uri(Controller.PatternsDirectory).AbsoluteUri)
+                FolderRequested = () => Application.OpenURL(new Uri(Controller.Session.PatternsDirectory).AbsoluteUri)
             };
             library.Picked += Controller.SelectPattern;
             library.OpenChanged += _ => UpdateShortcuts();
 
-            // 存档与地图复用结构库界面，选中即替换整个世界；地图只读。列表项不是完整结构：
-            // 缩略图是保存时或离线生成的图片，不演化；存档和地图都只能载入，不复制。
-            savesLibrary = new LifePatternLibrary(root, monoFont, () => Controller.Worlds.Saves, Controller.Worlds.IsSave)
-            {
-                RenameRequested = Controller.RenameSave,
-                DeleteRequested = Controller.DeleteSave,
-                PreviewImage = Controller.Worlds.Preview,
-                AnimatePreviews = false,
-                Title = "存档",
-                PickTip = "载入  ↵"
-            };
-            savesLibrary.Picked += EnterWorld;
-            savesLibrary.OpenChanged += _ => UpdateShortcuts();
-            mapsLibrary = new LifePatternLibrary(root, monoFont, () => Controller.Worlds.Maps, _ => false)
-            {
-                PreviewImage = Controller.Worlds.Preview,
-                AnimatePreviews = false,
-                Title = "地图",
-                PickTip = "载入  ↵"
-            };
-            mapsLibrary.Picked += EnterWorld;
-            mapsLibrary.OpenChanged += _ => UpdateShortcuts();
-
-            startScreen = new LifeStartScreen(root, monoFont);
-            startScreen.NewWorldRequested += () =>
-            {
-                Controller.NewWorld();
-                HideStart();
-            };
-            startScreen.ContinueRequested += ContinueWorld;
-            startScreen.SavesRequested += () => savesLibrary.Open(Controller.CurrentSave);
-            startScreen.MapsRequested += OpenMaps;
-            startScreen.QuitRequested += QuitApplication;
-
             // 提示最后加入，盖在二级菜单和选区操作条之上。
             tip = Add(root, new Label(), "life-dock__tip");
-            tip.style.unityFontDefinition = FontDefinition.FromFont(monoFont);
+            tip.style.unityFontDefinition = FontDefinition.FromFont(resources.MonoFont);
             tip.style.display = DisplayStyle.None;
 
             ApplyExpanded(false);
             UpdateStatusVisibility();
-            if (startVisible)
-                ShowStart(startCanResume);
         }
 
         static T Add<T>(VisualElement parent, T element, string className) where T : VisualElement
@@ -313,7 +250,7 @@ namespace GameOfLife
             SubItem(parent, LifeIcons.Step, "单步  N", Controller.Step);
             SubItem(parent, LifeIcons.Slower, "减速  ↓", () => Controller.ChangeSpeed(0.5f));
             speedLabel = Add(parent, new Label(), "life-dock__speed");
-            speedLabel.style.unityFontDefinition = FontDefinition.FromFont(monoFont);
+            speedLabel.style.unityFontDefinition = FontDefinition.FromFont(resources.MonoFont);
             speedLabel.RegisterCallback<PointerEnterEvent>(_ => ShowHint("代/秒  滚轮调整"));
             speedLabel.RegisterCallback<PointerLeaveEvent>(_ => HideTip());
             speedLabel.RegisterCallback<WheelEvent>(evt =>
@@ -338,127 +275,44 @@ namespace GameOfLife
             SubItem(parent, LifeIcons.Clear, "清空  C", Controller.Clear);
             SubItem(parent, LifeIcons.Reset, "重置  R", Controller.ResetPattern);
             SubItem(parent, LifeIcons.Save, "保存", SaveWorld);
-            SubItem(parent, LifeIcons.Home, "开始界面", () => ShowStart(true));
+            SubItem(parent, LifeIcons.Home, "主菜单", () => LifeSceneFlow.OpenMenu(Controller.Session));
             SubItem(parent, LifeIcons.Help, "帮助  ?", () =>
             {
                 CloseSub();
                 HideTip();
                 SetHelp(true);
             });
-            SubItem(parent, LifeIcons.Quit, "退出程序", QuitApplication);
-        }
-
-        static void QuitApplication()
-        {
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#else
-            Application.Quit();
-#endif
-        }
-
-        // ---------- 开始界面 ----------
-
-        void ShowStart(bool canResume)
-        {
-            CloseSub();
-            HideTip();
-            if (Controller.State.IsRunning)
-                Controller.ToggleRunning();
-            startVisible = true;
-            startCanResume = canResume;
-            Controller.Worlds.ReloadSaves();
-            startScreen.Show(canResume || Controller.Worlds.Saves.Count > 0);
-            UpdateShortcuts();
-        }
-
-        void ContinueWorld()
-        {
-            if (startCanResume)
-                HideStart();
-            else
-                EnterWorld(Controller.Worlds.Saves[0]);
-        }
-
-        void HideStart()
-        {
-            startVisible = false;
-            startScreen.Hide();
-            UpdateShortcuts();
-        }
-
-        void EnterWorld(LifePattern world)
-        {
-            if (!startScreen.IsLoading)
-                StartCoroutine(EnterWorldAfterFrame(world));
-        }
-
-        // 列表项只是名称与缩略图：选中后才在后台读取解析完整世界，期间滑翔机照常飞行；
-        // 编译进模拟必须在主线程同步完成，先让载入画面绘制出来再开始。
-        IEnumerator EnterWorldAfterFrame(LifePattern entry)
-        {
-            startScreen.ShowLoading();
-            Task<(LifePattern World, int2 Anchor)> load = Controller.Worlds.LoadAsync(entry);
-            while (!load.IsCompleted)
-                yield return null;
-            if (load.IsFaulted)
-            {
-                Debug.LogException(load.Exception);
-                startScreen.HideLoading();
-                yield break;
-            }
-            yield return null;
-            yield return null;
-            try
-            {
-                Controller.LoadWorld(load.Result.World, load.Result.Anchor,
-                    Controller.Worlds.IsSave(entry) ? entry : null);
-            }
-            finally
-            {
-                startScreen.HideLoading();
-            }
-            HideStart();
+            SubItem(parent, LifeIcons.Quit, "退出程序", LifeSceneFlow.Quit);
         }
 
         void SaveWorld()
         {
             CloseSub();
             HideTip();
-            if (saving)
+            if (Controller.Session.SaveTask is { IsCompleted: false })
                 return;
-            Task<string> save = Controller.SaveWorldAsync(out LifeController.SaveTicket ticket);
-            StartCoroutine(FinishSave(save, ticket));
+            ShowToast("保存中");
+            StartCoroutine(FinishSave(Controller.Session.SaveWorldAsync()));
         }
 
         // 保存在后台进行，不挡住编辑；完成后刷新存档列表并提示。
-        IEnumerator FinishSave(Task<string> save, LifeController.SaveTicket ticket)
+        IEnumerator FinishSave(Task<string> save)
         {
-            saving = true;
             while (!save.IsCompleted)
                 yield return null;
-            saving = false;
             if (save.IsFaulted)
             {
                 Debug.LogException(save.Exception);
                 ShowToast("保存失败");
             }
-            else if (save.Result != null)
-                Controller.CompleteSave(ticket, save.Result);
+            else
+                ShowToast(save.Result == null ? "棋盘是空的" : "已保存");
         }
 
-        // 列表只读目录，不读地图文件；点选某个地图时才读取解析并载入。
-        void OpenMaps()
-        {
-            Controller.Worlds.ReloadMaps();
-            mapsLibrary.Open(null);
-        }
-
-        /// <summary>开始界面、任一浮层或帮助打开时，棋盘快捷键停用。</summary>
+        /// <summary>结构库或帮助打开时，棋盘快捷键停用。</summary>
         void UpdateShortcuts()
         {
-            Controller.KeyboardShortcutsEnabled = !startVisible && !library.IsOpen && !savesLibrary.IsOpen
-                && !mapsLibrary.IsOpen && !HelpOpen;
+            Controller.KeyboardShortcutsEnabled = !library.IsOpen && !HelpOpen;
         }
 
         /// <summary>编辑图标显示当前工具；盖章时显示所选结构的缩略图。</summary>
@@ -680,11 +534,11 @@ namespace GameOfLife
                     Label label = Add(line, new Label(HelpRows[row, column]),
                         column % 2 == 0 ? "life-help__key" : "life-help__text");
                     if (column % 2 == 0)
-                        label.style.unityFontDefinition = FontDefinition.FromFont(monoFont);
+                        label.style.unityFontDefinition = FontDefinition.FromFont(resources.MonoFont);
                 }
             }
             Label close = Add(panel, new Label("?  关闭"), "life-help__footer");
-            close.style.unityFontDefinition = FontDefinition.FromFont(monoFont);
+            close.style.unityFontDefinition = FontDefinition.FromFont(resources.MonoFont);
         }
 
         bool HelpOpen => help.style.display == DisplayStyle.Flex;
@@ -699,16 +553,8 @@ namespace GameOfLife
 
         void Update()
         {
-            // 先记录本帧开始时是否有浮层，避免用 Esc 关闭存档列表的同一帧又触发开始界面的“返回”。
-            bool overlayOpen = library.IsOpen || savesLibrary.IsOpen || mapsLibrary.IsOpen;
+            bool overlayOpen = library.IsOpen;
             library.Tick();
-            savesLibrary.Tick();
-            mapsLibrary.Tick();
-            if (startVisible)
-            {
-                startScreen.Tick(!overlayOpen, startCanResume);
-                return;
-            }
             Keyboard keyboard = Keyboard.current;
             if (keyboard == null)
                 return;
@@ -740,7 +586,7 @@ namespace GameOfLife
 
         void LateUpdate()
         {
-            UpdateScale();
+            resources.UpdateScale();
             if (dock.panel == null)
                 Build();
             LifeState state = Controller.State;
@@ -798,12 +644,7 @@ namespace GameOfLife
         {
             Controller.Notified -= ShowToast;
             library?.Dispose();
-            savesLibrary?.Dispose();
-            mapsLibrary?.Dispose();
-            startScreen?.Dispose();
-            Destroy(font);
-            Destroy(monoFont);
-            Destroy(panelSettings);
+            resources.Dispose();
         }
     }
 }

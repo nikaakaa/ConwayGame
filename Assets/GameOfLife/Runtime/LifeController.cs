@@ -1,7 +1,5 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -32,12 +30,8 @@ namespace GameOfLife
         public LifeState State => manager.GetComponentData<LifeState>(boardEntity);
         public float Speed => manager.GetComponentData<LifeSettings>(boardEntity).GenerationsPerSecond;
         public LifePopulationSample PopulationSample => simulation.Simulation.PopulationSample;
-        public LifePatternStore Store { get; private set; }
-        public string PatternsDirectory { get; private set; }
-        /// <summary>存档与地图：载入时替换整个世界。</summary>
-        public LifeWorldStore Worlds { get; private set; }
-        /// <summary>当前世界所属的存档；新世界或地图为 null，保存时新建存档。</summary>
-        public LifePattern CurrentSave { get; private set; }
+        public LifeSession Session { get; private set; }
+        public LifePatternStore Store => Session.Patterns;
 
         /// <summary>选区为闭区间世界坐标；只有框选工具下才存在。</summary>
         public bool HasSelection { get; private set; }
@@ -66,25 +60,17 @@ namespace GameOfLife
         bool selectionMoved;
         // 盖章之前使用的画笔或框选，Esc 取消盖章时回到它。
         LifeBrushMode previousTool = LifeBrushMode.Cell;
-        // 换世界（新建或载入）时递增，后台保存完成时据此判断当前世界是否仍是保存的那个。
-        int worldVersion;
-
-        void Awake()
-        {
-            PatternsDirectory = Path.Combine(Application.persistentDataPath, "Patterns");
-            Store = new LifePatternStore(PatternsDirectory);
-            SelectedPattern = Store.Patterns[0];
-            Worlds = new LifeWorldStore(Path.Combine(Application.persistentDataPath, "Saves"));
-        }
 
         void Start()
         {
-            manager = World.DefaultGameObjectInjectionWorld.EntityManager;
             simulation = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<LifeSimulationSystem>();
-            EntityQuery query = manager.CreateEntityQuery(ComponentType.ReadOnly<LifeState>());
-            boardEntity = query.GetSingletonEntity();
-            query.Dispose();
-            simulation.LoadPatterns(Store.Patterns);
+            manager = simulation.EntityManager;
+            boardEntity = simulation.Board;
+            Session = simulation.Session;
+            if (!Session.HasWorld)
+                Session.NewWorld();
+            SelectedPattern = Store.Patterns[0];
+            Session.PatternStored += OnPatternStored;
             View.Bind(manager, boardEntity, simulation.Simulation);
             SetBrush(Brush);
         }
@@ -173,16 +159,21 @@ namespace GameOfLife
         {
             bool selected = HasSelection;
             Notify(selected ? "正在收集选区" : "正在收集世界快照");
-            int2[] cells = await simulation.Simulation.CollectCellsAsync(selected, SelectionMin, SelectionMax);
-            if (cells.Length == 0)
-            {
+            LifePattern pattern = await Session.StoreCellsAsync(name, selected, SelectionMin, SelectionMax);
+            if (pattern == null)
                 Notify(selected ? "选区内没有活细胞" : "棋盘是空的");
-                return null;
-            }
-            LifePattern pattern = Store.Save(name, cells);
-            PatternsChanged();
-            Notify("已存入 " + cells.Length + " 格");
             return pattern;
+        }
+
+        void OnPatternStored(LifePattern pattern)
+        {
+            SetBrush(Brush);
+            Notify("已存入 " + pattern.Population + " 格");
+        }
+
+        void OnDestroy()
+        {
+            Session.PatternStored -= OnPatternStored;
         }
 
         public void DeleteSelection()
@@ -327,16 +318,6 @@ namespace GameOfLife
 
         public void Clear() => Submit(new LifeCommand { Kind = LifeCommandKind.Clear });
 
-        /// <summary>空棋盘：清空、暂停、代数归零，视野回到原点。</summary>
-        public void NewWorld()
-        {
-            ClearSelection();
-            Submit(new LifeCommand { Kind = LifeCommandKind.Clear });
-            View.ResetWindow();
-            CurrentSave = null;
-            worldVersion++;
-        }
-
         /// <summary>
         /// 用 <see cref="LifeWorldStore.LoadAsync"/> 解析出的完整世界替换当前世界。结构临时加入盖章形状集合，
         /// 等待中的盖章指令会被回收器视为根，应用前不会被回收。视野以载入位置为中心，代数从零开始。
@@ -344,70 +325,12 @@ namespace GameOfLife
         /// <param name="save">来自存档时为该存档的列表项，之后保存会覆盖它；地图为 null。</param>
         public void LoadWorld(LifePattern world, int2 anchor, LifePattern save)
         {
-            var retained = new List<LifePattern>(Store.Patterns) { world };
-            simulation.LoadPatterns(retained);
+            Session.LoadWorld(world, anchor, save);
             ClearSelection();
-            DynamicBuffer<LifeCommand> commands = manager.GetBuffer<LifeCommand>(boardEntity);
-            commands.EnsureCapacity(commands.Length + 2);
-            commands.Add(new LifeCommand { Kind = LifeCommandKind.Clear });
-            commands.Add(new LifeCommand { Kind = LifeCommandKind.PatternStroke,
-                Shape = simulation.PatternShape(world), Position = anchor, End = anchor });
-            View.ResetWindow();
-            View.Pan(anchor);
+            View.RestoreViewport();
             hasPreviousCell = false;
-            CurrentSave = save;
-            worldVersion++;
             // 形状集合已重建，刷新当前笔刷的预览形状。
             SetBrush(Brush);
-        }
-
-        public Task<string> SaveWorldAsync(out SaveTicket ticket)
-        {
-            string name = CurrentSave != null ? CurrentSave.Name : "存档 " + DateTime.Now.ToString("MM-dd HH:mm");
-            ticket = new SaveTicket { Name = name, WorldVersion = worldVersion };
-            Notify("保存中 " + name);
-            return SaveSnapshotAsync(simulation.Simulation.CollectCellsAsync(false, default, default), name, CurrentSave);
-        }
-
-        async Task<string> SaveSnapshotAsync(Task<int2[]> capture, string name, LifePattern overwrite)
-        {
-            int2[] cells = await capture;
-            if (cells.Length == 0)
-            {
-                Notify("棋盘是空的");
-                return null;
-            }
-            return await Worlds.SaveAsync(name, cells, overwrite);
-        }
-
-        /// <summary>后台保存完成：刷新存档列表；保存期间没有换世界时，当前世界归属这个存档。</summary>
-        public void CompleteSave(SaveTicket ticket, string filePath)
-        {
-            Worlds.ReloadSaves();
-            if (ticket.WorldVersion == worldVersion)
-                CurrentSave = Worlds.FindSave(filePath);
-            Notify("已保存 " + ticket.Name);
-        }
-
-        public struct SaveTicket
-        {
-            public string Name;
-            public int WorldVersion;
-        }
-
-        public void DeleteSave(LifePattern save)
-        {
-            Worlds.DeleteSave(save);
-            if (CurrentSave == save)
-                CurrentSave = null;
-        }
-
-        public LifePattern RenameSave(LifePattern save, string name)
-        {
-            LifePattern renamed = Worlds.RenameSave(save, name);
-            if (CurrentSave == save)
-                CurrentSave = renamed;
-            return renamed;
         }
 
         public void ResetPattern()

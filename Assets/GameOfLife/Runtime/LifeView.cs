@@ -100,12 +100,15 @@ namespace GameOfLife
             boardEntity = entity;
             simulation = world;
             previousFrameTicks = Stopwatch.GetTimestamp();
-            manager.SetComponentData(boardEntity, new LifeViewport
-            {
-                Origin = Origin,
-                VisibleCells = VisibleCells,
-                FrameSeconds = 1.0 / 60
-            });
+            RestoreViewport();
+        }
+
+        public void RestoreViewport()
+        {
+            LifeViewport viewport = manager.GetComponentData<LifeViewport>(boardEntity);
+            Origin = viewport.Origin;
+            VisibleCells = viewport.VisibleCells;
+            CameraChanged();
         }
 
         void LateUpdate()
