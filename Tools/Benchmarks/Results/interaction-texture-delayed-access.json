@@ -1,0 +1,52 @@
+{
+  "success": true,
+  "command": "command run_script",
+  "data": {
+    "command": "run_script",
+    "parameters": {
+      "file": "Tools/Benchmarks/Work/MeasureTextureAccess.cs",
+      "entry": "MeasureTextureAccess.Main"
+    },
+    "result": {
+      "diagnostics": [],
+      "compileMs": 86,
+      "executeMs": 534,
+      "assemblyName": "PipelineRunScript_MeasureTextureAccess_3ffcbf42c94a4016809f288eb321c74b",
+      "success": true,
+      "result": [
+        {
+          "run": 0,
+          "readMs": 0.016900000000000002,
+          "pixels": 12845056
+        },
+        {
+          "run": 1,
+          "readMs": 0.0055000000000000005,
+          "pixels": 12845056
+        },
+        {
+          "run": 2,
+          "readMs": 0.0059,
+          "pixels": 12845056
+        },
+        {
+          "run": 3,
+          "readMs": 0.006,
+          "pixels": 12845056
+        },
+        {
+          "run": 4,
+          "readMs": 0.006,
+          "pixels": 12845056
+        }
+      ]
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "D:\\Unity_Project\\麦吉太文笔试"
+    }
+  },
+  "errors": [],
+  "warnings": []
+}

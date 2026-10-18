@@ -1,0 +1,161 @@
+{
+  "capturedAtUtc": "2026-10-18T11:21:45.075349+00:00",
+  "runtimeCommit": "4728ac4f403647137930c8db709575c60c67221d",
+  "policyCommit": "b6ee03cc5e20ee167ed1a1f212fe7715daedde0d",
+  "headAtCapture": "4728ac4f403647137930c8db709575c60c67221d",
+  "scope": "最终运行时与工具工作区在各项检查后捕获。Controller及UI包含Claude的在途修改，哈希记录实际工作区，不声称它们已提交。此清单不是早期原型源码的事后证明；原型的显示方式在preload-summary中区分。交互期间Profiler历史关闭，未测GPU完成或全路径分配。最终恢复工具新增等待正式命令队列消费，以便按实际暂停状态恢复播放。",
+  "input": {
+    "path": "Tools\\Benchmarks\\Work\\interaction-input-preload.rle",
+    "sourceSavePath": "C:\\Users\\Lenovo\\AppData\\LocalLow\\DefaultCompany\\麦吉太文笔试\\Saves\\20261018100215494.rle",
+    "bytes": 15599006,
+    "sha256": "897ff4decfb374d51c662de433240c157136d71159ce0f52d17885930d385639",
+    "parsedPopulation": 6231340,
+    "anchor": [
+      0,
+      1
+    ],
+    "restoreMetadata": {
+      "savePath": "C:\\Users\\Lenovo\\AppData\\LocalLow\\DefaultCompany\\麦吉太文笔试\\Saves\\20261018100215494.rle",
+      "originX": -63582,
+      "originY": -71799,
+      "size": 131072,
+      "speed": 1280.0,
+      "wasRunning": true,
+      "sourceGeneration": 396100,
+      "oldBackground": false,
+      "oldHistory": true
+    }
+  },
+  "runtime": [
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeComponents.cs",
+      "sha256": "91315c69b78d95897eb04182e09c692c71dc289f0cc9ed3a2c89715d7023c94e"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeSimulationPolicy.cs",
+      "sha256": "adaab04e342253abac23788092fce57d36a15b2568c1a100f346d4f1b81d9142"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeSimulationSystem.cs",
+      "sha256": "6429213144e65b647da8234eaa78f2c843345b5fd30e49f8a5f12ae10889b293"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeView.cs",
+      "sha256": "7ee5fea9542a9754d469ab274453167572b61840ff752f721c2f5a4baa81855a"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeRasterJob.cs",
+      "sha256": "bf6f6a3bfc516a7a38d819a97843c18df5d4f27a0d01b06484df189dfcce50a5"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeSelectionGraphic.cs",
+      "sha256": "1bdbd4fe63f9f34d11d32b72d244f60894ac07408b65f555f1b5fabca0c790da"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeWorld.cs",
+      "sha256": "22ddd9d50aa85feaf9b9d9793bb001ac061db3126181bc3f494a499fe31e9a30"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeWorld.Regions.cs",
+      "sha256": "a64e18f884157b63733a5ed68e94e294eb775add91acbd3847e9d3d25e0e26bf"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeController.cs",
+      "sha256": "f909c8adf0c0e406c03c6ff1d467a5a97b3653e8a7fce4e9a58ed7a56af92ba3"
+    }
+  ],
+  "uiWorkspace": [
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeEditorToolbar.cs",
+      "sha256": "764d5134c85d2019a0f3b878f14ce96fb0e051e73a7c5d5502cb45644790286d"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeWorldStore.cs",
+      "sha256": "181892331a5d1d159bfc7a0eaab853487c98e777ef070b749c439dbea96c204f"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeStartScreen.cs",
+      "sha256": "cf40624ad4b2bb0cf227914e3c2e6d9c61b54b8eaca69eddcd28c9b4f455a5e9"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifePatternLibrary.cs",
+      "sha256": "5e8de73ceee848f0e01c2273fba64ce2046a9993856df3ca6b5107c3b11f303c"
+    }
+  ],
+  "tools": [
+    {
+      "path": "Tools/Benchmarks/MeasureLife.cs",
+      "sha256": "2a85a3a8f6bc14752aa534435d23ada17252d83b8db2d44d0eb518f2ba163ef5"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeViewport.cs",
+      "sha256": "fa2f2c939d98d1f9a9f9c0c1280543e58e6cc8299ed3e92b9891f333a8513baf"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeInteraction.cs",
+      "sha256": "01201edaa86e472645948e257e4a023c88dcb48e55d626d486f1865ff806aab6"
+    },
+    {
+      "path": "Tools/Benchmarks/RestoreLifeInteraction.cs",
+      "sha256": "c6a53214798d49fe6291ae78974a59017e41f22e8ce17044ea8e8ff11f8caa4b"
+    }
+  ],
+  "results": [
+    {
+      "path": "Tools/Benchmarks/Results/interaction-preload-before.json",
+      "sha256": "4dbece7df5e9baf31f6476ad804ab9539b34b9dda72f484a0d82f466580891ef"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/interaction-preload-after.json",
+      "sha256": "1b2cb19ce822c25a7cf01c365ed9ee504d6793017776c4d84db60d5b50c6142d"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/interaction-preload-wide.json",
+      "sha256": "48bfe7df2ff6dd185ca2cc6d02584869034d9a5d12fdffec00144a9aa1047d64"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/interaction-preload-gpu-interfered.json",
+      "sha256": "943e39d79a93685cac16e4ff1a65cd65e47d4d112dca98bbbb6965f45caaf81e"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/interaction-preload-gpu-warmup.json",
+      "sha256": "50858dab408e944e6feef360c9dbb24a392e71deba0cc4540a3adb2dedb2c7bb"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/interaction-preload-gpu.json",
+      "sha256": "9d5942c2c025dc828a740695262f81abc04e106f6d4c1f2d7b18c7b7418f3c1c"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/interaction-preload-gpu-far.json",
+      "sha256": "19e87661815a92e5d26950e28695427a3d0069d94130c837c4cea769365a0bcc"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/interaction-texture-access.json",
+      "sha256": "9a30fc27ec550e0caf2b48f960610dd7b3f7b1b837b33a2dee7a992785ac324b"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/interaction-texture-delayed-access.json",
+      "sha256": "8bbc0ac3d8b64a19463b445984e912996d66334aa8591d5a735a77ec1c52f968"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/preload-core.json",
+      "sha256": "5bc3c31e76834b9dbd6b8d5baee1272d831c11060e8834fc7d41b02581b72feb"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/viewport-preload-current.json",
+      "sha256": "3e26550df26ff2608f0d81f33fae362047adf12055d6b9c744fc8621f4023c77"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/preload-layers.json",
+      "sha256": "72978b97dbec1532213c434048c02bd4a09a12e77fec87ce216417a818768743"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/preload-summary.json",
+      "sha256": "67b3e96e8dec765d72c6f371526c563c01443f3b8d8e697869e6ea6c5e46aa69"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/preload-restored.json",
+      "sha256": "d7ed2ceba91d55f577a5de3a4182b24af6f69a9cca4da8a0b4e889faf05021c3"
+    }
+  ]
+}

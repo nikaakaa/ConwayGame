@@ -1,0 +1,1427 @@
+{
+  "completedAtUtc": "2026-10-18T11:21:45.052599+00:00",
+  "runtimeCommit": "4728ac4f403647137930c8db709575c60c67221d",
+  "policyCommit": "b6ee03cc5e20ee167ed1a1f212fe7715daedde0d",
+  "percentileRule": "p99 = sorted[floor(.99 * (count - 1))]; median averages the two central values for even count",
+  "scope": "各记录均为五轮540帧正式交互入口回放。preload-before/after/wide是不同显示版本的探索记录，后两者仍含CPU棋盘回读；gpu-interfered/warmup的外部相机计数还包含预热期间反复累加，不能作为受控回放。修正后gpu为32768格、640代每秒、0至2432代，gpu-far为65536格、1280代每秒、54480至59088代，正式540帧无额外相机变化。两者时间基底、缓存、视野及目标速度不同，只报告绝对值，不计算加速倍数。早期gpu与核心/区域采样发生在补齐选区Graphic的CanvasRenderer依赖前；该单行声明不改变当时未启用选区边框的计时链路。far与layers使用最终运行时。未测GPU完成、鼠标到像素延迟或全Game的GC.Alloc。",
+  "core": {
+    "failures": 0,
+    "rows": 65
+  },
+  "viewport": {
+    "failures": 0,
+    "rows": 413
+  },
+  "replays": {
+    "preload-before": {
+      "reason": "completed",
+      "count": 540,
+      "sourceGeneration": 396100,
+      "originX": -63582,
+      "originY": -71799,
+      "size": 131072,
+      "speed": 1280.0,
+      "externalCameraChanges": 0,
+      "boardTextureSize": null,
+      "historyEnabledDuringReplay": false,
+      "generationRange": [
+        396100,
+        396100
+      ],
+      "runningFrames": 0,
+      "cameraSizes": [
+        65536,
+        131072
+      ],
+      "stepExponents": [],
+      "cameraCoveredFailures": null,
+      "postInputCameraCoveredFailures": null,
+      "hitMatchesCameraFailures": 0,
+      "phase": {
+        "idle": {
+          "count": 60,
+          "gapMs": {
+            "median": 5.0937,
+            "p99": 8.1825,
+            "max": 11.6056
+          },
+          "inputMs": {
+            "median": 0.0013,
+            "p99": 0.0017,
+            "max": 0.0064
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.7635
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.9892
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.019
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0119
+          },
+          "lateMs": {
+            "median": 0.0274,
+            "p99": 0.1039,
+            "max": 1.89
+          },
+          "simulationMs": {
+            "median": 0.0297,
+            "p99": 0.0406,
+            "max": 0.0423
+          }
+        },
+        "hover": {
+          "count": 120,
+          "gapMs": {
+            "median": 5.7863500000000005,
+            "p99": 7.8348,
+            "max": 11.3138
+          },
+          "inputMs": {
+            "median": 0.018,
+            "p99": 0.0268,
+            "max": 0.0765
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "overlayMs": {
+            "median": 0.6751,
+            "p99": 1.0447,
+            "max": 2.8297
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "overlayUploadMs": {
+            "median": 0.02175,
+            "p99": 0.0318,
+            "max": 0.0688
+          },
+          "lateMs": {
+            "median": 0.7398,
+            "p99": 1.126,
+            "max": 2.9175
+          },
+          "simulationMs": {
+            "median": 0.0297,
+            "p99": 0.0374,
+            "max": 0.046
+          }
+        },
+        "drag": {
+          "count": 240,
+          "gapMs": {
+            "median": 7.1331,
+            "p99": 13.4732,
+            "max": 25.3024
+          },
+          "inputMs": {
+            "median": 0.068,
+            "p99": 0.1342,
+            "max": 0.8978
+          },
+          "rasterMs": {
+            "median": 1.0008,
+            "p99": 1.0576,
+            "max": 1.1748
+          },
+          "overlayMs": {
+            "median": 0.69155,
+            "p99": 1.9676,
+            "max": 5.5385
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0203,
+            "max": 0.0318
+          },
+          "overlayUploadMs": {
+            "median": 0.0218,
+            "p99": 0.0405,
+            "max": 0.0705
+          },
+          "lateMs": {
+            "median": 1.7346499999999998,
+            "p99": 3.0941,
+            "max": 5.9095
+          },
+          "simulationMs": {
+            "median": 0.0638,
+            "p99": 0.0955,
+            "max": 2.0682
+          }
+        },
+        "zoom": {
+          "count": 120,
+          "gapMs": {
+            "median": 6.5622,
+            "p99": 15.6676,
+            "max": 24.1961
+          },
+          "inputMs": {
+            "median": 0.0011,
+            "p99": 0.0742,
+            "max": 0.1197
+          },
+          "rasterMs": {
+            "median": 1.001,
+            "p99": 1.0035,
+            "max": 1.0141
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 1.2196,
+            "max": 1.5922
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0217,
+            "max": 0.0237
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0302,
+            "max": 0.033
+          },
+          "lateMs": {
+            "median": 1.04725,
+            "p99": 2.1962,
+            "max": 2.7125
+          },
+          "simulationMs": {
+            "median": 0.0305,
+            "p99": 0.0789,
+            "max": 0.1671
+          }
+        }
+      }
+    },
+    "preload-after": {
+      "reason": "completed",
+      "count": 540,
+      "sourceGeneration": 0,
+      "originX": -63582,
+      "originY": -71799,
+      "size": 131072,
+      "speed": 10.0,
+      "externalCameraChanges": 0,
+      "boardTextureSize": 2048,
+      "historyEnabledDuringReplay": false,
+      "generationRange": [
+        0,
+        4608
+      ],
+      "runningFrames": 539,
+      "cameraSizes": [
+        65536,
+        131072
+      ],
+      "stepExponents": [
+        9,
+        10
+      ],
+      "cameraCoveredFailures": 88,
+      "postInputCameraCoveredFailures": 91,
+      "hitMatchesCameraFailures": 0,
+      "phase": {
+        "idle": {
+          "count": 60,
+          "gapMs": {
+            "median": 6.18865,
+            "p99": 13.9075,
+            "max": 14.0878
+          },
+          "inputMs": {
+            "median": 0.0013,
+            "p99": 0.0024,
+            "max": 0.0067
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 1.0049,
+            "max": 1.0113
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 5.638,
+            "max": 6.5249
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0199,
+            "max": 0.0199
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.027,
+            "max": 0.0277
+          },
+          "lateMs": {
+            "median": 0.03205,
+            "p99": 6.7768,
+            "max": 7.3393
+          },
+          "simulationMs": {
+            "median": 0.03285,
+            "p99": 3.6047,
+            "max": 3.7502
+          }
+        },
+        "hover": {
+          "count": 120,
+          "gapMs": {
+            "median": 6.280950000000001,
+            "p99": 11.6427,
+            "max": 13.1858
+          },
+          "inputMs": {
+            "median": 0.0176,
+            "p99": 0.0267,
+            "max": 0.4745
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "overlayMs": {
+            "median": 0.71825,
+            "p99": 1.6884,
+            "max": 2.6823
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "overlayUploadMs": {
+            "median": 0.0242,
+            "p99": 0.0356,
+            "max": 0.0415
+          },
+          "lateMs": {
+            "median": 0.78625,
+            "p99": 1.7827,
+            "max": 2.828
+          },
+          "simulationMs": {
+            "median": 0.03315,
+            "p99": 4.1015,
+            "max": 7.0202
+          }
+        },
+        "drag": {
+          "count": 240,
+          "gapMs": {
+            "median": 7.38045,
+            "p99": 13.0281,
+            "max": 17.193
+          },
+          "inputMs": {
+            "median": 0.03995,
+            "p99": 0.1049,
+            "max": 0.7936
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 1.044,
+            "max": 1.0642
+          },
+          "overlayMs": {
+            "median": 0.71505,
+            "p99": 5.6038,
+            "max": 8.1031
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.018,
+            "max": 0.0275
+          },
+          "overlayUploadMs": {
+            "median": 0.0254,
+            "p99": 0.0449,
+            "max": 0.0538
+          },
+          "lateMs": {
+            "median": 0.8116,
+            "p99": 6.1303,
+            "max": 8.8148
+          },
+          "simulationMs": {
+            "median": 0.0344,
+            "p99": 4.0705,
+            "max": 8.4226
+          }
+        },
+        "zoom": {
+          "count": 120,
+          "gapMs": {
+            "median": 8.356850000000001,
+            "p99": 16.9568,
+            "max": 22.0654
+          },
+          "inputMs": {
+            "median": 0.0012,
+            "p99": 0.07,
+            "max": 0.3411
+          },
+          "rasterMs": {
+            "median": 1.0014,
+            "p99": 1.0801,
+            "max": 1.156
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 6.5426,
+            "max": 6.9297
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0213,
+            "max": 0.032
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0413,
+            "max": 0.0523
+          },
+          "lateMs": {
+            "median": 1.0606499999999999,
+            "p99": 7.4219,
+            "max": 8.025
+          },
+          "simulationMs": {
+            "median": 0.0577,
+            "p99": 4.1796,
+            "max": 8.3889
+          }
+        }
+      }
+    },
+    "preload-wide": {
+      "reason": "completed",
+      "count": 540,
+      "sourceGeneration": 0,
+      "originX": -63582,
+      "originY": -71799,
+      "size": 131072,
+      "speed": 10.0,
+      "externalCameraChanges": 0,
+      "boardTextureSize": 3584,
+      "historyEnabledDuringReplay": false,
+      "generationRange": [
+        0,
+        4096
+      ],
+      "runningFrames": 539,
+      "cameraSizes": [
+        65536,
+        131072
+      ],
+      "stepExponents": [
+        9,
+        10
+      ],
+      "cameraCoveredFailures": 0,
+      "postInputCameraCoveredFailures": 0,
+      "hitMatchesCameraFailures": 0,
+      "phase": {
+        "idle": {
+          "count": 60,
+          "gapMs": {
+            "median": 5.611800000000001,
+            "p99": 20.7956,
+            "max": 22.8954
+          },
+          "inputMs": {
+            "median": 0.0012,
+            "p99": 0.0026,
+            "max": 0.0073
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 1.0368,
+            "max": 1.0405
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 10.2896,
+            "max": 10.7328
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0175,
+            "max": 0.0181
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0246,
+            "max": 0.0271
+          },
+          "lateMs": {
+            "median": 0.05025,
+            "p99": 10.9782,
+            "max": 11.4425
+          },
+          "simulationMs": {
+            "median": 0.0292,
+            "p99": 3.0614,
+            "max": 3.1333
+          }
+        },
+        "hover": {
+          "count": 120,
+          "gapMs": {
+            "median": 5.67665,
+            "p99": 18.4463,
+            "max": 26.6191
+          },
+          "inputMs": {
+            "median": 0.0168,
+            "p99": 0.0272,
+            "max": 0.6682
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 1.0008
+          },
+          "overlayMs": {
+            "median": 0.6912,
+            "p99": 2.1965,
+            "max": 9.8377
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0422
+          },
+          "overlayUploadMs": {
+            "median": 0.022150000000000003,
+            "p99": 0.0374,
+            "max": 0.0427
+          },
+          "lateMs": {
+            "median": 0.7605999999999999,
+            "p99": 2.2971,
+            "max": 10.5914
+          },
+          "simulationMs": {
+            "median": 0.0307,
+            "p99": 4.1319,
+            "max": 6.3931
+          }
+        },
+        "drag": {
+          "count": 240,
+          "gapMs": {
+            "median": 6.3863,
+            "p99": 20.2914,
+            "max": 37.3404
+          },
+          "inputMs": {
+            "median": 0.0391,
+            "p99": 0.0707,
+            "max": 0.8469
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 1.0462,
+            "max": 1.0662
+          },
+          "overlayMs": {
+            "median": 0.6948000000000001,
+            "p99": 10.6147,
+            "max": 13.088
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0172,
+            "max": 0.0206
+          },
+          "overlayUploadMs": {
+            "median": 0.023,
+            "p99": 0.038,
+            "max": 0.0462
+          },
+          "lateMs": {
+            "median": 0.7954,
+            "p99": 11.0733,
+            "max": 13.3145
+          },
+          "simulationMs": {
+            "median": 0.03175,
+            "p99": 4.1066,
+            "max": 12.2225
+          }
+        },
+        "zoom": {
+          "count": 120,
+          "gapMs": {
+            "median": 7.7360500000000005,
+            "p99": 17.0663,
+            "max": 20.2967
+          },
+          "inputMs": {
+            "median": 0.0011,
+            "p99": 0.0499,
+            "max": 0.374
+          },
+          "rasterMs": {
+            "median": 1.0126499999999998,
+            "p99": 1.0537,
+            "max": 1.0679
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 10.7852,
+            "max": 11.0804
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0183,
+            "max": 0.0242
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0294,
+            "max": 0.0773
+          },
+          "lateMs": {
+            "median": 1.0669499999999998,
+            "p99": 11.3748,
+            "max": 11.7807
+          },
+          "simulationMs": {
+            "median": 0.05315,
+            "p99": 4.1585,
+            "max": 5.9331
+          }
+        }
+      }
+    },
+    "preload-gpu-interfered": {
+      "reason": "completed",
+      "count": 540,
+      "sourceGeneration": 0,
+      "originX": -63582,
+      "originY": -71799,
+      "size": 131072,
+      "speed": 10.0,
+      "externalCameraChanges": 23,
+      "boardTextureSize": 3584,
+      "historyEnabledDuringReplay": false,
+      "generationRange": [
+        0,
+        1823
+      ],
+      "runningFrames": 539,
+      "cameraSizes": [
+        64,
+        128
+      ],
+      "stepExponents": [
+        0
+      ],
+      "cameraCoveredFailures": 0,
+      "postInputCameraCoveredFailures": 0,
+      "hitMatchesCameraFailures": 0,
+      "phase": {
+        "idle": {
+          "count": 60,
+          "gapMs": {
+            "median": 6.42105,
+            "p99": 22.238,
+            "max": 25.72
+          },
+          "inputMs": {
+            "median": 0.0011,
+            "p99": 0.0023,
+            "max": 0.0078
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 1.0402,
+            "max": 1.0403
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.02,
+            "max": 0.0211
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "lateMs": {
+            "median": 0.034850000000000006,
+            "p99": 1.225,
+            "max": 1.227
+          },
+          "simulationMs": {
+            "median": 1.03565,
+            "p99": 2.9348,
+            "max": 3.007
+          }
+        },
+        "hover": {
+          "count": 120,
+          "gapMs": {
+            "median": 8.042349999999999,
+            "p99": 29.2997,
+            "max": 48.5954
+          },
+          "inputMs": {
+            "median": 0.01595,
+            "p99": 0.0218,
+            "max": 0.5651
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 1.0355,
+            "max": 1.0413
+          },
+          "overlayMs": {
+            "median": 0.62115,
+            "p99": 0.9476,
+            "max": 2.9031
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0214,
+            "max": 0.0247
+          },
+          "overlayUploadMs": {
+            "median": 0.021449999999999997,
+            "p99": 0.0317,
+            "max": 0.0358
+          },
+          "lateMs": {
+            "median": 0.75615,
+            "p99": 1.8538,
+            "max": 3.1646
+          },
+          "simulationMs": {
+            "median": 1.5965500000000001,
+            "p99": 4.0329,
+            "max": 9.392
+          }
+        },
+        "drag": {
+          "count": 240,
+          "gapMs": {
+            "median": 8.7955,
+            "p99": 30.4988,
+            "max": 48.2711
+          },
+          "inputMs": {
+            "median": 0.036,
+            "p99": 0.0939,
+            "max": 0.7601
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 1.0493,
+            "max": 1.093
+          },
+          "overlayMs": {
+            "median": 0.6277,
+            "p99": 1.4592,
+            "max": 3.2604
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0212,
+            "max": 0.0254
+          },
+          "overlayUploadMs": {
+            "median": 0.0228,
+            "p99": 0.0371,
+            "max": 0.0512
+          },
+          "lateMs": {
+            "median": 0.7926,
+            "p99": 2.5684,
+            "max": 3.3471
+          },
+          "simulationMs": {
+            "median": 2.16345,
+            "p99": 5.3295,
+            "max": 7.4235
+          }
+        },
+        "zoom": {
+          "count": 120,
+          "gapMs": {
+            "median": 9.7598,
+            "p99": 26.5575,
+            "max": 65.4106
+          },
+          "inputMs": {
+            "median": 0.001,
+            "p99": 0.0485,
+            "max": 0.435
+          },
+          "rasterMs": {
+            "median": 1.0156,
+            "p99": 1.055,
+            "max": 1.0569
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 0.7206,
+            "max": 0.874
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0243,
+            "max": 0.0288
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0306,
+            "max": 0.0387
+          },
+          "lateMs": {
+            "median": 1.1313499999999999,
+            "p99": 1.9652,
+            "max": 2.0901
+          },
+          "simulationMs": {
+            "median": 3.2794999999999996,
+            "p99": 4.0519,
+            "max": 4.0727
+          }
+        }
+      }
+    },
+    "preload-gpu-warmup": {
+      "reason": "completed",
+      "count": 540,
+      "sourceGeneration": 5427,
+      "originX": -6929,
+      "originY": -3792,
+      "size": 4096,
+      "speed": 1280.0,
+      "externalCameraChanges": 25,
+      "boardTextureSize": 3584,
+      "historyEnabledDuringReplay": false,
+      "generationRange": [
+        5427,
+        9859
+      ],
+      "runningFrames": 539,
+      "cameraSizes": [
+        2048,
+        4096
+      ],
+      "stepExponents": [
+        4,
+        5
+      ],
+      "cameraCoveredFailures": 0,
+      "postInputCameraCoveredFailures": 0,
+      "hitMatchesCameraFailures": 0,
+      "phase": {
+        "idle": {
+          "count": 60,
+          "gapMs": {
+            "median": 7.5057,
+            "p99": 25.454,
+            "max": 26.6706
+          },
+          "inputMs": {
+            "median": 0.0011,
+            "p99": 0.0019,
+            "max": 0.0049
+          },
+          "rasterMs": {
+            "median": 1.00495,
+            "p99": 1.0388,
+            "max": 1.0524
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 0.6403,
+            "max": 0.9828
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0142,
+            "max": 0.0208
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0264,
+            "max": 0.0287
+          },
+          "lateMs": {
+            "median": 1.05695,
+            "p99": 1.7931,
+            "max": 2.1778
+          },
+          "simulationMs": {
+            "median": 1.1054,
+            "p99": 4.0376,
+            "max": 4.0428
+          }
+        },
+        "hover": {
+          "count": 120,
+          "gapMs": {
+            "median": 9.39385,
+            "p99": 12.4666,
+            "max": 32.4393
+          },
+          "inputMs": {
+            "median": 0.015349999999999999,
+            "p99": 0.0269,
+            "max": 0.0339
+          },
+          "rasterMs": {
+            "median": 1.003,
+            "p99": 1.0348,
+            "max": 1.038
+          },
+          "overlayMs": {
+            "median": 0.58535,
+            "p99": 0.7327,
+            "max": 0.9259
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0217
+          },
+          "overlayUploadMs": {
+            "median": 0.0214,
+            "p99": 0.0284,
+            "max": 0.0361
+          },
+          "lateMs": {
+            "median": 1.6785,
+            "p99": 1.8295,
+            "max": 2.0429
+          },
+          "simulationMs": {
+            "median": 2.6546,
+            "p99": 4.0506,
+            "max": 4.059
+          }
+        },
+        "drag": {
+          "count": 240,
+          "gapMs": {
+            "median": 10.521,
+            "p99": 25.1481,
+            "max": 29.0522
+          },
+          "inputMs": {
+            "median": 0.0353,
+            "p99": 0.0519,
+            "max": 0.3317
+          },
+          "rasterMs": {
+            "median": 1.0032,
+            "p99": 1.0343,
+            "max": 1.1997
+          },
+          "overlayMs": {
+            "median": 0.61325,
+            "p99": 0.9744,
+            "max": 1.0808
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0181,
+            "max": 0.0195
+          },
+          "overlayUploadMs": {
+            "median": 0.0217,
+            "p99": 0.0359,
+            "max": 0.0463
+          },
+          "lateMs": {
+            "median": 1.70995,
+            "p99": 2.0777,
+            "max": 2.3285
+          },
+          "simulationMs": {
+            "median": 3.53805,
+            "p99": 4.0809,
+            "max": 4.1103
+          }
+        },
+        "zoom": {
+          "count": 120,
+          "gapMs": {
+            "median": 8.88305,
+            "p99": 21.4754,
+            "max": 24.3935
+          },
+          "inputMs": {
+            "median": 0.001,
+            "p99": 0.0412,
+            "max": 0.0523
+          },
+          "rasterMs": {
+            "median": 1.0033,
+            "p99": 1.034,
+            "max": 1.0376
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 0.7102,
+            "max": 0.7475
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0167,
+            "max": 0.0213
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.03,
+            "max": 0.0332
+          },
+          "lateMs": {
+            "median": 1.0964,
+            "p99": 1.8221,
+            "max": 1.8848
+          },
+          "simulationMs": {
+            "median": 2.5302,
+            "p99": 4.063,
+            "max": 4.1082
+          }
+        }
+      }
+    },
+    "preload-gpu": {
+      "reason": "completed",
+      "count": 540,
+      "sourceGeneration": 0,
+      "originX": -23722,
+      "originY": -15189,
+      "size": 32768,
+      "speed": 640.0,
+      "externalCameraChanges": 0,
+      "boardTextureSize": 3584,
+      "historyEnabledDuringReplay": false,
+      "generationRange": [
+        0,
+        2432
+      ],
+      "runningFrames": 539,
+      "cameraSizes": [
+        16384,
+        32768
+      ],
+      "stepExponents": [
+        7,
+        8
+      ],
+      "cameraCoveredFailures": 0,
+      "postInputCameraCoveredFailures": 0,
+      "hitMatchesCameraFailures": 0,
+      "phase": {
+        "idle": {
+          "count": 60,
+          "gapMs": {
+            "median": 6.3459,
+            "p99": 9.619,
+            "max": 26.702
+          },
+          "inputMs": {
+            "median": 0.001,
+            "p99": 0.0019,
+            "max": 0.0056
+          },
+          "rasterMs": {
+            "median": 1.0012,
+            "p99": 1.0315,
+            "max": 1.0602
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0138
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "lateMs": {
+            "median": 1.0328499999999998,
+            "p99": 1.0775,
+            "max": 1.1011
+          },
+          "simulationMs": {
+            "median": 0.02735,
+            "p99": 0.0334,
+            "max": 0.1286
+          }
+        },
+        "hover": {
+          "count": 120,
+          "gapMs": {
+            "median": 6.781000000000001,
+            "p99": 12.8439,
+            "max": 35.5242
+          },
+          "inputMs": {
+            "median": 0.015300000000000001,
+            "p99": 0.0226,
+            "max": 0.0263
+          },
+          "rasterMs": {
+            "median": 1.00075,
+            "p99": 1.0187,
+            "max": 1.0355
+          },
+          "overlayMs": {
+            "median": 0.5845,
+            "p99": 0.8955,
+            "max": 1.1813
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0132,
+            "max": 0.0158
+          },
+          "overlayUploadMs": {
+            "median": 0.0188,
+            "p99": 0.0304,
+            "max": 0.0326
+          },
+          "lateMs": {
+            "median": 1.63345,
+            "p99": 1.8509,
+            "max": 2.0699
+          },
+          "simulationMs": {
+            "median": 0.027549999999999998,
+            "p99": 0.0377,
+            "max": 0.5993
+          }
+        },
+        "drag": {
+          "count": 240,
+          "gapMs": {
+            "median": 6.7620000000000005,
+            "p99": 25.7993,
+            "max": 36.8646
+          },
+          "inputMs": {
+            "median": 0.0354,
+            "p99": 0.0456,
+            "max": 0.0527
+          },
+          "rasterMs": {
+            "median": 1.0015,
+            "p99": 1.0485,
+            "max": 1.1549
+          },
+          "overlayMs": {
+            "median": 0.5929,
+            "p99": 0.9932,
+            "max": 1.0917
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0149,
+            "max": 0.0209
+          },
+          "overlayUploadMs": {
+            "median": 0.019,
+            "p99": 0.0287,
+            "max": 0.032
+          },
+          "lateMs": {
+            "median": 1.656,
+            "p99": 2.0659,
+            "max": 2.214
+          },
+          "simulationMs": {
+            "median": 0.02715,
+            "p99": 0.4972,
+            "max": 0.6014
+          }
+        },
+        "zoom": {
+          "count": 120,
+          "gapMs": {
+            "median": 6.454,
+            "p99": 16.703,
+            "max": 18.2197
+          },
+          "inputMs": {
+            "median": 0.0009,
+            "p99": 0.0391,
+            "max": 0.0549
+          },
+          "rasterMs": {
+            "median": 1.0012500000000002,
+            "p99": 1.0372,
+            "max": 1.0441
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 0.6219,
+            "max": 0.9865
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0143,
+            "max": 0.0156
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0249,
+            "max": 0.03
+          },
+          "lateMs": {
+            "median": 1.0459,
+            "p99": 1.71,
+            "max": 2.0637
+          },
+          "simulationMs": {
+            "median": 0.0278,
+            "p99": 0.5462,
+            "max": 0.9904
+          }
+        }
+      }
+    },
+    "preload-gpu-far": {
+      "reason": "completed",
+      "count": 540,
+      "sourceGeneration": 54480,
+      "originX": -27627,
+      "originY": -32874,
+      "size": 65536,
+      "speed": 1280.0,
+      "externalCameraChanges": 0,
+      "boardTextureSize": 3584,
+      "historyEnabledDuringReplay": false,
+      "generationRange": [
+        54480,
+        59088
+      ],
+      "runningFrames": 539,
+      "cameraSizes": [
+        32768,
+        65536
+      ],
+      "stepExponents": [
+        8,
+        9
+      ],
+      "cameraCoveredFailures": 0,
+      "postInputCameraCoveredFailures": 0,
+      "hitMatchesCameraFailures": 0,
+      "phase": {
+        "idle": {
+          "count": 60,
+          "gapMs": {
+            "median": 6.04635,
+            "p99": 11.7465,
+            "max": 17.784
+          },
+          "inputMs": {
+            "median": 0.0012,
+            "p99": 0.0016,
+            "max": 0.0075
+          },
+          "rasterMs": {
+            "median": 1.0018500000000001,
+            "p99": 1.0439,
+            "max": 1.0457
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.016,
+            "max": 0.0164
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "lateMs": {
+            "median": 1.03545,
+            "p99": 1.0917,
+            "max": 1.1206
+          },
+          "simulationMs": {
+            "median": 0.03175,
+            "p99": 0.0578,
+            "max": 0.1152
+          }
+        },
+        "hover": {
+          "count": 120,
+          "gapMs": {
+            "median": 5.9984,
+            "p99": 13.2536,
+            "max": 14.8678
+          },
+          "inputMs": {
+            "median": 0.016149999999999998,
+            "p99": 0.0254,
+            "max": 0.0282
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 1.0182,
+            "max": 1.0414
+          },
+          "overlayMs": {
+            "median": 0.6478999999999999,
+            "p99": 1.033,
+            "max": 2.5131
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0152,
+            "max": 0.0186
+          },
+          "overlayUploadMs": {
+            "median": 0.0201,
+            "p99": 0.0278,
+            "max": 0.0331
+          },
+          "lateMs": {
+            "median": 0.7299500000000001,
+            "p99": 1.8482,
+            "max": 2.5946
+          },
+          "simulationMs": {
+            "median": 0.03195,
+            "p99": 0.0969,
+            "max": 4.0591
+          }
+        },
+        "drag": {
+          "count": 240,
+          "gapMs": {
+            "median": 6.8375,
+            "p99": 18.3393,
+            "max": 19.4993
+          },
+          "inputMs": {
+            "median": 0.03665,
+            "p99": 0.068,
+            "max": 0.1684
+          },
+          "rasterMs": {
+            "median": 1.0018,
+            "p99": 1.0452,
+            "max": 1.0665
+          },
+          "overlayMs": {
+            "median": 0.6493,
+            "p99": 1.2165,
+            "max": 1.6156
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0166,
+            "max": 0.123
+          },
+          "overlayUploadMs": {
+            "median": 0.0209,
+            "p99": 0.0332,
+            "max": 0.0766
+          },
+          "lateMs": {
+            "median": 1.7058499999999999,
+            "p99": 2.1256,
+            "max": 2.5363
+          },
+          "simulationMs": {
+            "median": 0.03245,
+            "p99": 4.033,
+            "max": 4.098
+          }
+        },
+        "zoom": {
+          "count": 120,
+          "gapMs": {
+            "median": 6.172499999999999,
+            "p99": 18.4325,
+            "max": 20.8945
+          },
+          "inputMs": {
+            "median": 0.001,
+            "p99": 0.0391,
+            "max": 0.0564
+          },
+          "rasterMs": {
+            "median": 1.0018500000000001,
+            "p99": 1.0602,
+            "max": 1.147
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 0.7018,
+            "max": 0.7284
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0155,
+            "max": 0.0162
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0279,
+            "max": 0.0393
+          },
+          "lateMs": {
+            "median": 1.0459,
+            "p99": 1.7723,
+            "max": 1.8216
+          },
+          "simulationMs": {
+            "median": 0.03295,
+            "p99": 4.0314,
+            "max": 4.0457
+          }
+        }
+      }
+    }
+  }
+}

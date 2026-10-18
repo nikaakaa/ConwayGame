@@ -1,0 +1,27 @@
+{
+  "request": "var controller = UnityEngine.Object.FindFirstObjectByType<GameOfLife.LifeController>();\nvar view = controller.View;\nvar root = view.BoardImage.transform;\nvar overlay = root.GetChild(0).GetComponent<UnityEngine.UI.RawImage>();\nvar board = root.GetChild(1).GetComponent<UnityEngine.UI.RawImage>();\nvar border = root.GetChild(2).GetComponent<GameOfLife.LifeSelectionGraphic>();\nvar pixels = ((UnityEngine.Texture2D)board.texture).GetRawTextureData<UnityEngine.Color32>();\nint transparent = 0, white = 0, other = 0;\nfor (int i = 0; i < pixels.Length; i += 31)\n{\n    var pixel = pixels[i];\n    if (pixel.a == 0 && pixel.r == 0 && pixel.g == 0 && pixel.b == 0) transparent++;\n    else if (pixel.a == 255 && pixel.r == 255 && pixel.g == 255 && pixel.b == 255) white++;\n    else other++;\n}\nview.SetSelection(true, view.Origin + view.VisibleCells / 4,\n    view.Origin + view.VisibleCells * 3 / 4);\nUnityEngine.Canvas.ForceUpdateCanvases();\nvar mesh = border.canvasRenderer.GetMesh();\nint vertices = mesh.vertexCount;\nint triangleIndices = mesh.triangles.Length;\nview.SetSelection(controller.HasSelection, controller.SelectionMin, controller.SelectionMax);\nUnityEngine.Canvas.ForceUpdateCanvases();\nreturn new { boardTextureWidth = board.texture.width, boardTextureHeight = board.texture.height,\n    overlayTextureWidth = overlay.texture.width, sampledEveryPixels = 31, transparent, white, other,\n    selectionVertices = vertices, selectionTriangleIndices = triangleIndices,\n    overlayIndex = overlay.transform.GetSiblingIndex(), boardIndex = board.transform.GetSiblingIndex(),\n    selectionIndex = border.transform.GetSiblingIndex(), rootColor = view.BoardImage.color };\n",
+  "response": {
+    "success": true,
+    "command": "command eval_file",
+    "data": {
+      "command": "eval_file",
+      "parameters": {
+        "file": "D:\\Unity_Project\\麦吉太文笔试\\Tools\\Benchmarks\\Work\\InspectPreloadLayers.cs",
+        "timeout": "600000"
+      },
+      "result": {
+        "output": null,
+        "diagnostics": [],
+        "success": true,
+        "result": "{ boardTextureWidth = 3584, boardTextureHeight = 3584, overlayTextureWidth = 1024, sampledEveryPixels = 31, transparent = 411990, white = 2367, other = 0, selectionVertices = 1392, selectionTriangleIndices = 2088, overlayIndex = 0, boardIndex = 1, selectionIndex = 2, rootColor = RGBA(0.000, 0.000, 0.000, 1.000) }"
+      },
+      "target": {
+        "host": "127.0.0.1",
+        "port": 7800,
+        "projectPath": "D:\\Unity_Project\\麦吉太文笔试"
+      }
+    },
+    "errors": [],
+    "warnings": []
+  }
+}

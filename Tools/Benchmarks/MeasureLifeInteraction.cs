@@ -28,6 +28,9 @@ public static class MeasureLifeInteraction
         public double lateMs;
         public long generation;
         public bool running;
+        public bool cameraCovered;
+        public bool postInputCameraCovered;
+        public int stepExponent;
         public int desiredX, desiredY, desiredSize;
         public int textureX, textureY, textureSize;
         public bool hitMatchesCamera;
@@ -104,6 +107,15 @@ public static class MeasureLifeInteraction
                 rect.TransformPoint(new Vector3(rect.rect.xMin + rect.rect.width * x, rect.rect.yMin + rect.rect.height * y)));
         }
 
+        bool CameraCovered()
+        {
+            LifeView view = controller.View;
+            LifeRegion bounds = view.TextureBounds;
+            return bounds.MinX <= view.Origin.x && bounds.MinY <= view.Origin.y
+                && bounds.MaxX >= (long)view.Origin.x + view.VisibleCells
+                && bounds.MaxY >= (long)view.Origin.y + view.VisibleCells;
+        }
+
         void Tick()
         {
             if (clock.Elapsed.TotalSeconds > 180) { Finish("timeout"); return; }
@@ -132,9 +144,14 @@ public static class MeasureLifeInteraction
                 prepared = true;
             }
             var view = controller.View;
+            if (warmup++ < 24)
+            {
+                expectedX = view.Origin.x; expectedY = view.Origin.y; expectedSize = view.VisibleCells;
+                previous = Stopwatch.GetTimestamp();
+                return;
+            }
             if (view.Origin.x != expectedX || view.Origin.y != expectedY || view.VisibleCells != expectedSize)
                 externalCameraChanges++;
-            if (warmup++ < 24) { previous = Stopwatch.GetTimestamp(); return; }
             if (count == 0 && advanceDuringReplay) controller.ToggleRunning();
             int run = count / 108;
             int frame = count % 108;
@@ -145,6 +162,7 @@ public static class MeasureLifeInteraction
                 rasterMs = recorders[0].LastValue / 1000000d, simulationMs = recorders[1].LastValue / 1000000d,
                 lateMs = recorders[2].LastValue / 1000000d, overlayMs = recorders[3].LastValue / 1000000d,
                 generation = system.Simulation.Snapshot.Generation, running = controller.State.IsRunning,
+                cameraCovered = CameraCovered(), stepExponent = LifeSimulationPolicy.StepExponent(view.VisibleCells, controller.Speed),
                 boardUploadMs = recorders[4].LastValue / 1000000d, overlayUploadMs = recorders[5].LastValue / 1000000d,
                 desiredX = view.Origin.x, desiredY = view.Origin.y, desiredSize = view.VisibleCells,
                 textureX = (int)view.TextureBounds.MinX, textureY = (int)view.TextureBounds.MinY,
@@ -176,6 +194,7 @@ public static class MeasureLifeInteraction
             samples[count].inputMs = (Stopwatch.GetTimestamp() - inputStart) * 1000d / Stopwatch.Frequency;
             view.TryGetCell(Position(0.5f, 0.5f), null, out var centerCell);
             samples[count].hitMatchesCamera = Unity.Mathematics.math.all(centerCell == view.Origin + view.VisibleCells / 2);
+            samples[count].postInputCameraCovered = CameraCovered();
             expectedX = view.Origin.x; expectedY = view.Origin.y; expectedSize = view.VisibleCells;
             previous = now;
             if (++count == samples.Length) Finish("completed");
@@ -191,6 +210,7 @@ public static class MeasureLifeInteraction
                 completedAtUtc = DateTime.UtcNow.ToString("O"), reason, compiledOverlay = overlay,
                 sourceGeneration, originX, originY, size, speed, wasRunning, savePath,
                 advanceDuringReplay,
+                boardTextureSize = LifeView.BoardTextureSize,
                 externalCameraChanges, uncontaminatedCameraReplay = externalCameraChanges == 0,
                 count, elapsedSeconds = clock.Elapsed.TotalSeconds, samples = samples.Take(count).ToArray(),
                 historyEnabledDuringReplay = UnityEditorInternal.ProfilerDriver.enabled,

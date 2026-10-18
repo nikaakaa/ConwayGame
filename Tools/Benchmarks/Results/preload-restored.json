@@ -1,0 +1,37 @@
+{
+  "success": true,
+  "command": "command run_script",
+  "data": {
+    "command": "run_script",
+    "parameters": {
+      "file": "D:\\Unity_Project\\麦吉太文笔试\\Tools\\Benchmarks\\RestoreLifeInteraction.cs",
+      "entry": "RestoreLifeInteraction.Main",
+      "args": "[true]"
+    },
+    "result": {
+      "diagnostics": [],
+      "compileMs": 161,
+      "executeMs": 8165,
+      "assemblyName": "PipelineRunScript_RestoreLifeInteraction_9d58db80f80241a5a49f231ae73d7c19",
+      "success": true,
+      "result": {
+        "population": 6231340,
+        "anchorX": 0,
+        "anchorY": 1,
+        "originX": -63582,
+        "originY": -71799,
+        "VisibleCells": 131072,
+        "resumed": true,
+        "sourceGeneration": 396100,
+        "generationRestartsAtZero": true
+      }
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "D:\\Unity_Project\\麦吉太文笔试"
+    }
+  },
+  "errors": [],
+  "warnings": []
+}

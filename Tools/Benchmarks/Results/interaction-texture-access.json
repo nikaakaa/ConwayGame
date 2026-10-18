@@ -1,0 +1,62 @@
+{
+  "success": true,
+  "command": "command eval",
+  "data": {
+    "command": "eval",
+    "parameters": {
+      "code": "var c=UnityEngine.Object.FindFirstObjectByType<GameOfLife.LifeController>(); var t=(UnityEngine.Texture2D)c.View.BoardImage.transform.GetChild(0).GetComponent<UnityEngine.UI.RawImage>().texture; var rows=new System.Collections.Generic.List<object>(); for(int i=0;i<5;i++){var clock=System.Diagnostics.Stopwatch.StartNew(); t.Apply(false,false); clock.Stop(); double upload=clock.Elapsed.TotalMilliseconds; clock.Restart(); var first=t.GetRawTextureData<UnityEngine.Color32>(); clock.Stop(); double firstRead=clock.Elapsed.TotalMilliseconds; clock.Restart(); var second=t.GetRawTextureData<UnityEngine.Color32>(); clock.Stop(); rows.Add(new{run=i,uploadMs=upload,firstAccessMs=firstRead,secondAccessMs=clock.Elapsed.TotalMilliseconds,pixels=second.Length});} return new{width=t.width,rows};"
+    },
+    "result": {
+      "output": null,
+      "diagnostics": [],
+      "success": true,
+      "result": {
+        "width": 3584,
+        "rows": [
+          {
+            "run": 0,
+            "uploadMs": 0.0376,
+            "firstAccessMs": 10.171000000000001,
+            "secondAccessMs": 0.0078000000000000005,
+            "pixels": 12845056
+          },
+          {
+            "run": 1,
+            "uploadMs": 0.0239,
+            "firstAccessMs": 9.935,
+            "secondAccessMs": 0.0031000000000000003,
+            "pixels": 12845056
+          },
+          {
+            "run": 2,
+            "uploadMs": 0.015700000000000002,
+            "firstAccessMs": 16.865000000000002,
+            "secondAccessMs": 0.003,
+            "pixels": 12845056
+          },
+          {
+            "run": 3,
+            "uploadMs": 0.013800000000000002,
+            "firstAccessMs": 18.3886,
+            "secondAccessMs": 0.0043,
+            "pixels": 12845056
+          },
+          {
+            "run": 4,
+            "uploadMs": 0.016800000000000002,
+            "firstAccessMs": 13.9425,
+            "secondAccessMs": 0.0028,
+            "pixels": 12845056
+          }
+        ]
+      }
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "D:\\Unity_Project\\麦吉太文笔试"
+    }
+  },
+  "errors": [],
+  "warnings": []
+}
