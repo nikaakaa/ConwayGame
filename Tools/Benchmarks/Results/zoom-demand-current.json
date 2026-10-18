@@ -1,0 +1,100 @@
+{
+  "input": "Tools/Benchmarks/Work/metaglider-prefix.rle",
+  "population": 275636,
+  "tiles": 59101,
+  "expected": {
+    "MinX": -524288,
+    "MinY": -524288,
+    "MaxX": 524288,
+    "MaxY": 524288,
+    "IsEmpty": false
+  },
+  "before": {
+    "generation": 0,
+    "version": 3,
+    "bounds": {
+      "MinX": 352,
+      "MinY": 60784,
+      "MaxX": 608,
+      "MaxY": 61040,
+      "IsEmpty": false
+    },
+    "current": true,
+    "advancing": true,
+    "nodes": 21685,
+    "cache": 0,
+    "request": {
+      "active": 1,
+      "target": {
+        "Epoch": 1,
+        "Generation": 1024
+      },
+      "bounds": {
+        "MinX": 352,
+        "MinY": 60784,
+        "MaxX": 608,
+        "MaxY": 61040,
+        "IsEmpty": false
+      }
+    }
+  },
+  "afterDemand": {
+    "generation": 0,
+    "version": 4,
+    "bounds": {
+      "MinX": -524288,
+      "MinY": -524288,
+      "MaxX": 524288,
+      "MaxY": 524288,
+      "IsEmpty": false
+    },
+    "current": true,
+    "advancing": true,
+    "nodes": 21688,
+    "cache": 0,
+    "request": {
+      "active": 1,
+      "target": {
+        "Epoch": 1,
+        "Generation": 1024
+      },
+      "bounds": {
+        "MinX": -524288,
+        "MinY": -524288,
+        "MaxX": 524288,
+        "MaxY": 524288,
+        "IsEmpty": false
+      }
+    }
+  },
+  "afterPump": {
+    "generation": 0,
+    "version": 4,
+    "bounds": {
+      "MinX": -524288,
+      "MinY": -524288,
+      "MaxX": 524288,
+      "MaxY": 524288,
+      "IsEmpty": false
+    },
+    "current": true,
+    "advancing": true,
+    "nodes": 21725,
+    "cache": 8,
+    "request": {
+      "active": 1,
+      "target": {
+        "Epoch": 1,
+        "Generation": 1024
+      },
+      "bounds": {
+        "MinX": -524288,
+        "MinY": -524288,
+        "MaxX": 524288,
+        "MaxY": 524288,
+        "IsEmpty": false
+      }
+    }
+  },
+  "scope": "已有初态树可直接服务第零代的新视野；先发起旧窗口未来推进，再提交扩大视野，检查当前快照显示是否被未来请求阻挡。不是FPS或完整巨构吞吐测量。"
+}

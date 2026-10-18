@@ -1,0 +1,764 @@
+{
+  "coldGenerationMs": 31483.530600000002,
+  "generation": 1,
+  "whitePixels": 402,
+  "phases": [
+    {
+      "phase": "source-generation-1",
+      "ready": true,
+      "elapsedMs": 139.7397,
+      "samples": [
+        {
+          "ms": 0.2028,
+          "generation": 1,
+          "visibleCells": 1048576,
+          "originX": -524288,
+          "originY": -524288,
+          "demand": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "worldVersion": 5,
+          "worldBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "knownBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "current": true,
+          "advancing": false,
+          "rasterActive": true,
+          "rasterVersion": 5,
+          "rasterGeneration": 1,
+          "rasterBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "renderedVersion": 4,
+          "textureBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "textureCoversCamera": true,
+          "nodes": 5153968,
+          "cache": 2789973
+        },
+        {
+          "ms": 56.716300000000004,
+          "generation": 1,
+          "visibleCells": 1048576,
+          "originX": -524288,
+          "originY": -524288,
+          "demand": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "worldVersion": 5,
+          "worldBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "knownBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "current": true,
+          "advancing": false,
+          "rasterActive": true,
+          "rasterVersion": 5,
+          "rasterGeneration": 1,
+          "rasterBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "renderedVersion": 4,
+          "textureBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "textureCoversCamera": true,
+          "nodes": 5153968,
+          "cache": 2789973
+        },
+        {
+          "ms": 139.68370000000002,
+          "generation": 1,
+          "visibleCells": 1048576,
+          "originX": -524288,
+          "originY": -524288,
+          "demand": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "worldVersion": 5,
+          "worldBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "knownBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "current": true,
+          "advancing": false,
+          "rasterActive": false,
+          "rasterVersion": 5,
+          "rasterGeneration": 1,
+          "rasterBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "renderedVersion": 5,
+          "textureBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "textureCoversCamera": true,
+          "nodes": 5153968,
+          "cache": 2789973
+        }
+      ]
+    },
+    {
+      "phase": "zoom-out-three",
+      "ready": true,
+      "elapsedMs": 171.7028,
+      "samples": [
+        {
+          "ms": 0.0065000000000000006,
+          "generation": 1,
+          "visibleCells": 8388608,
+          "originX": -4194304,
+          "originY": -4194304,
+          "demand": {
+            "MinX": -14680064,
+            "MinY": -14680064,
+            "MaxX": 14680064,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "worldVersion": 8,
+          "worldBounds": {
+            "MinX": -14680064,
+            "MinY": -14680064,
+            "MaxX": 14680064,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "knownBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "current": true,
+          "advancing": false,
+          "rasterActive": true,
+          "rasterVersion": 6,
+          "rasterGeneration": 1,
+          "rasterBounds": {
+            "MinX": -3670016,
+            "MinY": -3670016,
+            "MaxX": 3670016,
+            "MaxY": 3670016,
+            "IsEmpty": false
+          },
+          "renderedVersion": 5,
+          "textureBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "textureCoversCamera": false,
+          "nodes": 5153968,
+          "cache": 2789973
+        },
+        {
+          "ms": 64.0116,
+          "generation": 1,
+          "visibleCells": 8388608,
+          "originX": -4194304,
+          "originY": -4194304,
+          "demand": {
+            "MinX": -14680064,
+            "MinY": -14680064,
+            "MaxX": 14680064,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "worldVersion": 8,
+          "worldBounds": {
+            "MinX": -14680064,
+            "MinY": -14680064,
+            "MaxX": 14680064,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "knownBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "current": true,
+          "advancing": false,
+          "rasterActive": true,
+          "rasterVersion": 8,
+          "rasterGeneration": 1,
+          "rasterBounds": {
+            "MinX": -14680064,
+            "MinY": -14680064,
+            "MaxX": 14680064,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "renderedVersion": 6,
+          "textureBounds": {
+            "MinX": -3670016,
+            "MinY": -3670016,
+            "MaxX": 3670016,
+            "MaxY": 3670016,
+            "IsEmpty": false
+          },
+          "textureCoversCamera": false,
+          "nodes": 5153968,
+          "cache": 2789973
+        },
+        {
+          "ms": 117.622,
+          "generation": 1,
+          "visibleCells": 8388608,
+          "originX": -4194304,
+          "originY": -4194304,
+          "demand": {
+            "MinX": -14680064,
+            "MinY": -14680064,
+            "MaxX": 14680064,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "worldVersion": 8,
+          "worldBounds": {
+            "MinX": -14680064,
+            "MinY": -14680064,
+            "MaxX": 14680064,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "knownBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "current": true,
+          "advancing": false,
+          "rasterActive": true,
+          "rasterVersion": 8,
+          "rasterGeneration": 1,
+          "rasterBounds": {
+            "MinX": -14680064,
+            "MinY": -14680064,
+            "MaxX": 14680064,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "renderedVersion": 6,
+          "textureBounds": {
+            "MinX": -3670016,
+            "MinY": -3670016,
+            "MaxX": 3670016,
+            "MaxY": 3670016,
+            "IsEmpty": false
+          },
+          "textureCoversCamera": false,
+          "nodes": 5153968,
+          "cache": 2789973
+        },
+        {
+          "ms": 171.6591,
+          "generation": 1,
+          "visibleCells": 8388608,
+          "originX": -4194304,
+          "originY": -4194304,
+          "demand": {
+            "MinX": -14680064,
+            "MinY": -14680064,
+            "MaxX": 14680064,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "worldVersion": 8,
+          "worldBounds": {
+            "MinX": -14680064,
+            "MinY": -14680064,
+            "MaxX": 14680064,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "knownBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "current": true,
+          "advancing": false,
+          "rasterActive": false,
+          "rasterVersion": 8,
+          "rasterGeneration": 1,
+          "rasterBounds": {
+            "MinX": -14680064,
+            "MinY": -14680064,
+            "MaxX": 14680064,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "renderedVersion": 8,
+          "textureBounds": {
+            "MinX": -14680064,
+            "MinY": -14680064,
+            "MaxX": 14680064,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "textureCoversCamera": true,
+          "nodes": 5153968,
+          "cache": 2789973
+        }
+      ]
+    },
+    {
+      "phase": "inspect-4096",
+      "ready": true,
+      "elapsedMs": 112.7382,
+      "samples": [
+        {
+          "ms": 0.0065000000000000006,
+          "generation": 1,
+          "visibleCells": 4096,
+          "originX": -2096,
+          "originY": 391008,
+          "demand": {
+            "MinX": -8192,
+            "MinY": 385024,
+            "MaxX": 6144,
+            "MaxY": 399360,
+            "IsEmpty": false
+          },
+          "worldVersion": 19,
+          "worldBounds": {
+            "MinX": -8192,
+            "MinY": 385024,
+            "MaxX": 6144,
+            "MaxY": 399360,
+            "IsEmpty": false
+          },
+          "knownBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "current": true,
+          "advancing": false,
+          "rasterActive": true,
+          "rasterVersion": 15,
+          "rasterGeneration": 1,
+          "rasterBounds": {
+            "MinX": -131072,
+            "MinY": 262144,
+            "MaxX": 98304,
+            "MaxY": 491520,
+            "IsEmpty": false
+          },
+          "renderedVersion": 11,
+          "textureBounds": {
+            "MinX": -2097152,
+            "MinY": -1572864,
+            "MaxX": 1572864,
+            "MaxY": 2097152,
+            "IsEmpty": false
+          },
+          "textureCoversCamera": true,
+          "nodes": 5153968,
+          "cache": 2789973
+        },
+        {
+          "ms": 51.0428,
+          "generation": 1,
+          "visibleCells": 4096,
+          "originX": -2096,
+          "originY": 391008,
+          "demand": {
+            "MinX": -8192,
+            "MinY": 385024,
+            "MaxX": 6144,
+            "MaxY": 399360,
+            "IsEmpty": false
+          },
+          "worldVersion": 19,
+          "worldBounds": {
+            "MinX": -8192,
+            "MinY": 385024,
+            "MaxX": 6144,
+            "MaxY": 399360,
+            "IsEmpty": false
+          },
+          "knownBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "current": true,
+          "advancing": false,
+          "rasterActive": true,
+          "rasterVersion": 19,
+          "rasterGeneration": 1,
+          "rasterBounds": {
+            "MinX": -8192,
+            "MinY": 385024,
+            "MaxX": 6144,
+            "MaxY": 399360,
+            "IsEmpty": false
+          },
+          "renderedVersion": 15,
+          "textureBounds": {
+            "MinX": -131072,
+            "MinY": 262144,
+            "MaxX": 98304,
+            "MaxY": 491520,
+            "IsEmpty": false
+          },
+          "textureCoversCamera": true,
+          "nodes": 5153968,
+          "cache": 2789973
+        },
+        {
+          "ms": 112.7136,
+          "generation": 1,
+          "visibleCells": 4096,
+          "originX": -2096,
+          "originY": 391008,
+          "demand": {
+            "MinX": -8192,
+            "MinY": 385024,
+            "MaxX": 6144,
+            "MaxY": 399360,
+            "IsEmpty": false
+          },
+          "worldVersion": 19,
+          "worldBounds": {
+            "MinX": -8192,
+            "MinY": 385024,
+            "MaxX": 6144,
+            "MaxY": 399360,
+            "IsEmpty": false
+          },
+          "knownBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "current": true,
+          "advancing": false,
+          "rasterActive": false,
+          "rasterVersion": 19,
+          "rasterGeneration": 1,
+          "rasterBounds": {
+            "MinX": -8192,
+            "MinY": 385024,
+            "MaxX": 6144,
+            "MaxY": 399360,
+            "IsEmpty": false
+          },
+          "renderedVersion": 19,
+          "textureBounds": {
+            "MinX": -8192,
+            "MinY": 385024,
+            "MaxX": 6144,
+            "MaxY": 399360,
+            "IsEmpty": false
+          },
+          "textureCoversCamera": true,
+          "nodes": 5153968,
+          "cache": 2789973
+        }
+      ]
+    },
+    {
+      "phase": "return-to-full",
+      "ready": true,
+      "elapsedMs": 157.3915,
+      "samples": [
+        {
+          "ms": 0.0068000000000000005,
+          "generation": 1,
+          "visibleCells": 8388608,
+          "originX": -4194352,
+          "originY": -3801248,
+          "demand": {
+            "MinX": -16777216,
+            "MinY": -14680064,
+            "MaxX": 12582912,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "worldVersion": 30,
+          "worldBounds": {
+            "MinX": -16777216,
+            "MinY": -14680064,
+            "MaxX": 12582912,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "knownBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "current": true,
+          "advancing": false,
+          "rasterActive": true,
+          "rasterVersion": 25,
+          "rasterGeneration": 1,
+          "rasterBounds": {
+            "MinX": -524288,
+            "MinY": -131072,
+            "MaxX": 393216,
+            "MaxY": 786432,
+            "IsEmpty": false
+          },
+          "renderedVersion": 22,
+          "textureBounds": {
+            "MinX": -65536,
+            "MinY": 327680,
+            "MaxX": 49152,
+            "MaxY": 442368,
+            "IsEmpty": false
+          },
+          "textureCoversCamera": false,
+          "nodes": 5153968,
+          "cache": 2789973
+        },
+        {
+          "ms": 51.6828,
+          "generation": 1,
+          "visibleCells": 8388608,
+          "originX": -4194352,
+          "originY": -3801248,
+          "demand": {
+            "MinX": -16777216,
+            "MinY": -14680064,
+            "MaxX": 12582912,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "worldVersion": 30,
+          "worldBounds": {
+            "MinX": -16777216,
+            "MinY": -14680064,
+            "MaxX": 12582912,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "knownBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "current": true,
+          "advancing": false,
+          "rasterActive": false,
+          "rasterVersion": 25,
+          "rasterGeneration": 1,
+          "rasterBounds": {
+            "MinX": -524288,
+            "MinY": -131072,
+            "MaxX": 393216,
+            "MaxY": 786432,
+            "IsEmpty": false
+          },
+          "renderedVersion": 25,
+          "textureBounds": {
+            "MinX": -524288,
+            "MinY": -131072,
+            "MaxX": 393216,
+            "MaxY": 786432,
+            "IsEmpty": false
+          },
+          "textureCoversCamera": false,
+          "nodes": 5153968,
+          "cache": 2789973
+        },
+        {
+          "ms": 105.04950000000001,
+          "generation": 1,
+          "visibleCells": 8388608,
+          "originX": -4194352,
+          "originY": -3801248,
+          "demand": {
+            "MinX": -16777216,
+            "MinY": -14680064,
+            "MaxX": 12582912,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "worldVersion": 30,
+          "worldBounds": {
+            "MinX": -16777216,
+            "MinY": -14680064,
+            "MaxX": 12582912,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "knownBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "current": true,
+          "advancing": false,
+          "rasterActive": true,
+          "rasterVersion": 30,
+          "rasterGeneration": 1,
+          "rasterBounds": {
+            "MinX": -16777216,
+            "MinY": -14680064,
+            "MaxX": 12582912,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "renderedVersion": 25,
+          "textureBounds": {
+            "MinX": -524288,
+            "MinY": -131072,
+            "MaxX": 393216,
+            "MaxY": 786432,
+            "IsEmpty": false
+          },
+          "textureCoversCamera": false,
+          "nodes": 5153968,
+          "cache": 2789973
+        },
+        {
+          "ms": 157.3655,
+          "generation": 1,
+          "visibleCells": 8388608,
+          "originX": -4194352,
+          "originY": -3801248,
+          "demand": {
+            "MinX": -16777216,
+            "MinY": -14680064,
+            "MaxX": 12582912,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "worldVersion": 30,
+          "worldBounds": {
+            "MinX": -16777216,
+            "MinY": -14680064,
+            "MaxX": 12582912,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "knownBounds": {
+            "MinX": -1835008,
+            "MinY": -1835008,
+            "MaxX": 1835008,
+            "MaxY": 1835008,
+            "IsEmpty": false
+          },
+          "current": true,
+          "advancing": false,
+          "rasterActive": false,
+          "rasterVersion": 30,
+          "rasterGeneration": 1,
+          "rasterBounds": {
+            "MinX": -16777216,
+            "MinY": -14680064,
+            "MaxX": 12582912,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "renderedVersion": 30,
+          "textureBounds": {
+            "MinX": -16777216,
+            "MinY": -14680064,
+            "MaxX": 12582912,
+            "MaxY": 14680064,
+            "IsEmpty": false
+          },
+          "textureCoversCamera": true,
+          "nodes": 5153968,
+          "cache": 2789973
+        }
+      ]
+    }
+  ],
+  "scope": "完整93235805细胞初态，通过正式单步完成第1代后暂停。连续缩小三档，放大至已知活区域4096格，再返回8388608格；以最新世界帧与已完成纹理版本、预加载范围一致为完成条件。冷演化准备单独计时，不测FPS、0GC或稳态吞吐。"
+}

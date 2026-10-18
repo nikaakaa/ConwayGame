@@ -1,0 +1,123 @@
+{
+  "date": "2026-10-18",
+  "runtimeSourceCommit": "673bd1563b80b0ccc1e80a4548cf9883b61eba0d",
+  "files": [
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeWorld.Regions.cs",
+      "bytes": 58494,
+      "sha256": "15d1138d239159f3eca4522c14efe9c3a7b01f5f59afd289ebea2f6bea1bb370"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeSimulationSystem.cs",
+      "bytes": 12508,
+      "sha256": "95eeef4cf88ed9c4e7c53684c55f4d446ab719af18b21deb9ffca65c5b3b0a35"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeSimulationPolicy.cs",
+      "bytes": 2495,
+      "sha256": "9e8e84ddceb4c00c25808c807d0bb97b899475f7e7daaf33668147a112a5a7f5"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeView.cs",
+      "bytes": 13423,
+      "sha256": "22df68ce1b53abf10c1830926e77d4f70decf94c182b787ee2de38951667b769"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeController.cs",
+      "bytes": 19700,
+      "sha256": "9c2860acfd52aa388ec524f93010d8c3d6c378bc9c8e31c0ccee821a62699257"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeRasterJob.cs",
+      "bytes": 6857,
+      "sha256": "bf6f6a3bfc516a7a38d819a97843c18df5d4f27a0d01b06484df189dfcce50a5"
+    },
+    {
+      "path": "Tools/Benchmarks/Work/ReplayZoomRefresh.cs",
+      "bytes": 19002,
+      "sha256": "dec452e40a92a9784084e064ce71d73f58a3162ae5d0037046bab152843cabee"
+    },
+    {
+      "path": "Tools/Benchmarks/Work/TraceViewportDemand.cs",
+      "bytes": 2660,
+      "sha256": "ecbef4137f3678e5f10644f88e20426f1e00f4d1822eceb6ee75efefc07d87cd"
+    },
+    {
+      "path": "Tools/Benchmarks/Work/LoadPreparedGiant.cs",
+      "bytes": 2926,
+      "sha256": "9ee35b242f16e819eeecf07d97d4698dd3e8ce5f5d728095009a5bba74deab42"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeViewport.cs",
+      "bytes": 15683,
+      "sha256": "fa2f2c939d98d1f9a9f9c0c1280543e58e6cc8299ed3e92b9891f333a8513baf"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/viewport-reference.json",
+      "bytes": 353534,
+      "sha256": "1ddc900dd6a9ffdbc6dc8a6bb718d93739ba796f2d7cc155ad15492243504e61"
+    },
+    {
+      "path": "Assets/StreamingAssets/LifePatterns/metaglider-0e0p.rle.gz",
+      "bytes": 75695760,
+      "sha256": "abdb0544a0cd98318e446d837d13ba77fc9bf5d8b41661935da03ab571db7b60"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/zoom-demand-before.json",
+      "bytes": 2111,
+      "sha256": "1910fb19865f3d67af846daf8279778287049dfa7dea35efaeca30070ba08694"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/zoom-demand-current.json",
+      "bytes": 2149,
+      "sha256": "415b2e03922fefdd983ea3a36c86acff118787f52d3b1d6384bd97cc26733b79"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/zoom-giant-before-reuse.json",
+      "bytes": 597242,
+      "sha256": "ac39cb95ef033625a34d792c163d9e0d6bfbc4a44fb968be5d0ec21cde60bd02"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/zoom-giant-frozen.json",
+      "bytes": 21463,
+      "sha256": "c5ade84117c512d80fbcac61af190e4a47f357dcd2f84589a79eb2a73d4cf23b"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/zoom-giant-pending.json",
+      "bytes": 15326,
+      "sha256": "28742e7071143e4275290bf8e7799f51c5d84f324e9aea3d4894e79329987b13"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/viewport-zoom-current.json",
+      "bytes": 136402,
+      "sha256": "744d34d61b2fd18c2c071443453ec6a71bb8f23a4566f07a13d89ea56ed28e08"
+    }
+  ],
+  "preparedInput": {
+    "path": "Tools/Benchmarks/Work/metaglider-tiles.bin",
+    "bytes": 921002404,
+    "sha256": "19b38b8cb6cc50c08dfae50817f8773eff33dee206cd77e2a342aaaa7a90ab72"
+  },
+  "inputProvenance": "metaglider-tiles.bin 由正式 LifeWorldStore.LoadAsync 完整解析后写出 count(int32 little-endian) 与原 LifeTile 数组字节。仅避免多次解析相同 RLE；模拟仍调用正式 Session.LoadWorld。缓存读取耗时不能作为 RLE 加载耗时。",
+  "fullInput": {
+    "population": 93235805,
+    "tiles": 23025060
+  },
+  "conditions": {
+    "unity": "6000.3.3f1",
+    "mode": "Editor Play",
+    "profilerHistoryDuringReplay": false,
+    "runInBackgroundDuringReplay": true,
+    "restoredPlayMode": "stopped",
+    "restoredBackground": false,
+    "restoredProfilerHistory": true
+  },
+  "limitations": [
+    "单次顺序诊断，没有交替多轮 A/B，不报告加速倍数。",
+    "第128代的before-reuse来自已加入窗口优先级、尚无KnownBounds复用的中间工作区，未保存当时完整源码哈希；不与第1代计算速度比。",
+    "冻结回放计时从最后输入后的20ms等待结束开始，50ms采样；不包括整段输入或GPU完成。",
+    "402为整张预加载纹理中的不透明像素数，不是细胞人口。",
+    "准备第一代31.484秒单独记录；模拟吞吐、长跑陌生区域、Player内存及帧率未测。",
+    "Work为忽略的本地诊断资料，不增加Unity测试或运行时第二套加载路径。"
+  ]
+}
