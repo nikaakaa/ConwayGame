@@ -50,13 +50,15 @@ namespace GameOfLife
     {
         public readonly LifeSnapshot Snapshot;
         public readonly LifeRegion ValidBounds;
+        public readonly LifeRegion KnownBounds;
         public readonly LifeShape Shape;
         public readonly uint Version;
 
-        public LifeViewFrame(LifeSnapshot snapshot, LifeRegion validBounds, LifeShape shape, uint version)
+        public LifeViewFrame(LifeSnapshot snapshot, LifeRegion validBounds, LifeRegion knownBounds, LifeShape shape, uint version)
         {
             Snapshot = snapshot;
             ValidBounds = validBounds;
+            KnownBounds = knownBounds;
             Shape = shape;
             Version = version;
         }
@@ -93,8 +95,8 @@ namespace GameOfLife
         public LifePopulationSample PopulationSample => timeline[0].Population;
         public int RegionCacheCount => timeline[0].RegionCount;
         public int EpochCount => timeline[0].EpochCount;
-        public bool IsAdvancing => core.Requests[0].Active != 0 && core.Requests[0].Target.Generation > Snapshot.Generation;
-        public bool HasPendingWork => core.Requests[0].Active != 0 || core.Requests[1].Active != 0;
+        public bool IsAdvancing => timeline[0].AdvanceGeneration > timeline[0].Published.Generation;
+        public bool HasPendingWork => core.Requests[0].Active != 0 || core.Requests[1].Active != 0 || IsAdvancing;
         public bool IsViewCurrent => ViewFrame.Snapshot.Equals(Snapshot) && ViewFrame.ValidBounds.Equals(timeline[0].Viewport);
 
         void InitializeRegions()
@@ -122,7 +124,7 @@ namespace GameOfLife
             int epoch = kernel.AddEpoch(new WorldEpoch { Kind = 0, Initial = empty, World = 0, GridX = empty.X, GridY = empty.Y });
             kernel.Time.Published = new LifeSnapshot(epoch, 0);
             kernel.Time.Viewport = new LifeRegion(-64, -64, 64, 64);
-            kernel.Time.Frame = new LifeViewFrame(kernel.Time.Published, kernel.Time.Viewport, empty, 1);
+            kernel.Time.Frame = new LifeViewFrame(kernel.Time.Published, kernel.Time.Viewport, kernel.Time.Viewport, empty, 1);
             kernel.Time.Population = new LifePopulationSample(kernel.Time.Published, 0);
             WriteCore(kernel);
         }
@@ -134,14 +136,15 @@ namespace GameOfLife
             if (kernel.Time.Viewport.Equals(viewport))
                 return;
             kernel.Time.Viewport = viewport;
-            if (kernel.Requests[0].Active == 0)
-                kernel.StartRegionRequest(0, kernel.Time.Published, viewport, false);
+            kernel.CancelRegionRequest(0);
+            kernel.ScheduleViewRequest();
             WriteCore(kernel);
         }
 
         public void RefreshView()
         {
             Core kernel = ReadCore();
+            kernel.Time.AdvanceGeneration = kernel.Time.Published.Generation;
             kernel.StartRegionRequest(0, kernel.Time.Published, kernel.Time.Viewport, false);
             WriteCore(kernel);
         }
@@ -149,18 +152,18 @@ namespace GameOfLife
         public void BeginAdvance(int stepExponent)
         {
             Core kernel = ReadCore();
-            LifeSnapshot target = new LifeSnapshot(kernel.Time.Published.Epoch, kernel.Time.Published.Generation + (1L << stepExponent));
-            kernel.StartRegionRequest(0, target, kernel.Time.Viewport, false);
+            kernel.Time.AdvanceGeneration = kernel.Time.Published.Generation + (1L << stepExponent);
+            kernel.CancelRegionRequest(0);
+            kernel.ScheduleViewRequest();
             WriteCore(kernel);
         }
 
         public void CancelAdvance()
         {
             Core kernel = ReadCore();
+            kernel.Time.AdvanceGeneration = kernel.Time.Published.Generation;
             kernel.CancelRegionRequest(0);
-            if (!kernel.Time.Frame.Snapshot.Equals(kernel.Time.Published)
-                || !kernel.Time.Frame.ValidBounds.Equals(kernel.Time.Viewport))
-                kernel.StartRegionRequest(0, kernel.Time.Published, kernel.Time.Viewport, false);
+            kernel.ScheduleViewRequest();
             WriteCore(kernel);
         }
 
@@ -267,6 +270,7 @@ namespace GameOfLife
         struct TimelineState
         {
             public LifeSnapshot Published;
+            public long AdvanceGeneration;
             public LifeSnapshot EditSource;
             public LifeViewFrame Frame;
             public LifePopulationSample Population;
@@ -441,6 +445,7 @@ namespace GameOfLife
 
             public void BeginRegionEdit()
             {
+                Time.AdvanceGeneration = Time.Published.Generation;
                 CancelRegionRequest(0);
                 WorldEpoch epoch = Epoch(Time.Published.Epoch);
                 if (epoch.Kind == 1 && epoch.BaseGeneration == Time.Published.Generation)
@@ -511,6 +516,7 @@ namespace GameOfLife
                 Time.World++;
                 int id = AddEpoch(new WorldEpoch { Kind = 0, Initial = State.EditShape, World = Time.World, GridX = State.EditShape.X, GridY = State.EditShape.Y });
                 Time.Published = new LifeSnapshot(id, 0);
+                Time.AdvanceGeneration = 0;
                 Time.EditSource = Time.Published;
                 Time.Population = new LifePopulationSample(Time.Published, 0);
                 StartRegionRequest(0, Time.Published, Time.Viewport, false);
@@ -540,7 +546,7 @@ namespace GameOfLife
                 if (epoch.Kind == 0 && snapshot.Generation == epoch.BaseGeneration)
                 {
                     if (owner == 0)
-                        PublishFrame(snapshot, bounds, epoch.Initial);
+                        PublishFrame(snapshot, bounds, Support(snapshot), epoch.Initial);
                     else
                     {
                         Requests[1] = new RegionRequest { Active = 1, Target = snapshot, Bounds = bounds, Phase = 1,
@@ -569,9 +575,30 @@ namespace GameOfLife
                 };
             }
 
+            public void ScheduleViewRequest()
+            {
+                if (!Time.Frame.Snapshot.Equals(Time.Published) || !Time.Frame.ValidBounds.Equals(Time.Viewport))
+                {
+                    LifeViewFrame frame = Time.Frame;
+                    if (frame.Snapshot.Equals(Time.Published)
+                        && (Contains(frame.KnownBounds, Time.Viewport) || Contains(frame.KnownBounds, Support(Time.Published))))
+                        PublishFrame(Time.Published, Time.Viewport, frame.KnownBounds, frame.Shape);
+                    else
+                    {
+                        StartRegionRequest(0, Time.Published, Time.Viewport, false);
+                        if (Requests[0].Active != 0)
+                            return;
+                    }
+                }
+                if (Time.AdvanceGeneration > Time.Published.Generation)
+                    StartRegionRequest(0, new LifeSnapshot(Time.Published.Epoch, Time.AdvanceGeneration), Time.Viewport, false);
+            }
+
             public void PumpRegions(int workBudget)
             {
                 NativeList<AdvanceFrame> viewFrames = Frames;
+                if (Requests[0].Active == 0)
+                    ScheduleViewRequest();
                 for (int work = 0; work < workBudget; work++)
                 {
                     int owner = Time.NextWorker;
@@ -598,8 +625,8 @@ namespace GameOfLife
                     request.CenterActive = State.Advancing;
                     request.CenterPending = State.PendingResult;
                     Requests[owner] = request;
-                    if (owner == 0 && request.Active == 0 && !request.Bounds.Equals(Time.Viewport))
-                        StartRegionRequest(0, Time.Published, Time.Viewport, false);
+                    if (owner == 0 && request.Active == 0)
+                        ScheduleViewRequest();
                 }
                 Frames = viewFrames;
             }
@@ -634,7 +661,7 @@ namespace GameOfLife
                 if (owner == 0)
                 {
                     Time.Published = request.Target;
-                    PublishFrame(request.Target, request.Bounds, shape);
+                    PublishFrame(request.Target, request.Bounds, request.Bounds, shape);
                     request.Active = 0;
                 }
                 else
@@ -644,12 +671,12 @@ namespace GameOfLife
                 }
             }
 
-            void PublishFrame(LifeSnapshot snapshot, LifeRegion bounds, LifeShape shape)
+            void PublishFrame(LifeSnapshot snapshot, LifeRegion bounds, LifeRegion knownBounds, LifeShape shape)
             {
                 LifeViewFrame previous = Time.Frame;
                 bool changed = previous.Shape.Root != shape.Root || previous.Shape.X != shape.X || previous.Shape.Y != shape.Y
                     || !previous.ValidBounds.Equals(bounds);
-                Time.Frame = new LifeViewFrame(snapshot, bounds, shape, previous.Version + (changed ? 1u : 0u));
+                Time.Frame = new LifeViewFrame(snapshot, bounds, knownBounds, shape, previous.Version + (changed ? 1u : 0u));
             }
 
             void StepExport(ref RegionRequest request)
@@ -1155,6 +1182,9 @@ namespace GameOfLife
 
             static LifeRegion ShapeBounds(LifeShape shape, int level) => new LifeRegion(shape.X, shape.Y, shape.X + (1L << level), shape.Y + (1L << level));
             LifeRegion ShapeBounds(LifeShape shape) => ShapeBounds(shape, Nodes[shape.Root].Level);
+            static bool Contains(LifeRegion outer, LifeRegion inner) => outer.MinX <= inner.MinX && outer.MinY <= inner.MinY
+                && outer.MaxX >= inner.MaxX && outer.MaxY >= inner.MaxY;
+
             static bool Intersects(LifeRegion area, long x, long y, long side) => !area.IsEmpty && x < area.MaxX && y < area.MaxY && x + side > area.MinX && y + side > area.MinY;
             static LifeRegion Union(LifeRegion first, LifeRegion second) => new LifeRegion(math.min(first.MinX, second.MinX), math.min(first.MinY, second.MinY), math.max(first.MaxX, second.MaxX), math.max(first.MaxY, second.MaxY));
 
