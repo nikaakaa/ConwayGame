@@ -141,10 +141,12 @@ foreach (var source in expectedPopulations)
         continue;
     }
     using var world = new GameOfLife.LifeWorld();
-    var published = world.Shape;
+    var published = world.Snapshot;
+    var frameVersion = world.ViewFrame.Version;
     var shape = world.BuildShape(pattern.Tiles);
     bool populationMatches = world.Nodes[shape.Root].Population == source.Value && pattern.Population == source.Value;
-    bool publishedUnchanged = world.Shape.Root == published.Root && world.Shape.X == published.X && world.Shape.Y == published.Y;
+    bool publishedUnchanged = world.Snapshot.Epoch == published.Epoch
+        && world.Snapshot.Generation == published.Generation && world.ViewFrame.Version == frameVersion;
     int repetitions = source.Key == "metapixel-galaxy.rle" ? 5 : 1;
     for (int run = 0; run < repetitions; run++)
     {

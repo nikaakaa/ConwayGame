@@ -62,7 +62,7 @@ object ReadGcAllocationResult(Unity.Profiling.ProfilerRecorder recorder)
     };
 }
 
-string[] request = System.IO.File.ReadAllLines("Temp/LifeBenchmarks/request.txt", System.Text.Encoding.UTF8);
+string[] request = System.IO.File.ReadAllLines("Tools/Benchmarks/Work/request.txt", System.Text.Encoding.UTF8);
 string inputPath = request[0];
 int repetitions = int.Parse(request[1], System.Globalization.CultureInfo.InvariantCulture);
 string expectedSum = request[2];
@@ -75,46 +75,55 @@ if (!parsed)
     return new { parsed, parseError, gcAllocationCalibration };
 
 var results = new List<object>();
-(string sum, string xor) Fingerprint(GameOfLife.LifeWorld world)
+(string sum, string xor) Fingerprint(Unity.Mathematics.int2[] cells)
 {
     ulong sum = 0, xor = 0;
-    var nodes = world.Nodes;
-    var shape = world.Shape;
-    var stack = new Stack<(int root, long x, long y)>();
-    stack.Push((shape.Root, shape.X, shape.Y));
-    while (stack.Count != 0)
+    foreach (var cell in cells)
     {
-        var item = stack.Pop();
-        var node = nodes[item.root];
-        if (node.Population == 0)
-            continue;
-        if (node.Level == 4)
+        unchecked
         {
-            for (int y = 0; y < 16; y++)
-            {
-                uint row = node.Bits.GetRow(y);
-                while (row != 0)
-                {
-                    int x = Unity.Mathematics.math.tzcnt(row);
-                    row &= row - 1;
-                    unchecked
-                    {
-                        ulong key = ((ulong)(uint)(item.x + x) << 32) | (uint)(item.y + y);
-                        key = (key ^ (key >> 30)) * 0xbf58476d1ce4e5b9UL;
-                        key = (key ^ (key >> 27)) * 0x94d049bb133111ebUL;
-                        key ^= key >> 31;
-                        sum += key;
-                        xor ^= key;
-                    }
-                }
-            }
-            continue;
+            ulong key = ((ulong)(uint)cell.x << 32) | (uint)cell.y;
+            key = (key ^ (key >> 30)) * 0xbf58476d1ce4e5b9UL;
+            key = (key ^ (key >> 27)) * 0x94d049bb133111ebUL;
+            key ^= key >> 31;
+            sum += key;
+            xor ^= key;
         }
-        long half = 1L << (node.Level - 1);
-        for (int i = 0; i < 4; i++)
-            stack.Push((node.Children[i], item.x + ((i & 1) * half), item.y + ((i >> 1) * half)));
     }
     return (sum.ToString("x16"), xor.ToString("x16"));
+}
+
+(Unity.Mathematics.int2 origin, int visibleCells) WholeSupportViewport(GameOfLife.LifeTile[] tiles, int generations)
+{
+    var min = tiles[0].Position;
+    var max = min + 16;
+    foreach (var tile in tiles)
+    {
+        min = Unity.Mathematics.math.min(min, tile.Position);
+        max = Unity.Mathematics.math.max(max, tile.Position + 16);
+    }
+    min -= generations;
+    max += generations;
+    int visibleCells = 16;
+    while (visibleCells < Unity.Mathematics.math.cmax(max - min))
+        visibleCells *= 2;
+    return (min, visibleCells);
+}
+
+(Unity.Mathematics.int2[] cells, double milliseconds) ExportWholeWorld(GameOfLife.LifeWorld world)
+{
+    var exportWatch = System.Diagnostics.Stopwatch.StartNew();
+    var request = world.CollectCellsAsync(false, default, default);
+    while (!request.IsCompleted && exportWatch.Elapsed.TotalSeconds < 60)
+    {
+        if (world.IsCollecting)
+            world.ContinueCollection(4096);
+        world.Pump(128);
+    }
+    if (!request.IsCompleted)
+        throw new TimeoutException("全图导出未在 60 秒内完成。");
+    var cells = request.GetAwaiter().GetResult();
+    return (cells, exportWatch.Elapsed.TotalMilliseconds);
 }
 int failures = 0;
 const int budget = 128;
@@ -129,7 +138,9 @@ for (int run = 0; run < repetitions; run++)
     watch.Stop();
     double buildMs = watch.Elapsed.TotalMilliseconds;
     roots.Add(initial);
-    GameOfLife.LifeShape coldResult = default;
+    var viewport = WholeSupportViewport(pattern.Tiles, 35328);
+    world.SetViewport(viewport.origin, viewport.visibleCells);
+    (string sum, string xor) coldFingerprint = default;
     long coldPopulation = 0;
     for (int cache = 0; cache < 2; cache++)
     {
@@ -137,6 +148,9 @@ for (int run = 0; run < repetitions; run++)
         world.BeginEdit();
         world.Stamp(initial, Unity.Mathematics.int2.zero);
         world.EndEdit();
+        world.RefreshView();
+        while (!world.IsViewCurrent)
+            world.Pump(budget);
         int batches = 0;
         int collections = 0;
         int nextCollection = 262144;
@@ -158,7 +172,7 @@ for (int run = 0; run < repetitions; run++)
             bool finished;
             do
             {
-                if (!world.IsCollecting && world.NodeCount >= nextCollection)
+                if (!world.IsCollecting && world.NodeCount + world.RegionCacheCount >= nextCollection)
                 {
                     world.BeginCollection(roots.AsArray());
                     collections++;
@@ -172,13 +186,14 @@ for (int run = 0; run < repetitions; run++)
                     collectionMilliseconds += batchWatch.Elapsed.TotalMilliseconds;
                     collectionBatches++;
                     if (collected)
-                        nextCollection = Math.Max(262144, world.NodeCount * 2);
+                        nextCollection = Math.Max(262144, (world.NodeCount + world.RegionCacheCount) * 2);
                     finished = false;
                 }
                 else
                 {
                     batchWatch.Restart();
-                    finished = world.ContinueAdvance(budget);
+                    world.Pump(budget);
+                    finished = !world.IsAdvancing;
                     batchWatch.Stop();
                     maxBatchMs = Math.Max(maxBatchMs, batchWatch.Elapsed.TotalMilliseconds);
                     batches++;
@@ -194,27 +209,33 @@ for (int run = 0; run < repetitions; run++)
         }
         watch.Stop();
         var gcAllocations = ReadGcAllocationResult(gcRecorder);
+        long advanceCacheHits = world.CacheHits - hits;
+        long advanceCacheMisses = world.CacheMisses - misses;
+        var exported = ExportWholeWorld(world);
+        var fingerprint = Fingerprint(exported.cells);
+        long population = exported.cells.LongLength;
         bool sameAsCold = true;
         if (cache == 0)
         {
-            coldResult = world.Shape;
-            coldPopulation = world.Population;
-            roots.Add(coldResult);
+            coldFingerprint = fingerprint;
+            coldPopulation = population;
+            roots.Add(world.ViewFrame.Shape);
         }
         else
-            sameAsCold = world.Shape.Root == coldResult.Root && world.Shape.X == coldResult.X
-                && world.Shape.Y == coldResult.Y && world.Population == coldPopulation;
-        var fingerprint = Fingerprint(world);
+            sameAsCold = fingerprint == coldFingerprint && population == coldPopulation;
         bool referenceMatches = fingerprint.sum == expectedSum && fingerprint.xor == expectedXor;
         bool valid = complete && sameAsCold && generations == 35328 && referenceMatches;
         if (!valid)
             failures++;
         results.Add(new {
             run, cache = cache == 0 ? "cold" : "warm", initialPopulation = pattern.Population,
-            actualPopulation = world.Population, generations, milliseconds = watch.Elapsed.TotalMilliseconds,
+            actualPopulation = population, generations, milliseconds = watch.Elapsed.TotalMilliseconds,
+            viewportMilliseconds = watch.Elapsed.TotalMilliseconds, exportMilliseconds = exported.milliseconds,
+            exactCompletionMilliseconds = watch.Elapsed.TotalMilliseconds + exported.milliseconds,
+            originX = viewport.origin.x, originY = viewport.origin.y, viewport.visibleCells,
             buildMs, maxBatchMs, maxCollectionBatchMs, collectionMilliseconds, collectionBatches, batches, collections, peakNodes,
             nodes = world.NodeCount, cacheEntries = world.CacheCount,
-            cacheHits = world.CacheHits - hits, cacheMisses = world.CacheMisses - misses,
+            cacheHits = advanceCacheHits, cacheMisses = advanceCacheMisses,
             gcAllocations, fingerprint.sum, fingerprint.xor, referenceMatches, complete, sameAsCold, valid
         });
         if (!complete)
@@ -226,10 +247,10 @@ var result = new {
     unity = Application.unityVersion, burstEnabled = Unity.Burst.BurstCompiler.IsEnabled,
     processor = SystemInfo.processorType, inputPath, parsed, parseMs = parseWatch.Elapsed.TotalMilliseconds,
     initialPopulation = pattern.Population, tileCount = pattern.Tiles.Length,
-    repetitions, budget, limitSeconds, gcAllocationCalibration, failures, results
+    repetitions, budget, limitSeconds, gcAllocationCalibration, failures, results,
+    scope = "固定视野覆盖初态向外扩展 35328 格的保守影响范围，连续请求 32768/2048/512 代；milliseconds/GC.Alloc 只记录完成视野推进及回收。显式全图导出另计 exportMilliseconds，人口和指纹来自导出数组；exactCompletionMilliseconds 为两阶段之和，指纹遍历不计入。导出可能补算离屏，不能仅凭视野完成声称全图完成；新口径不能与旧整图根推进耗时直接计算加速比。"
 };
-System.IO.Directory.CreateDirectory("Temp/LifeBenchmarks");
-System.IO.File.WriteAllText("Temp/LifeBenchmarks/MeasureLifeInLife-result.json",
+System.IO.File.WriteAllText("Tools/Benchmarks/Results/viewport-galaxy.json",
     Newtonsoft.Json.JsonConvert.SerializeObject(result, Newtonsoft.Json.Formatting.Indented),
     new System.Text.UTF8Encoding(false));
 return result;

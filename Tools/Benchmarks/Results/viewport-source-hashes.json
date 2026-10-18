@@ -1,0 +1,236 @@
+{
+  "capturedAtUtc": "2026-10-18T09:25:15.542199+00:00",
+  "measuredCoreCommit": "7a43787ee7ce4de40395a74b47eb5ced733f1eff",
+  "renderChangeCommit": "f9370e13d00982af4b2f44f51e5520db1b7b4a75",
+  "environment": {
+    "unity": "6000.3.3f1",
+    "entities": "1.4.8",
+    "burst": "1.8.29",
+    "collections": "2.6.8",
+    "processor": "Intel Core i9-13900HX",
+    "logicalProcessors": 32
+  },
+  "core": [
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeNode.cs",
+      "workspaceSha256": "71fe1d90e73759b9b3266ed60dd31add26b4531f4d73526660e748acd093f873",
+      "gitFilteredBlobSha1": "17f5a436dc2446e9404341006e28274bcd0464aa",
+      "gitFilteredSha256": "da2578232e7d657fadd433a07ffd040abc3c8a7e05cad49b40b93f4c5537f9db"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeWorld.cs",
+      "workspaceSha256": "fdacc8b10a209d91d8ab8d3a3a8d0550b656e1372745b07d2b2aae441ae01163",
+      "gitFilteredBlobSha1": "7ccdbebec31f7fefda3dbc6e8ea3785a8d2f85ae",
+      "gitFilteredSha256": "5f6af8c610ecb42f4132ba6e6c63075b911efe3dde198d726d669436ef99d05b"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeWorld.Regions.cs",
+      "workspaceSha256": "c55446356095d015e9370e09cf99eb36c02ad9a145e3f5dd4a2b9abcbf92596d",
+      "gitFilteredBlobSha1": "4d43d9e8cbbf75ce585c31d20a227eea1e935a87",
+      "gitFilteredSha256": "c55446356095d015e9370e09cf99eb36c02ad9a145e3f5dd4a2b9abcbf92596d"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeSimulationSystem.cs",
+      "workspaceSha256": "7738c721def9a7534df7f273c5da20d3c19aebb0df8c2ea7f7bb1964229ab389",
+      "gitFilteredBlobSha1": "d924e403d3e34ef82b306f38970aa162c46c9834",
+      "gitFilteredSha256": "7738c721def9a7534df7f273c5da20d3c19aebb0df8c2ea7f7bb1964229ab389"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeSimulationPolicy.cs",
+      "workspaceSha256": "81609d5f3d244bf239276a0e954eb08db5866b13f49fa3996ad162301e5b3cb3",
+      "gitFilteredBlobSha1": "0fdb530e8d6efbadae4fe933d11b67049e67919e",
+      "gitFilteredSha256": "81609d5f3d244bf239276a0e954eb08db5866b13f49fa3996ad162301e5b3cb3"
+    }
+  ],
+  "renderingStaticOnly": [
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeView.cs",
+      "workspaceSha256": "996bf00891e002527f8aba54eba338b64e84f208f342ccdd0cc8225f421fae21",
+      "gitFilteredBlobSha1": "e4eb2cf5f3920e3d2ed79da1ba9fed8a10f10aa8",
+      "gitFilteredSha256": "795e110307091445833f7e256ba19d7d5ae7b6dc29ab183a63d895e133780b8b"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeRasterJob.cs",
+      "workspaceSha256": "0fbc72a6b4af52e467fc7dd17b9b31592eb774935fdcf17fa540976d63a8e8e7",
+      "gitFilteredBlobSha1": "fb48077b18f04a7e2909f639118077a8b008ca73",
+      "gitFilteredSha256": "0fbc72a6b4af52e467fc7dd17b9b31592eb774935fdcf17fa540976d63a8e8e7"
+    }
+  ],
+  "toolsAtFinalCapture": [
+    {
+      "path": "Tools/Benchmarks/MeasureLife.cs",
+      "workspaceSha256": "be3280a8d76b9bd8f4a33e93722d1fccae792917914af9bb57bd752c64335f31",
+      "gitFilteredBlobSha1": "08be405b02d0cac1eeee3fe30445293fa6a02aa8",
+      "gitFilteredSha256": "be3280a8d76b9bd8f4a33e93722d1fccae792917914af9bb57bd752c64335f31"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeCadence.cs",
+      "workspaceSha256": "80d7e635170b41a4ab748bc3faa86d907c5859d7f476f7028f01f208c82be964",
+      "gitFilteredBlobSha1": "61ff3e1fddd9fa19594f57cb008461edc59ef83d",
+      "gitFilteredSha256": "80d7e635170b41a4ab748bc3faa86d907c5859d7f476f7028f01f208c82be964"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeCatalog.cs",
+      "workspaceSha256": "5443ff1ba369bbdb30032368ac1ffc480a09799ce9719c15b55b35a029ce96a9",
+      "gitFilteredBlobSha1": "dd1a93cea7b76bd8043da037a9da9073c2fcb389",
+      "gitFilteredSha256": "5443ff1ba369bbdb30032368ac1ffc480a09799ce9719c15b55b35a029ce96a9"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeContinuity.cs",
+      "workspaceSha256": "6f4ac3f111d675bae8518eb6c8e4c7cad9bc0730373e1609fe084777c38bffba",
+      "gitFilteredBlobSha1": "148715f7ce29f3e1b3400491086a30fe8e663f14",
+      "gitFilteredSha256": "6f4ac3f111d675bae8518eb6c8e4c7cad9bc0730373e1609fe084777c38bffba"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeInLife.cs",
+      "workspaceSha256": "288d167fa8f36931a0fbecab4beac8f260428fe0fec095328a31e22d5a693aa0",
+      "gitFilteredBlobSha1": "a50172b8d2b4c1010bac5dcfc51cfc2a3c2c2757",
+      "gitFilteredSha256": "288d167fa8f36931a0fbecab4beac8f260428fe0fec095328a31e22d5a693aa0"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeScheduler.cs",
+      "workspaceSha256": "2d609d09b486611661607197d772dc78b8bbb3cdd7aa10aabed2c3f1553999c5",
+      "gitFilteredBlobSha1": "ba5131ae252ffd4d200e2461918b497af7a7ef66",
+      "gitFilteredSha256": "2d609d09b486611661607197d772dc78b8bbb3cdd7aa10aabed2c3f1553999c5"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeStepCosts.cs",
+      "workspaceSha256": "cfb07cca505b95e6e83e115b1989bb8742404a95911d89dc36d9832b49cc100d",
+      "gitFilteredBlobSha1": "bcbebdecc1bfa6db8d75bcfbeda66fcdb3c51c7d",
+      "gitFilteredSha256": "cfb07cca505b95e6e83e115b1989bb8742404a95911d89dc36d9832b49cc100d"
+    },
+    {
+      "path": "Tools/Benchmarks/ObserveLifeFrames.cs",
+      "workspaceSha256": "7e624e6befc7a7853cfc81d8cc7932152b0e8e8aa79c8818638d5ce1c8c10576",
+      "gitFilteredBlobSha1": "5cd34b991ccbfa8bf4230254638339307a6c2530",
+      "gitFilteredSha256": "7e624e6befc7a7853cfc81d8cc7932152b0e8e8aa79c8818638d5ce1c8c10576"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeViewport.cs",
+      "workspaceSha256": "fa2f2c939d98d1f9a9f9c0c1280543e58e6cc8299ed3e92b9891f333a8513baf",
+      "gitFilteredBlobSha1": "7ee930bd16738ba00cab73afb6739c387e7f4f81",
+      "gitFilteredSha256": "fa2f2c939d98d1f9a9f9c0c1280543e58e6cc8299ed3e92b9891f333a8513baf"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeViewportCosts.cs",
+      "workspaceSha256": "2c3a49b61ba1f316cd82b296ea7ffa2ddf1f7836c217b1eab2ed95838bdc8341",
+      "gitFilteredBlobSha1": "88c2cb5a2d19b99f81b038a66a6024aedb093f8f",
+      "gitFilteredSha256": "2c3a49b61ba1f316cd82b296ea7ffa2ddf1f7836c217b1eab2ed95838bdc8341"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeViewportLong.cs",
+      "workspaceSha256": "78fbb71b451bb88f432dc811d48a040ab030574e6794675e5d8ec5880bbda1ef",
+      "gitFilteredBlobSha1": "10348b35def412c282863e8e702d480b2022004b",
+      "gitFilteredSha256": "78fbb71b451bb88f432dc811d48a040ab030574e6794675e5d8ec5880bbda1ef"
+    },
+    {
+      "path": "Tools/Benchmarks/PrepareLifeViewportInput.cs",
+      "workspaceSha256": "017384c4c31ed0f20367e0c0b630f20d27e7239e7f9f317a80331115b87f39b6",
+      "gitFilteredBlobSha1": "ad720fe9997978aa25f96212806f6d93becdbc8b",
+      "gitFilteredSha256": "017384c4c31ed0f20367e0c0b630f20d27e7239e7f9f317a80331115b87f39b6"
+    },
+    {
+      "path": "Tools/Benchmarks/PrepareLifeViewport.cjs",
+      "workspaceSha256": "5f7270d9090454f2276de1f8bbd63b650e329c453cd59038e3cdafb5f6a228db",
+      "gitFilteredBlobSha1": "bc78eee2cc167f36d5cc6969ea60871963dc565d",
+      "gitFilteredSha256": "5f7270d9090454f2276de1f8bbd63b650e329c453cd59038e3cdafb5f6a228db"
+    }
+  ],
+  "rawEvidence": [
+    {
+      "path": "Tools/Benchmarks/Results/viewport-current.json",
+      "workspaceSha256": "bdc411f7fff9861c405713ef984ef39b18f9c535cea4f30dc62622cbffc3ff87",
+      "gitFilteredBlobSha1": "869a6f17704406fbb393cd7798a2920627ae937e",
+      "gitFilteredSha256": "6cd51d123f38ae08379e3325cfafa5867158aaf13b8558c5fa9cd6f7bce1d9a1"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/viewport-hex-costs.json",
+      "workspaceSha256": "300ba63ecbca07f052a96348a966348f98a89ec8492968bf6f4f92b6dc64db51",
+      "gitFilteredBlobSha1": "6f48b4081471bc53a31042192b95ab012b3d4f6a",
+      "gitFilteredSha256": "202517d9763acefb6359b6b7b8b19469a4fdc01ab7cd43598b4551ef060d845b"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/viewport-long.json",
+      "workspaceSha256": "73703574726bfa52db9fcb7a157d837d3ec78738c35d27233a517627036e6b47",
+      "gitFilteredBlobSha1": "4e256bc2bafe8dadf2617c880f992bb0d689775d",
+      "gitFilteredSha256": "86865273094f37b89759ab797c6910ffd8dedd3c90d6713f69e0aa9f56f56535"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/viewport-galaxy.json",
+      "workspaceSha256": "d84deefb81fc33902f9894b127b296762f0d4af4af4e4d7e2cce36df3f666e3c",
+      "gitFilteredBlobSha1": "3f9ff72225e710d7c396af1a6c5a4cdd7a47dfb1",
+      "gitFilteredSha256": "7c221d2676acb3fd0d8432b8dc78c1bb0fe107cf5d65b0037eace7f4f8a2c37a"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/viewport-system.json",
+      "workspaceSha256": "fe7d7afe343af9383bdc40bc25161217b1b7cccfc41c9aa0d41ffcd1ec007378",
+      "gitFilteredBlobSha1": "68df1cdcfb187a976772c30c82d3a296c37addea",
+      "gitFilteredSha256": "1c017d679fa2de5fed6e0f7ed5f59a9096d6993059038b5ca9b9225c27c80fde"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/viewport-reference.json",
+      "workspaceSha256": "1ddc900dd6a9ffdbc6dc8a6bb718d93739ba796f2d7cc155ad15492243504e61",
+      "gitFilteredBlobSha1": "b3315be685151972d5fc07481ef2e6720eeeb0e1",
+      "gitFilteredSha256": "1ddc900dd6a9ffdbc6dc8a6bb718d93739ba796f2d7cc155ad15492243504e61"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/life-frames-interaction-before.json",
+      "workspaceSha256": "81d61f8a4f2464fe170d72054f1f41f1ea55ccf3de1db5f6e19482c80ade2ec4",
+      "gitFilteredBlobSha1": "76a74d06431075841b57c5d5a6f073f12836930e",
+      "gitFilteredSha256": "bd7e8f370ac2a7c67155872e8fc5bad71e26741555d5cbbb9b6f5dc7e0502ba0"
+    },
+    {
+      "path": "Tools/Benchmarks/Results/viewport-hex-costs-progress.jsonl",
+      "workspaceSha256": "30e2f6ae83abd4be29651f743a63cf9b25ca3f917c981849d372e0437265bbd4",
+      "gitFilteredBlobSha1": "f65a7bf558cf0c621d52e18b390cbaf18cb8fecd",
+      "gitFilteredSha256": "b1e7178262915f25a2e92ea84094c29112401be9dfe52140131ee7a0d8ebd40f"
+    }
+  ],
+  "uiWorkspaceAtCaptureOnly": [
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeController.cs",
+      "workspaceSha256": "8837140a305eedc4b0e8f768ef65c3f8d8e5999945c165eb2481c4a92bdfe96e",
+      "gitFilteredBlobSha1": "4d8b4b758593a19ac635e059754b4c0f4d9169e3",
+      "gitFilteredSha256": "aed9ba29db813831031a0bf3a3061d499cd36bfc05e0823a1a2bf6e8cf887ca9"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeEditorToolbar.cs",
+      "workspaceSha256": "9d6baf6f5ed3b26034b7a359ecb3d8b1dec88f3f685a89b093ad5125a4933429",
+      "gitFilteredBlobSha1": "13fb704037f47974ac62ddeefc32d232589182bc",
+      "gitFilteredSha256": "9d6baf6f5ed3b26034b7a359ecb3d8b1dec88f3f685a89b093ad5125a4933429"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifePatternLibrary.cs",
+      "workspaceSha256": "5e8de73ceee848f0e01c2273fba64ce2046a9993856df3ca6b5107c3b11f303c",
+      "gitFilteredBlobSha1": "e42e38e7ca97cce0ffc488c9df56cad59b91ffe1",
+      "gitFilteredSha256": "5e8de73ceee848f0e01c2273fba64ce2046a9993856df3ca6b5107c3b11f303c"
+    }
+  ],
+  "inputs": [
+    {
+      "path": "Assets/StreamingAssets/LifePatterns/hexadecimal.rle",
+      "bytes": 5438166,
+      "sha256": "272d7727e944e89b6fa82b394966b9405f9969cc62c3c44c8fb77cb63cc58742"
+    },
+    {
+      "path": "Assets/StreamingAssets/LifePatterns/metapixel-galaxy.rle",
+      "bytes": 18474711,
+      "sha256": "c93b83ed4b56cf992bc653db4b460cb996bdbaedbafa308bd262e212ccc88f99"
+    },
+    {
+      "path": "Tools/Benchmarks/Work/hex-22071-tiles.bin",
+      "bytes": 14801404,
+      "sha256": "ed92a644c4e10cde5e0f163d118da27a1c07ba1271babdcd2bd3f6948a6bf2dc"
+    }
+  ],
+  "scope": [
+    "核心五份最终结果实际运行已完成，失败均为0；不把单次银河或单次长跑诊断当作受控加速比。",
+    "显示层拆分只有静态检查，未编译运行。当前目标Editor由用户处于Play，本轮未主动停止或重启。",
+    "交互被动记录只有1帧、Profiler历史开启，不是有效FPS基线。",
+    "UI由另一方维护，本清单只记录捕获时工作文件，不证明它们是此前每轮测量的相同字节。",
+    "工具最终整理发生在原始结果之后：新输入准备入口由已执行脚本提取；后续修复元组序列化，拆分覆盖层指标，并把MeasureLife/InLife的缓存计数读取移至导出之前。这些工具修订未全部重跑。",
+    "原始JSON保持原字节。viewport-galaxy.json中的缓存计数仍包含导出，耗时已分别记录；不据其计数推导推进命中率。",
+    "工作文件与Git按属性过滤后的blob分别记录校验和，以区分CRLF/LF，不把换行归一化误认作算法变化。",
+    "Work二进制快照未提交，可用PrepareLifeViewportInput.cs从同一RLE重建。"
+  ]
+}

@@ -108,6 +108,58 @@ void Put(GameOfLife.LifeWorld world, GameOfLife.LifeShape shape)
     world.BeginEdit();
     world.Stamp(shape, Unity.Mathematics.int2.zero);
     world.EndEdit();
+    world.RefreshView();
+    while (!world.IsViewCurrent)
+        world.Pump(budget);
+}
+
+(Unity.Mathematics.int2 origin, int visibleCells) ConfigureViewport(GameOfLife.LifeWorld world, GameOfLife.LifeTile[] tiles, int generations)
+{
+    var min = tiles[0].Position;
+    var max = min + 16;
+    foreach (var tile in tiles)
+    {
+        min = Unity.Mathematics.math.min(min, tile.Position);
+        max = Unity.Mathematics.math.max(max, tile.Position + 16);
+    }
+    min -= generations;
+    max += generations;
+    int visibleCells = 16;
+    while (visibleCells < Unity.Mathematics.math.cmax(max - min))
+        visibleCells *= 2;
+    world.SetViewport(min, visibleCells);
+    return (min, visibleCells);
+}
+
+(Unity.Mathematics.int2[] cells, double milliseconds) ExportWholeWorld(GameOfLife.LifeWorld world)
+{
+    var exportWatch = System.Diagnostics.Stopwatch.StartNew();
+    var request = world.CollectCellsAsync(false, default, default);
+    while (!request.IsCompleted && exportWatch.Elapsed.TotalSeconds < limitSeconds)
+    {
+        if (world.IsCollecting)
+            world.ContinueCollection(1024);
+        world.Pump(budget);
+    }
+    if (!request.IsCompleted)
+        throw new TimeoutException("全图导出超过测量时限。");
+    return (request.GetAwaiter().GetResult(), exportWatch.Elapsed.TotalMilliseconds);
+}
+
+(ulong sum, ulong xor) Fingerprint(Unity.Mathematics.int2[] cells)
+{
+    ulong sum = 0, xor = 0;
+    foreach (var cell in cells)
+        unchecked
+        {
+            ulong hash = ((ulong)(uint)cell.x << 32) | (uint)cell.y;
+            hash = (hash ^ (hash >> 30)) * 0xbf58476d1ce4e5b9UL;
+            hash = (hash ^ (hash >> 27)) * 0x94d049bb133111ebUL;
+            hash ^= hash >> 31;
+            sum += hash;
+            xor ^= hash;
+        }
+    return (sum, xor);
 }
 
 var blocks = Blocks();
@@ -127,9 +179,11 @@ var cases = new List<(string name, GameOfLife.LifePattern pattern, int exponent,
 using (var warmup = new GameOfLife.LifeWorld())
 {
     var shape = warmup.BuildShape(GameOfLife.LifePatterns.Items[4].Tiles);
+    ConfigureViewport(warmup, GameOfLife.LifePatterns.Items[4].Tiles, 8);
     Put(warmup, shape);
     warmup.BeginAdvance(3);
-    while (!warmup.ContinueAdvance(budget)) { }
+    while (warmup.IsAdvancing)
+        warmup.Pump(budget);
 }
 
 int failures = 0;
@@ -139,7 +193,8 @@ foreach (var item in cases)
     {
         using var world = new GameOfLife.LifeWorld();
         var initial = world.BuildShape(item.pattern.Tiles);
-        GameOfLife.LifeShape coldResult = default;
+        var viewport = ConfigureViewport(world, item.pattern.Tiles, 1 << item.exponent);
+        (ulong sum, ulong xor) coldFingerprint = default;
         long coldPopulation = 0;
         for (int cache = 0; cache < 2; cache++)
         {
@@ -157,41 +212,49 @@ foreach (var item in cases)
             do
             {
                 batchWatch.Restart();
-                complete = world.ContinueAdvance(budget);
+                world.Pump(budget);
+                complete = !world.IsAdvancing;
                 batchWatch.Stop();
                 maxBatchMs = Math.Max(maxBatchMs, batchWatch.Elapsed.TotalMilliseconds);
                 batches++;
             } while (!complete && stopwatch.Elapsed.TotalSeconds < limitSeconds);
             stopwatch.Stop();
             var gcAllocations = ReadGcAllocationResult(gcRecorder);
+            long advanceCacheHits = world.CacheHits - hits;
+            long advanceCacheMisses = world.CacheMisses - misses;
+            var exported = ExportWholeWorld(world);
+            long population = exported.cells.LongLength;
+            var fingerprint = Fingerprint(exported.cells);
 
             bool sameAsCold = true;
             if (cache == 0)
             {
-                coldResult = world.Shape;
-                coldPopulation = world.Population;
+                coldFingerprint = fingerprint;
+                coldPopulation = population;
             }
             else
-                sameAsCold = world.Shape.Root == coldResult.Root && world.Shape.X == coldResult.X
-                    && world.Shape.Y == coldResult.Y && world.Population == coldPopulation;
+                sameAsCold = fingerprint == coldFingerprint && population == coldPopulation;
 
-            bool expectedPopulation = item.expectedPopulation < 0 || world.Population == item.expectedPopulation;
+            bool expectedPopulation = item.expectedPopulation < 0 || population == item.expectedPopulation;
             bool gliderPosition = item.name != "glider"
-                || world.GetCell(new Unity.Mathematics.int2(1024, -1023))
-                    && world.GetCell(new Unity.Mathematics.int2(1025, -1024))
-                    && world.GetCell(new Unity.Mathematics.int2(1023, -1025))
-                    && world.GetCell(new Unity.Mathematics.int2(1024, -1025))
-                    && world.GetCell(new Unity.Mathematics.int2(1025, -1025));
+                || Array.IndexOf(exported.cells, new Unity.Mathematics.int2(1024, -1023)) >= 0
+                    && Array.IndexOf(exported.cells, new Unity.Mathematics.int2(1025, -1024)) >= 0
+                    && Array.IndexOf(exported.cells, new Unity.Mathematics.int2(1023, -1025)) >= 0
+                    && Array.IndexOf(exported.cells, new Unity.Mathematics.int2(1024, -1025)) >= 0
+                    && Array.IndexOf(exported.cells, new Unity.Mathematics.int2(1025, -1025)) >= 0;
             bool valid = complete && sameAsCold && expectedPopulation && gliderPosition;
             if (!valid)
                 failures++;
             results.Add(new {
                 operation = "advance", name = item.name, run, cache = cache == 0 ? "cold" : "warm",
-                initialPopulation = item.pattern.Population, actualPopulation = world.Population,
+                initialPopulation = item.pattern.Population, actualPopulation = population,
                 requestedGenerations = 1L << item.exponent,
                 milliseconds = stopwatch.Elapsed.TotalMilliseconds, maxBatchMs, batches, budget,
+                viewportMilliseconds = stopwatch.Elapsed.TotalMilliseconds, exportMilliseconds = exported.milliseconds,
+                exactCompletionMilliseconds = stopwatch.Elapsed.TotalMilliseconds + exported.milliseconds,
+                originX = viewport.origin.x, originY = viewport.origin.y, viewport.visibleCells,
                 gcAllocations, nodes = world.NodeCount, cacheEntries = world.CacheCount,
-                cacheHits = world.CacheHits - hits, cacheMisses = world.CacheMisses - misses,
+                cacheHits = advanceCacheHits, cacheMisses = advanceCacheMisses,
                 complete, sameAsCold, expectedPopulation, gliderPosition, valid
             });
             if (!complete)
@@ -204,6 +267,7 @@ long sequentialPopulation = -1;
 for (int run = 0; run < repetitions; run++)
 {
     using var world = new GameOfLife.LifeWorld();
+    var viewport = ConfigureViewport(world, chaos.Tiles, 128);
     Put(world, world.BuildShape(chaos.Tiles));
     var stopwatch = new System.Diagnostics.Stopwatch();
     var batchWatch = new System.Diagnostics.Stopwatch();
@@ -220,7 +284,8 @@ for (int run = 0; run < repetitions; run++)
         do
         {
             batchWatch.Restart();
-            finished = world.ContinueAdvance(budget);
+            world.Pump(budget);
+            finished = !world.IsAdvancing;
             batchWatch.Stop();
             maxBatchMs = Math.Max(maxBatchMs, batchWatch.Elapsed.TotalMilliseconds);
             batches++;
@@ -234,16 +299,23 @@ for (int run = 0; run < repetitions; run++)
     }
     stopwatch.Stop();
     var gcAllocations = ReadGcAllocationResult(gcRecorder);
+    long advanceCacheHits = world.CacheHits;
+    long advanceCacheMisses = world.CacheMisses;
+    var exported = ExportWholeWorld(world);
+    long population = exported.cells.LongLength;
     if (run == 0)
-        sequentialPopulation = world.Population;
-    bool valid = complete && generations == 128 && world.Population == sequentialPopulation;
+        sequentialPopulation = population;
+    bool valid = complete && generations == 128 && population == sequentialPopulation;
     if (!valid)
         failures++;
     results.Add(new {
         operation = "sequential", name = "chaos-128-generations", run,
         milliseconds = stopwatch.Elapsed.TotalMilliseconds, gcAllocations,
-        actualPopulation = world.Population, generations, maxBatchMs, batches,
-        nodes = world.NodeCount, cacheHits = world.CacheHits, cacheMisses = world.CacheMisses, valid
+        actualPopulation = population, generations, maxBatchMs, batches,
+        viewportMilliseconds = stopwatch.Elapsed.TotalMilliseconds, exportMilliseconds = exported.milliseconds,
+        exactCompletionMilliseconds = stopwatch.Elapsed.TotalMilliseconds + exported.milliseconds,
+        originX = viewport.origin.x, originY = viewport.origin.y, viewport.visibleCells,
+        nodes = world.NodeCount, cacheHits = advanceCacheHits, cacheMisses = advanceCacheMisses, valid
     });
 }
 
@@ -253,6 +325,11 @@ using (var entityWorld = new Unity.Entities.World("Life input benchmark", Unity.
     var manager = entityWorld.EntityManager;
     using var query = manager.CreateEntityQuery(Unity.Entities.ComponentType.ReadOnly<GameOfLife.LifeState>());
     var board = query.GetSingletonEntity();
+    var strokeOrigin = new Unity.Mathematics.int2(-1024, -4096);
+    manager.SetComponentData(board, new GameOfLife.LifeViewport {
+        Origin = strokeOrigin, VisibleCells = 8192, FrameSeconds = 1d / 60
+    });
+    system.Simulation.SetViewport(strokeOrigin, 8192);
     var initial = system.Simulation.BuildShape(blocks.Tiles);
     var stopwatch = new System.Diagnostics.Stopwatch();
     for (int run = -1; run < repetitions; run++)
@@ -278,7 +355,9 @@ using (var entityWorld = new Unity.Entities.World("Life input benchmark", Unity.
             && stopwatch.Elapsed.TotalSeconds < limitSeconds);
         stopwatch.Stop();
         var gcAllocations = ReadGcAllocationResult(gcRecorder);
-        bool valid = system.Simulation.Population == blocks.Population + 1024
+        var exported = ExportWholeWorld(system.Simulation);
+        long population = exported.cells.LongLength;
+        bool valid = population == blocks.Population + 1024
             && manager.GetBuffer<GameOfLife.LifeCommand>(board, true).Length == 0;
         if (!valid)
             failures++;
@@ -286,7 +365,9 @@ using (var entityWorld = new Unity.Entities.World("Life input benchmark", Unity.
             results.Add(new {
                 operation = "stroke", name = "1024-cells-on-1048576", run,
                 milliseconds = stopwatch.Elapsed.TotalMilliseconds, gcAllocations,
-                actualPopulation = system.Simulation.Population, frames, valid
+                actualPopulation = population, frames, valid,
+                exportMilliseconds = exported.milliseconds,
+                exactCompletionMilliseconds = stopwatch.Elapsed.TotalMilliseconds + exported.milliseconds
             });
     }
 }
@@ -297,12 +378,20 @@ using (var stack = new Unity.Collections.NativeList<GameOfLife.LifeDrawTask>(256
     var texture = new Texture2D(1024, 1024, TextureFormat.RGBA32, false);
     foreach (int visible in new[] { 128, 65536, 67108864 })
     {
+        var origin = new Unity.Mathematics.int2(-visible / 2, -visible / 2);
+        var materializeWatch = System.Diagnostics.Stopwatch.StartNew();
+        world.SetViewport(origin, visible);
+        world.RefreshView();
+        while (!world.IsViewCurrent)
+            world.Pump(budget);
+        materializeWatch.Stop();
+        var frame = world.ViewFrame;
         for (int run = -1; run < repetitions; run++)
         {
             var pixels = texture.GetRawTextureData<Color32>();
             var job = new GameOfLife.LifeRasterJob {
-                Nodes = world.Nodes, Shape = world.Shape, Pixels = pixels, Stack = stack,
-                Origin = new Unity.Mathematics.int2(-visible / 2, -visible / 2), VisibleCells = visible
+                Nodes = world.Nodes, Shape = frame.Shape, Pixels = pixels, Stack = stack,
+                Origin = origin, VisibleCells = visible
             };
             var stopwatch = new System.Diagnostics.Stopwatch();
             using var gcRecorder = StartGcAllocationRecording();
@@ -325,7 +414,8 @@ using (var stack = new Unity.Collections.NativeList<GameOfLife.LifeDrawTask>(256
                 results.Add(new {
                     operation = "raster", name = "1048576-cells", run, visible,
                     milliseconds = rasterMs, uploadCpuMilliseconds = stopwatch.Elapsed.TotalMilliseconds,
-                    gcAllocations, whitePixels, valid
+                    gcAllocations, whitePixels, valid,
+                    materializeMilliseconds = materializeWatch.Elapsed.TotalMilliseconds
                 });
         }
     }
@@ -335,7 +425,8 @@ var result = new {
     completedAtUtc = DateTime.UtcNow.ToString("O"),
     unity = Application.unityVersion, burstEnabled = Unity.Burst.BurstCompiler.IsEnabled,
     processor = SystemInfo.processorType, logicalProcessors = SystemInfo.processorCount,
-    repetitions, budget, limitSeconds, gcAllocationCalibration, failures, results
+    repetitions, budget, limitSeconds, gcAllocationCalibration, failures, results,
+    scope = "advance/sequential 固定视野覆盖输入向外扩展请求代数的保守支持；milliseconds 与 GC.Alloc 只计视野推进。精确人口、坐标与指纹由显式全图导出取得，另计 exportMilliseconds，exactCompletionMilliseconds 合计两阶段。stroke 计命令消费，不冒充画面就绪延迟，导出验证另计。raster 从完成 ViewFrame 绘制，区域准备计 materializeMilliseconds 并排除在 raster/上传计时之外。新口径不能把局部发布当作全图完成，也不能直接与旧根推进计时计算加速比。"
 };
 System.IO.Directory.CreateDirectory("Temp/LifeBenchmarks");
 System.IO.File.WriteAllText("Temp/LifeBenchmarks/MeasureLife-result.json",

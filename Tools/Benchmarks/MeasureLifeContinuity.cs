@@ -73,46 +73,37 @@ bool parsed = GameOfLife.LifePatternText.TryParse(input, "Life-in-Life 连续演
 if (!parsed)
     return new { parsed, parseError, gcAllocationCalibration, complete = false, failures = 1 };
 
-(string sum, string xor) Fingerprint(GameOfLife.LifeWorld world)
+(string sum, string xor) Fingerprint(Unity.Mathematics.int2[] cells)
 {
     ulong sum = 0, xor = 0;
-    var nodes = world.Nodes;
-    var shape = world.Shape;
-    var stack = new Stack<(int root, long x, long y)>();
-    stack.Push((shape.Root, shape.X, shape.Y));
-    while (stack.Count != 0)
+    foreach (var cell in cells)
     {
-        var item = stack.Pop();
-        var node = nodes[item.root];
-        if (node.Population == 0)
-            continue;
-        if (node.Level == 4)
+        unchecked
         {
-            for (int y = 0; y < 16; y++)
-            {
-                uint row = node.Bits.GetRow(y);
-                while (row != 0)
-                {
-                    int x = Unity.Mathematics.math.tzcnt(row);
-                    row &= row - 1;
-                    unchecked
-                    {
-                        ulong key = ((ulong)(uint)(item.x + x) << 32) | (uint)(item.y + y);
-                        key = (key ^ (key >> 30)) * 0xbf58476d1ce4e5b9UL;
-                        key = (key ^ (key >> 27)) * 0x94d049bb133111ebUL;
-                        key ^= key >> 31;
-                        sum += key;
-                        xor ^= key;
-                    }
-                }
-            }
-            continue;
+            ulong key = ((ulong)(uint)cell.x << 32) | (uint)cell.y;
+            key = (key ^ (key >> 30)) * 0xbf58476d1ce4e5b9UL;
+            key = (key ^ (key >> 27)) * 0x94d049bb133111ebUL;
+            key ^= key >> 31;
+            sum += key;
+            xor ^= key;
         }
-        long half = 1L << (node.Level - 1);
-        for (int i = 0; i < 4; i++)
-            stack.Push((node.Children[i], item.x + ((i & 1) * half), item.y + ((i >> 1) * half)));
     }
     return (sum.ToString("x16"), xor.ToString("x16"));
+}
+
+(Unity.Mathematics.int2[] cells, double milliseconds) ExportWholeWorld(GameOfLife.LifeWorld world)
+{
+    var exportWatch = System.Diagnostics.Stopwatch.StartNew();
+    var request = world.CollectCellsAsync(false, default, default);
+    while (!request.IsCompleted && exportWatch.Elapsed.TotalSeconds < 60)
+    {
+        if (world.IsCollecting)
+            world.ContinueCollection(4096);
+        world.Pump(128);
+    }
+    if (!request.IsCompleted)
+        throw new TimeoutException("全图导出未在 60 秒内完成。");
+    return (request.GetAwaiter().GetResult(), exportWatch.Elapsed.TotalMilliseconds);
 }
 
 const int macroSteps = 8;
@@ -132,11 +123,29 @@ using var retained = new Unity.Collections.NativeArray<GameOfLife.LifeShape>(new
 world.BeginEdit();
 world.Stamp(initial, Unity.Mathematics.int2.zero);
 world.EndEdit();
-var initialFingerprint = Fingerprint(world);
-long initialPopulation = world.Population;
+var viewportOrigin = pattern.Tiles[0].Position;
+var viewportMax = viewportOrigin + 16;
+foreach (var tile in pattern.Tiles)
+{
+    viewportOrigin = Unity.Mathematics.math.min(viewportOrigin, tile.Position);
+    viewportMax = Unity.Mathematics.math.max(viewportMax, tile.Position + 16);
+}
+viewportOrigin -= (int)(macroSteps * generationsPerMacro);
+viewportMax += (int)(macroSteps * generationsPerMacro);
+int visibleCells = 16;
+while (visibleCells < Unity.Mathematics.math.cmax(viewportMax - viewportOrigin))
+    visibleCells *= 2;
+world.SetViewport(viewportOrigin, visibleCells);
+world.RefreshView();
+while (!world.IsViewCurrent)
+    world.Pump(advanceBudget);
+var initialExport = ExportWholeWorld(world);
+var initialFingerprint = Fingerprint(initialExport.cells);
+long initialPopulation = initialExport.cells.LongLength;
+long finalPopulation = initialPopulation;
 var finalFingerprint = initialFingerprint;
 
-void RecordSnapshot(int macroStep, bool complete, double? milliseconds, object gcAllocations, int batches, int collections, int collectionBatches, int advanceBatchesDuringCollection, int peakNodes, (string sum, string xor) actual)
+void RecordSnapshot(int macroStep, bool complete, double? milliseconds, double exportMilliseconds, long population, object gcAllocations, int batches, int collections, int collectionBatches, int advanceBatchesDuringCollection, int peakNodes, (string sum, string xor) actual)
 {
     var expected = snapshots[macroStep];
     long expectedGeneration = (long)expected["generation"];
@@ -144,8 +153,10 @@ void RecordSnapshot(int macroStep, bool complete, double? milliseconds, object g
     string expectedSum = (string)expected["sum"];
     string expectedXor = (string)expected["xor"];
     finalFingerprint = actual;
-    bool generationMatches = generation == expectedGeneration && generation == macroStep * generationsPerMacro;
-    bool populationMatches = world.Population == expectedPopulation;
+    finalPopulation = population;
+    bool generationMatches = generation == expectedGeneration && generation == macroStep * generationsPerMacro
+        && world.Snapshot.Generation == generation;
+    bool populationMatches = population == expectedPopulation;
     bool fingerprintMatches = actual.sum == expectedSum && actual.xor == expectedXor;
     bool valid = complete && generationMatches && populationMatches && fingerprintMatches;
     if (!valid)
@@ -154,17 +165,19 @@ void RecordSnapshot(int macroStep, bool complete, double? milliseconds, object g
     {
         macroStep, complete, valid, generation, expectedGeneration,
         timedOut = !complete,
-        population = world.Population, expectedPopulation,
+        population, expectedPopulation,
         actual.sum, actual.xor, expectedSum, expectedXor,
         generationMatches, populationMatches, fingerprintMatches,
-        sameAsInitial = world.Population == initialPopulation && actual == initialFingerprint,
+        sameAsInitial = population == initialPopulation && actual == initialFingerprint,
         milliseconds, gcAllocations, batches, collections, collectionBatches, advanceBatchesDuringCollection, peakNodes,
+        viewportMilliseconds = milliseconds, exportMilliseconds,
+        exactCompletionMilliseconds = milliseconds.HasValue ? milliseconds.Value + exportMilliseconds : exportMilliseconds,
         nodes = world.NodeCount, cacheEntries = world.CacheCount,
         cacheHits = world.CacheHits, cacheMisses = world.CacheMisses
     });
 }
 
-RecordSnapshot(0, true, null, null, 0, 0, 0, 0, world.NodeCount, initialFingerprint);
+RecordSnapshot(0, true, null, initialExport.milliseconds, initialPopulation, null, 0, 0, 0, 0, world.NodeCount, initialFingerprint);
 var watch = new System.Diagnostics.Stopwatch();
 for (int macroStep = 1; macroStep <= macroSteps; macroStep++)
 {
@@ -182,7 +195,7 @@ for (int macroStep = 1; macroStep <= macroSteps; macroStep++)
         bool finished;
         do
         {
-            if (!world.IsCollecting && world.NodeCount >= nextCollection)
+            if (!world.IsCollecting && world.NodeCount + world.RegionCacheCount >= nextCollection)
             {
                 world.BeginCollection(retained);
                 collections++;
@@ -192,11 +205,12 @@ for (int macroStep = 1; macroStep <= macroSteps; macroStep++)
                 bool collected = world.ContinueCollection(collectionBudget);
                 collectionBatches++;
                 if (collected)
-                    nextCollection = Math.Max(262144, world.NodeCount * 2);
+                    nextCollection = Math.Max(262144, (world.NodeCount + world.RegionCacheCount) * 2);
             }
             if (world.IsCollecting)
                 advanceBatchesDuringCollection++;
-            finished = world.ContinueAdvance(advanceBudget);
+            world.Pump(advanceBudget);
+            finished = !world.IsAdvancing;
             batches++;
             peakNodes = Math.Max(peakNodes, world.NodeCount);
         }
@@ -219,13 +233,15 @@ for (int macroStep = 1; macroStep <= macroSteps; macroStep++)
     var gcAllocations = ReadGcAllocationResult(gcRecorder);
     if (complete)
         completedMacroSteps++;
-    RecordSnapshot(macroStep, complete, watch.Elapsed.TotalMilliseconds, gcAllocations, batches, collections, collectionBatches, advanceBatchesDuringCollection, peakNodes, Fingerprint(world));
+    var exported = ExportWholeWorld(world);
+    RecordSnapshot(macroStep, complete, watch.Elapsed.TotalMilliseconds, exported.milliseconds, exported.cells.LongLength,
+        gcAllocations, batches, collections, collectionBatches, advanceBatchesDuringCollection, peakNodes, Fingerprint(exported.cells));
     if (!complete)
         break;
 }
 
 bool allComplete = completedMacroSteps == macroSteps && generation == macroSteps * generationsPerMacro && !world.IsAdvancing;
-bool returnsToInitial = allComplete && world.Population == initialPopulation && finalFingerprint == initialFingerprint;
+bool returnsToInitial = allComplete && finalPopulation == initialPopulation && finalFingerprint == initialFingerprint;
 var result = new
 {
     completedAtUtc = DateTime.UtcNow.ToString("O"),
@@ -234,10 +250,11 @@ var result = new
     inputPath, referencePath, parsed,
     initialPopulation, tileCount = pattern.Tiles.Length,
     macroSteps, generationsPerMacro, advanceBudget, collectionBudget, limitSecondsPerMacro,
+    viewportOriginX = viewportOrigin.x, viewportOriginY = viewportOrigin.y, visibleCells,
     interleaveCollectionAndAdvance = true,
     completedMacroSteps, generation, complete = allComplete, valid = allComplete && failures == 0,
     gcAllocationCalibration, failures, returnsToInitial, results,
-    scope = "同一 LifeWorld 只摆放一次，连续推进 8 个宏步；每步核对独立参考的全部细胞指纹、人口与累计代数。GC.Alloc 事件计数只包含主线程推进和回收，排除输入读取、解析、建树、初始摆放、指纹遍历和结果记录，不表示分配字节；本工具不验证实际帧率，也不把 8 步称为已完成底层周期。"
+    scope = "同一 LifeWorld 只摆放一次，固定视野覆盖初态向外扩展 282624 格的保守支持，连续推进 8 个宏步。每步显式全图导出后才核对独立参考的全部细胞指纹与人口；milliseconds/GC.Alloc 仅计视野推进和回收，exportMilliseconds 单列导出求值与枚举，exactCompletionMilliseconds 合计两阶段。指纹遍历、输入和记录排除在计时外。新 API 的视野完成不等于全图完成，新旧计时不能直接计算加速比；本工具不验证实际帧率，也不把 8 步称为已完成底层周期。"
 };
 System.IO.Directory.CreateDirectory("Temp/LifeBenchmarks");
 System.IO.File.WriteAllText("Temp/LifeBenchmarks/MeasureLifeContinuity-result.json",

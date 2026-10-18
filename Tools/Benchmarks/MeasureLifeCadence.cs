@@ -62,8 +62,8 @@ object ReadGcAllocationResult(Unity.Profiling.ProfilerRecorder recorder)
     };
 }
 
-string inputPath = "Temp/LifeBenchmarks/hex-22071-tiles.bin";
-var reference = Newtonsoft.Json.Linq.JObject.Parse(System.IO.File.ReadAllText("Temp/LifeBenchmarks/hex-reference-targets.json", System.Text.Encoding.UTF8));
+string inputPath = "Tools/Benchmarks/Work/hex-22071-tiles.bin";
+var reference = Newtonsoft.Json.Linq.JObject.Parse(System.IO.File.ReadAllText("Tools/Benchmarks/Results/hex-reference.json", System.Text.Encoding.UTF8));
 var expected = ((Newtonsoft.Json.Linq.JArray)reference["snapshots"]).First(item => (long)item["generation"] == 22583);
 int repetitions = 5;
 GameOfLife.LifeTile[] tiles;
@@ -89,40 +89,34 @@ ulong CellHash(long x, long y)
     }
 }
 
-(string sum, string xor) Fingerprint(GameOfLife.LifeWorld world)
+(string sum, string xor) Fingerprint(Unity.Mathematics.int2[] cells)
 {
     ulong sum = 0, xor = 0;
-    var nodes = world.Nodes;
-    void Visit(int id, long x, long y)
+    foreach (var cell in cells)
     {
-        var node = nodes[id];
-        if (node.Population == 0)
-            return;
-        if (node.Level > 4)
+        unchecked
         {
-            long half = 1L << (node.Level - 1);
-            for (int i = 0; i < 4; i++)
-                Visit(node.Children[i], x + (i & 1) * half, y + (i >> 1) * half);
-            return;
-        }
-        for (int rowIndex = 0; rowIndex < 16; rowIndex++)
-        {
-            uint row = node.Bits.GetRow(rowIndex);
-            while (row != 0)
-            {
-                int column = Unity.Mathematics.math.tzcnt(row);
-                row &= row - 1;
-                unchecked
-                {
-                    ulong key = CellHash(x + column, y + rowIndex);
-                    sum += key;
-                    xor ^= key;
-                }
-            }
+            ulong key = CellHash(cell.x, cell.y);
+            sum += key;
+            xor ^= key;
         }
     }
-    Visit(world.Shape.Root, world.Shape.X, world.Shape.Y);
     return (sum.ToString("x16"), xor.ToString("x16"));
+}
+
+(Unity.Mathematics.int2[] cells, double milliseconds) ExportWholeWorld(GameOfLife.LifeWorld simulation)
+{
+    var exportWatch = System.Diagnostics.Stopwatch.StartNew();
+    var request = simulation.CollectCellsAsync(false, default, default);
+    while (!request.IsCompleted && exportWatch.Elapsed.TotalSeconds < 60)
+    {
+        if (simulation.IsCollecting)
+            simulation.ContinueCollection(1024);
+        simulation.Pump(128);
+    }
+    if (!request.IsCompleted)
+        throw new TimeoutException("全图导出未在 60 秒内完成。");
+    return (request.GetAwaiter().GetResult(), exportWatch.Elapsed.TotalMilliseconds);
 }
 
 var results = new List<object>();
@@ -144,6 +138,29 @@ for (int run = 0; run < repetitions; run++)
     system.Simulation.BeginEdit();
     system.Simulation.Stamp(system.PatternShape(pattern), Unity.Mathematics.int2.zero);
     system.Simulation.EndEdit();
+    var viewportOrigin = pattern.Tiles[0].Position;
+    var viewportMax = viewportOrigin + 16;
+    foreach (var tile in pattern.Tiles)
+    {
+        viewportOrigin = Unity.Mathematics.math.min(viewportOrigin, tile.Position);
+        viewportMax = Unity.Mathematics.math.max(viewportMax, tile.Position + 16);
+    }
+    var viewportCenter = viewportOrigin + (viewportMax - viewportOrigin) / 2;
+    int visibleCells = 16;
+    while (visibleCells < Unity.Mathematics.math.cmax(viewportMax - viewportOrigin) + requestedGenerations * 2)
+        visibleCells *= 2;
+    int targetDivisorExponent = Unity.Mathematics.math.tzcnt((uint)requestedGenerations);
+    while (GameOfLife.LifeSimulationPolicy.StepExponent(visibleCells, generationsPerSecond) > targetDivisorExponent)
+        visibleCells /= 2;
+    viewportOrigin = viewportCenter - visibleCells / 2;
+    int policyStepExponent = GameOfLife.LifeSimulationPolicy.StepExponent(visibleCells, generationsPerSecond);
+    manager.SetComponentData(board, new GameOfLife.LifeViewport {
+        Origin = viewportOrigin, VisibleCells = visibleCells, FrameSeconds = 1d / 60
+    });
+    system.Simulation.SetViewport(viewportOrigin, visibleCells);
+    system.Simulation.RefreshView();
+    while (!system.Simulation.IsViewCurrent)
+        system.Simulation.Pump(128);
     manager.SetComponentData(board, new GameOfLife.LifeSettings { GenerationsPerSecond = generationsPerSecond });
     manager.SetComponentData(board, new GameOfLife.LifeState { Revision = 1 });
     manager.GetBuffer<GameOfLife.LifeCommand>(board).Add(new GameOfLife.LifeCommand { Kind = GameOfLife.LifeCommandKind.Play });
@@ -183,7 +200,8 @@ for (int run = 0; run < repetitions; run++)
     } while (state.Generation < requestedGenerations && watch.Elapsed.TotalSeconds < 60);
     watch.Stop();
     var gcAllocations = ReadGcAllocationResult(gcRecorder);
-    var fingerprint = Fingerprint(system.Simulation);
+    var exported = ExportWholeWorld(system.Simulation);
+    var fingerprint = Fingerprint(exported.cells);
     bool referenceMatches = fingerprint.sum == (string)expected["sum"] && fingerprint.xor == (string)expected["xor"];
     bool complete = state.Generation == requestedGenerations && !system.Simulation.IsAdvancing;
     bool valid = complete && referenceMatches;
@@ -191,10 +209,14 @@ for (int run = 0; run < repetitions; run++)
         failures++;
     results.Add(new {
         run, prepareMs, updates, maximumUpdateMs, milliseconds = watch.Elapsed.TotalMilliseconds,
+        viewportMilliseconds = watch.Elapsed.TotalMilliseconds, exportMilliseconds = exported.milliseconds,
+        exactCompletionMilliseconds = watch.Elapsed.TotalMilliseconds + exported.milliseconds,
+        viewportOriginX = viewportOrigin.x, viewportOriginY = viewportOrigin.y, visibleCells, frameSeconds = 1d / 60,
+        policyStepExponent, policyStepGenerations = 1L << policyStepExponent,
         publicationCount, publicationTimesMs = publicationTimes.Take(publicationCount).ToArray(),
         publicationGenerations = publicationGenerations.Take(publicationCount).ToArray(),
         gcAllocations, peakNodes, nodes = system.Simulation.NodeCount,
-        generation = state.Generation, population = system.Simulation.Population,
+        generation = state.Generation, population = exported.cells.LongLength,
         fingerprint.sum, fingerprint.xor, referenceMatches, complete, valid
     });
 
@@ -208,7 +230,7 @@ for (int run = 0; run < repetitions; run++)
     bool advancingAtSubmit = system.Simulation.IsAdvancing;
     bool collectingAtSubmit = system.Simulation.IsCollecting;
     var beforeInput = manager.GetComponentData<GameOfLife.LifeState>(board);
-    long populationBeforeInput = system.Simulation.Population;
+    long populationBeforeInput = exported.cells.LongLength;
     const int brushLength = 64;
     var brushStart = new Unity.Mathematics.int2(1000000, 1000000);
     manager.GetBuffer<GameOfLife.LifeCommand>(board).Add(new GameOfLife.LifeCommand {
@@ -241,31 +263,39 @@ for (int run = 0; run < repetitions; run++)
         system.Update();
         cleanupUpdates++;
     }
-    bool cellsAlive = true;
+    cleanupWatch.Stop();
     ulong expectedSum = ulong.Parse(fingerprint.sum, System.Globalization.NumberStyles.HexNumber);
     ulong expectedXor = ulong.Parse(fingerprint.xor, System.Globalization.NumberStyles.HexNumber);
     for (int cell = 0; cell < brushLength; cell++)
     {
         var position = brushStart + new Unity.Mathematics.int2(cell, 0);
-        cellsAlive &= system.Simulation.GetCell(position);
         ulong hash = CellHash(position.x, position.y);
         unchecked { expectedSum += hash; }
         expectedXor ^= hash;
     }
-    var editedFingerprint = Fingerprint(system.Simulation);
+    var editedExport = ExportWholeWorld(system.Simulation);
+    var editedFingerprint = Fingerprint(editedExport.cells);
+    int brushCells = 0;
+    foreach (var cell in editedExport.cells)
+        if (cell.y == brushStart.y && cell.x >= brushStart.x && cell.x < brushStart.x + brushLength)
+            brushCells++;
+    bool cellsAlive = brushCells == brushLength;
     bool editedMatches = editedFingerprint.sum == expectedSum.ToString("x16")
         && editedFingerprint.xor == expectedXor.ToString("x16");
     bool inputValid = advancingAtSubmit && collectingAtSubmit && consumed && collectingAtConsumption
         && !afterInput.IsRunning && !system.Simulation.IsAdvancing && !system.Simulation.IsCollecting
         && beforeInput.Generation == requestedGenerations && afterInput.Generation == beforeInput.Generation
-        && system.Simulation.Population == populationBeforeInput + brushLength && cellsAlive && editedMatches;
+        && editedExport.cells.LongLength == populationBeforeInput + brushLength && cellsAlive && editedMatches;
     if (!inputValid)
         failures++;
     inputLatencyResults.Add(new {
         run, brushLength, advancingAtSubmit, collectingAtSubmit, collectingAtConsumption,
         consumed, inputUpdates, inputMilliseconds, maximumInputUpdateMs, inputGcAllocations,
         cleanupUpdates, generationBefore = beforeInput.Generation, generationAfter = afterInput.Generation,
-        populationBeforeInput, population = system.Simulation.Population, cellsAlive, editedMatches,
+        cleanupMilliseconds = cleanupWatch.Elapsed.TotalMilliseconds, exportMilliseconds = editedExport.milliseconds,
+        exactCompletionMilliseconds = inputMilliseconds + cleanupWatch.Elapsed.TotalMilliseconds + editedExport.milliseconds,
+        populationBeforeInput, populationBeforeInputGeneration = state.Generation,
+        population = editedExport.cells.LongLength, cellsAlive, editedMatches,
         editedFingerprint.sum, editedFingerprint.xor, valid = inputValid
     });
 }
@@ -274,10 +304,9 @@ var result = new {
     unity = Application.unityVersion, inputPath, repetitions,
     requestedGenerations, inputSourceGeneration = 22071, generationsPerSecond, initialDeltaTime, gcAllocationCalibration, failures, results,
     inputLatencyResults,
-    scope = "Production System updates with synthetic time; excludes raster, UI, actual frame pacing and input preparation."
+    scope = "正式 System 的合成时间驱动，只注入目标代数的信用。窗口位于输入中心，尺寸从保守支持向下选，使策略跨度整除有限目标，避免零 DeltaTime 时尾部信用不足；窗口不保证覆盖全图。milliseconds、发布次数和 GC.Alloc 只计该视野推进；全图指纹与人口由随后显式导出取得，exportMilliseconds 单列补算和枚举，exactCompletionMilliseconds 合计。输入延迟只计命令消费，清理和导出验证分别计时；populationBeforeInput 来自目标代完成后的导出，若提交前代数已变化则有效性判定失败。排除绘图、UI、实际帧节奏、输入准备与指纹遍历，新口径不能直接与旧整图计时计算加速比。"
 };
-System.IO.Directory.CreateDirectory("Temp/LifeBenchmarks");
-System.IO.File.WriteAllText("Temp/LifeBenchmarks/hex-scheduler-cadence.json",
+System.IO.File.WriteAllText("Tools/Benchmarks/Results/viewport-system.json",
     Newtonsoft.Json.JsonConvert.SerializeObject(result, Newtonsoft.Json.Formatting.Indented),
     new System.Text.UTF8Encoding(false));
 return result;
