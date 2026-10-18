@@ -32,7 +32,7 @@ git clone https://github.com/nikaakaa/ConwayGame.git
 
 主要依赖：Entities 1.4.8、Burst 1.8.29、Collections 2.6.8、Mathematics 1.3.3、Input System 1.17.0、URP 17.3.0 和 UGUI 2.0.0。菜单与工具栏使用 UI Toolkit。
 
-构建场景列表只包含 `MainMenu.unity` 和 `GameOfLife.unity`，主菜单排在首位。`Tools/Game of Life/Create Demo Scenes` 可重新生成两个场景和这份列表。本轮没有重新构建，`Builds/` 中现有 EXE 与 ZIP 仍是旧版本，不包含双场景与菜单改动；构建入口与已有产物记录见[构建与运行](Docs/路径/构建与运行.md)。
+构建场景列表只包含 `MainMenu.unity` 和 `GameOfLife.unity`，主菜单排在首位。`Tools/Game of Life/Create Demo Scenes` 可重新生成两个场景和这份列表。Windows 发行包已更新，包含双场景、菜单与巨构视野刷新修复；本机 ZIP 为 `Builds/GameOfLife-Windows-x64.zip`，解压后运行 `GameOfLife.exe`。构建入口、源码版本与检查范围见[构建与运行](Docs/路径/构建与运行.md)。
 
 ## 操作
 
