@@ -12,7 +12,10 @@ const centerY = bounds.bottom - Math.floor((bounds.bottom - bounds.top + 1) / 2)
 life.move_field(pattern.field_x, pattern.field_y, -centerX, -centerY);
 life.setup_field(pattern.field_x, pattern.field_y);
 const initialPopulation = life.root.population;
-const macroSteps = Number(process.argv[3] ?? 1);
+const targets = process.argv.slice(3).map(Number);
+if (!targets.length || targets.some((value, index) => !Number.isSafeInteger(value) || value <= (index ? targets[index - 1] : 0))) {
+    throw new Error('Pass strictly increasing positive target generations after the RLE path.');
+}
 let sum = 0n, xor = 0n;
 function visit(node, x, y) {
     if (!node.population) return;
@@ -40,10 +43,14 @@ function snapshot() {
         sum: sum.toString(16).padStart(16, '0'), xor: xor.toString(16).padStart(16, '0') };
 }
 const snapshots = [snapshot()];
-for (let step = 0; step < macroSteps; step++) {
-    for (const exponent of [15, 11, 9]) {
-        life.step = exponent;
-        life.next_generation(true);
+for (const target of targets) {
+    let remaining = target - life.generation;
+    for (let exponent = Math.floor(Math.log2(remaining)); exponent >= 0; exponent--) {
+        if (remaining >= 2 ** exponent) {
+            life.set_step(exponent);
+            life.next_generation(true);
+            remaining -= 2 ** exponent;
+        }
     }
     snapshots.push(snapshot());
 }
