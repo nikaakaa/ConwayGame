@@ -756,15 +756,14 @@ namespace GameOfLife
                         DelegateParent(stack, frame, index);
                         return;
                     }
-                    long previous = PreviousCut(frame.Key, epoch);
-                    long elapsed = frame.Key.Generation - previous;
-                    if (elapsed > (1L << (space.Level - 1)))
+                    long elapsed = frame.Key.Generation - epoch.BaseGeneration;
+                    int exponent = math.tzcnt((ulong)elapsed);
+                    long amount = 1L << exponent;
+                    if (amount > (1L << (space.Level - 1)))
                     {
                         DelegateParent(stack, frame, index);
                         return;
                     }
-                    int exponent = 63 - math.lzcnt((ulong)elapsed);
-                    long amount = 1L << exponent;
                     long sourceGeneration = frame.Key.Generation - amount;
                     frame.Exponent = exponent;
                     frame.Phase = 3;
@@ -1025,26 +1024,6 @@ namespace GameOfLife
                 }
                 root = -1;
                 return false;
-            }
-
-            long PreviousCut(RegionKey key, WorldEpoch epoch)
-            {
-                long best = epoch.BaseGeneration;
-                SpatialKey probe = key.Space;
-                for (int level = key.Space.Level; level <= epoch.MaxCachedLevel; level++)
-                {
-                    long side = 1L << level;
-                    probe.Level = level;
-                    probe.X = key.Space.X & -side;
-                    probe.Y = key.Space.Y & -side;
-                    if (!Frontiers.TryGetValue(probe, out RegionFrontier frontier))
-                        continue;
-                    if (frontier.Latest < key.Generation)
-                        best = math.max(best, frontier.Latest);
-                    else if (frontier.Count == 2 && frontier.Previous < key.Generation)
-                        best = math.max(best, frontier.Previous);
-                }
-                return best;
             }
 
             bool TryExtract(LifeShape shape, SpatialKey square, out int result)
