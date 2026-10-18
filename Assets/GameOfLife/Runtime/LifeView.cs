@@ -2,6 +2,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.UI;
 using Stopwatch = System.Diagnostics.Stopwatch;
@@ -17,20 +18,27 @@ namespace GameOfLife
 
         public int2 Origin { get; private set; } = new int2(-64, -64);
         public int VisibleCells { get; private set; } = 128;
-        public int2 DisplayedOrigin => displayedOrigin;
-        public int DisplayedCells => displayedCells;
+        public LifeRegion TextureBounds { get; private set; }
 
         public const int TextureSize = 1024;
         Texture2D texture;
+        Texture2D backTexture;
         Texture2D overlayTexture;
+        RawImage boardSurface;
         RawImage overlayImage;
+        static readonly ProfilerMarker BoardRaster = new ProfilerMarker("LifeView.BoardRaster");
+        static readonly ProfilerMarker BoardUpload = new ProfilerMarker("LifeView.BoardUpload");
+        static readonly ProfilerMarker OverlayRaster = new ProfilerMarker("LifeView.OverlayRaster");
+        static readonly ProfilerMarker OverlayUpload = new ProfilerMarker("LifeView.OverlayUpload");
         EntityManager manager;
         Entity boardEntity;
         LifeWorld simulation;
         NativeList<LifeDrawTask> drawStack;
+        NativeList<LifeDrawTask> overlayStack;
+        NativeArray<LifeRasterProgress> rasterProgress;
+        LifeViewFrame rasterFrame;
+        bool rasterActive;
         uint renderedVersion;
-        int2 displayedOrigin = new int2(-64, -64);
-        int displayedCells = 128;
         bool overlayChanged = true;
         LifeShape ghost;
         bool hasGhost;
@@ -45,22 +53,33 @@ namespace GameOfLife
         void Awake()
         {
             drawStack = new NativeList<LifeDrawTask>(256, Allocator.Persistent);
+            overlayStack = new NativeList<LifeDrawTask>(256, Allocator.Persistent);
+            rasterProgress = new NativeArray<LifeRasterProgress>(1, Allocator.Persistent);
             texture = CreateTexture("Life board");
+            backTexture = CreateTexture("Life board back buffer");
             overlayTexture = CreateTexture("Life overlays");
-            BoardImage.texture = texture;
-            BoardImage.uvRect = new Rect(0, 0, 1, 1);
-            var overlay = new GameObject("Life overlays", typeof(RectTransform), typeof(RawImage));
-            overlay.transform.SetParent(BoardImage.transform, false);
-            overlay.transform.SetAsFirstSibling();
-            overlayImage = overlay.GetComponent<RawImage>();
-            overlayImage.texture = overlayTexture;
-            overlayImage.raycastTarget = false;
-            overlayImage.enabled = false;
-            RectTransform rect = overlayImage.rectTransform;
+            BoardImage.texture = null;
+            BoardImage.color = Color.black;
+            boardSurface = CreateLayer("Life board surface", texture);
+            boardSurface.transform.SetSiblingIndex(0);
+            overlayImage = CreateLayer("Life overlays", overlayTexture);
+            overlayImage.transform.SetSiblingIndex(1);
+        }
+
+        RawImage CreateLayer(string name, Texture2D layerTexture)
+        {
+            var layer = new GameObject(name, typeof(RectTransform), typeof(RawImage));
+            layer.transform.SetParent(BoardImage.transform, false);
+            var image = layer.GetComponent<RawImage>();
+            image.texture = layerTexture;
+            image.raycastTarget = false;
+            image.enabled = false;
+            RectTransform rect = image.rectTransform;
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
+            return image;
         }
 
         static Texture2D CreateTexture(string name) => new Texture2D(TextureSize, TextureSize, TextureFormat.RGBA32, false)
@@ -95,27 +114,53 @@ namespace GameOfLife
             });
             previousFrameTicks = frameTicks;
             LifeViewFrame frame = simulation.ViewFrame;
-            bool boardChanged = renderedVersion != frame.Version;
-            if (!overlayChanged && !boardChanged)
-                return;
-            displayedOrigin = new int2((int)frame.ValidBounds.MinX, (int)frame.ValidBounds.MinY);
-            displayedCells = (int)(frame.ValidBounds.MaxX - frame.ValidBounds.MinX);
-            if (hovering)
-                hoverCell = displayedOrigin + (int2)math.floor(hoverNormalized * displayedCells);
-            NativeArray<Color32> boardPixels = texture.GetRawTextureData<Color32>();
-            if (boardChanged)
+            if (!rasterActive && renderedVersion != frame.Version)
             {
-                new LifeRasterJob
-                {
-                    Nodes = simulation.Nodes,
-                    Shape = frame.Shape,
-                    Pixels = boardPixels,
-                    Stack = drawStack,
-                    Origin = displayedOrigin,
-                    VisibleCells = displayedCells
-                }.Run();
-                texture.Apply(false, false);
+                rasterFrame = frame;
+                rasterProgress[0] = default;
+                drawStack.Clear();
+                drawStack.Add(new LifeDrawTask { Root = frame.Shape.Root, X = frame.Shape.X, Y = frame.Shape.Y });
+                simulation.SetRenderRoot(frame.Shape.Root);
+                rasterActive = true;
             }
+            if (rasterActive)
+            {
+                long deadline = Stopwatch.GetTimestamp() + Stopwatch.Frequency / 1000;
+                using (BoardRaster.Auto())
+                {
+                    do
+                    {
+                        new LifeRasterJob
+                        {
+                            Nodes = simulation.Nodes,
+                            Pixels = backTexture.GetRawTextureData<Color32>(),
+                            Stack = drawStack,
+                            Progress = rasterProgress,
+                            WorkBudget = 64,
+                            Origin = new int2((int)rasterFrame.ValidBounds.MinX, (int)rasterFrame.ValidBounds.MinY),
+                            VisibleCells = (int)(rasterFrame.ValidBounds.MaxX - rasterFrame.ValidBounds.MinX)
+                        }.Run();
+                    }
+                    while (rasterProgress[0].Stage != LifeRasterStage.Complete && Stopwatch.GetTimestamp() < deadline);
+                }
+                if (rasterProgress[0].Stage == LifeRasterStage.Complete)
+                {
+                    using (BoardUpload.Auto())
+                        backTexture.Apply(false, false);
+                    Texture2D previous = texture;
+                    texture = backTexture;
+                    backTexture = previous;
+                    boardSurface.texture = texture;
+                    TextureBounds = rasterFrame.ValidBounds;
+                    renderedVersion = rasterFrame.Version;
+                    rasterActive = false;
+                    simulation.SetRenderRoot(0);
+                    PresentSurface();
+                    overlayChanged = true;
+                }
+            }
+            if (!overlayChanged)
+                return;
             bool showOverlay = hovering && hasGhost || hasSelection;
             overlayImage.enabled = showOverlay;
             if (showOverlay)
@@ -123,30 +168,32 @@ namespace GameOfLife
                 LifeShape preview = ghost;
                 preview.X += hoverCell.x;
                 preview.Y += hoverCell.y;
-                new LifeOverlayRasterJob
-                {
-                    Nodes = simulation.Nodes,
-                    BoardPixels = texture.GetRawTextureData<Color32>(),
-                    Pixels = overlayTexture.GetRawTextureData<Color32>(),
-                    Stack = drawStack,
-                    Origin = displayedOrigin,
-                    VisibleCells = displayedCells,
-                    Ghost = preview,
-                    ShowGhost = hovering && hasGhost,
-                    HasSelection = hasSelection,
-                    SelectionMin = selectionMin,
-                    SelectionMax = selectionMax
-                }.Run();
-                overlayTexture.Apply(false, false);
+                using (OverlayRaster.Auto())
+                    new LifeOverlayRasterJob
+                    {
+                        Nodes = simulation.Nodes,
+                        BoardPixels = texture.GetRawTextureData<Color32>(),
+                        BoardBounds = TextureBounds,
+                        Pixels = overlayTexture.GetRawTextureData<Color32>(),
+                        Stack = overlayStack,
+                        Origin = Origin,
+                        VisibleCells = VisibleCells,
+                        Ghost = preview,
+                        ShowGhost = hovering && hasGhost,
+                        HasSelection = hasSelection,
+                        SelectionMin = selectionMin,
+                        SelectionMax = selectionMax
+                    }.Run();
+                using (OverlayUpload.Auto())
+                    overlayTexture.Apply(false, false);
             }
-            renderedVersion = frame.Version;
             overlayChanged = false;
         }
 
         public bool TryGetCell(Vector2 screenPosition, Camera eventCamera, out int2 cell)
         {
             bool inside = TryGetNormalized(screenPosition, eventCamera, out float2 normalized);
-            cell = displayedOrigin + (int2)math.floor(normalized * displayedCells);
+            cell = Origin + (int2)math.floor(normalized * VisibleCells);
             return inside;
         }
 
@@ -169,7 +216,7 @@ namespace GameOfLife
         public void SetHover(Vector2 position, Camera eventCamera)
         {
             bool visible = TryGetNormalized(position, eventCamera, out hoverNormalized);
-            int2 cell = displayedOrigin + (int2)math.floor(hoverNormalized * displayedCells);
+            int2 cell = Origin + (int2)math.floor(hoverNormalized * VisibleCells);
             if (visible == hovering && (!visible || math.all(cell == hoverCell)))
                 return;
             hovering = visible;
@@ -198,12 +245,14 @@ namespace GameOfLife
             if (math.all(offset == 0))
                 return;
             Origin += offset;
+            CameraChanged();
         }
 
         public void ResetWindow()
         {
             VisibleCells = 128;
             Origin = new int2(-64, -64);
+            CameraChanged();
         }
 
         public void Zoom(Vector2 position, Camera eventCamera, bool zoomIn)
@@ -213,15 +262,47 @@ namespace GameOfLife
             int nextSize = math.clamp(zoomIn ? VisibleCells / 2 : VisibleCells * 2, MinVisibleCells, MaxVisibleCells);
             if (nextSize == VisibleCells)
                 return;
-            int2 anchor = displayedOrigin + (int2)math.floor(normalized * displayedCells);
+            int2 anchor = Origin + (int2)math.floor(normalized * VisibleCells);
             Origin = anchor - (int2)math.floor(normalized * nextSize);
             VisibleCells = nextSize;
+            CameraChanged();
+        }
+
+        void CameraChanged()
+        {
+            if (hovering)
+                hoverCell = Origin + (int2)math.floor(hoverNormalized * VisibleCells);
+            overlayChanged = true;
+            PresentSurface();
+        }
+
+        void PresentSurface()
+        {
+            long minX = math.max(TextureBounds.MinX, Origin.x);
+            long minY = math.max(TextureBounds.MinY, Origin.y);
+            long maxX = math.min(TextureBounds.MaxX, (long)Origin.x + VisibleCells);
+            long maxY = math.min(TextureBounds.MaxY, (long)Origin.y + VisibleCells);
+            bool intersects = minX < maxX && minY < maxY;
+            boardSurface.enabled = intersects;
+            if (!intersects)
+                return;
+            float textureCells = TextureBounds.MaxX - TextureBounds.MinX;
+            boardSurface.uvRect = new Rect((minX - TextureBounds.MinX) / textureCells,
+                (minY - TextureBounds.MinY) / textureCells, (maxX - minX) / textureCells, (maxY - minY) / textureCells);
+            RectTransform rect = boardSurface.rectTransform;
+            rect.anchorMin = new Vector2((minX - Origin.x) / (float)VisibleCells, (minY - Origin.y) / (float)VisibleCells);
+            rect.anchorMax = new Vector2((maxX - Origin.x) / (float)VisibleCells, (maxY - Origin.y) / (float)VisibleCells);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
         }
 
         void OnDestroy()
         {
             drawStack.Dispose();
+            overlayStack.Dispose();
+            rasterProgress.Dispose();
             Destroy(texture);
+            Destroy(backTexture);
             Destroy(overlayTexture);
         }
     }

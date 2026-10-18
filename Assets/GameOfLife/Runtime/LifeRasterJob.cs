@@ -13,24 +13,55 @@ namespace GameOfLife
         public long Y;
     }
 
+    public enum LifeRasterStage
+    {
+        Clear,
+        Draw,
+        Complete
+    }
+
+    public struct LifeRasterProgress
+    {
+        public LifeRasterStage Stage;
+        public int ClearCursor;
+    }
+
     [BurstCompile]
     public struct LifeRasterJob : IJob
     {
         [ReadOnly] public NativeArray<LifeNode> Nodes;
         public NativeArray<Color32> Pixels;
         public NativeList<LifeDrawTask> Stack;
-        public LifeShape Shape;
+        public NativeArray<LifeRasterProgress> Progress;
+        public int WorkBudget;
         public int2 Origin;
         public int VisibleCells;
 
         public void Execute()
         {
+            LifeRasterProgress progress = Progress[0];
             var raster = new LifeRasterizer
             {
                 Nodes = Nodes, Pixels = Pixels, Stack = Stack, Origin = Origin, VisibleCells = VisibleCells
             };
-            raster.Clear(new Color32(0, 0, 0, 255));
-            raster.DrawTree(Shape, new Color32(255, 255, 255, 255), false);
+            for (int work = 0; work < WorkBudget && progress.Stage != LifeRasterStage.Complete; work++)
+            {
+                if (progress.Stage == LifeRasterStage.Clear)
+                {
+                    int end = math.min(progress.ClearCursor + 1024, Pixels.Length);
+                    raster.Clear(progress.ClearCursor, end, new Color32(0, 0, 0, 255));
+                    progress.ClearCursor = end;
+                    if (end == Pixels.Length)
+                        progress.Stage = LifeRasterStage.Draw;
+                }
+                else
+                {
+                    raster.DrawNext(new Color32(255, 255, 255, 255), false);
+                    if (Stack.Length == 0)
+                        progress.Stage = LifeRasterStage.Complete;
+                }
+            }
+            Progress[0] = progress;
         }
     }
 
@@ -39,6 +70,7 @@ namespace GameOfLife
     {
         [ReadOnly] public NativeArray<LifeNode> Nodes;
         [ReadOnly] public NativeArray<Color32> BoardPixels;
+        public LifeRegion BoardBounds;
         public NativeArray<Color32> Pixels;
         public NativeList<LifeDrawTask> Stack;
         public LifeShape Ghost;
@@ -56,10 +88,10 @@ namespace GameOfLife
         {
             var raster = new LifeRasterizer
             {
-                Nodes = Nodes, BoardPixels = BoardPixels, Pixels = Pixels, Stack = Stack,
+                Nodes = Nodes, BoardPixels = BoardPixels, BoardBounds = BoardBounds, Pixels = Pixels, Stack = Stack,
                 Origin = Origin, VisibleCells = VisibleCells
             };
-            raster.Clear(default);
+            raster.Clear(0, Pixels.Length, default);
             long lowX = (long)SelectionMin.x - Origin.x;
             long lowY = (long)SelectionMin.y - Origin.y;
             long highX = (long)SelectionMax.x + 1 - Origin.x;
@@ -81,6 +113,7 @@ namespace GameOfLife
     {
         public NativeArray<LifeNode> Nodes;
         public NativeArray<Color32> BoardPixels;
+        public LifeRegion BoardBounds;
         public NativeArray<Color32> Pixels;
         public NativeList<LifeDrawTask> Stack;
         public int2 Origin;
@@ -91,9 +124,9 @@ namespace GameOfLife
         static readonly Color32 White = new Color32(255, 255, 255, 255);
         static readonly Color32 DashDim = new Color32(110, 110, 110, 255);
 
-        public void Clear(Color32 color)
+        public void Clear(int begin, int end, Color32 color)
         {
-            for (int i = 0; i < Pixels.Length; i++)
+            for (int i = begin; i < end; i++)
                 Pixels[i] = color;
         }
 
@@ -102,47 +135,50 @@ namespace GameOfLife
             Stack.Clear();
             Stack.Add(new LifeDrawTask { Root = shape.Root, X = shape.X, Y = shape.Y });
             while (Stack.Length != 0)
+                DrawNext(color, preserveBoard);
+        }
+
+        public void DrawNext(Color32 color, bool preserveBoard)
+        {
+            LifeDrawTask task = Stack[Stack.Length - 1];
+            Stack.RemoveAt(Stack.Length - 1);
+            LifeNode node = Nodes[task.Root];
+            if (node.Population == 0)
+                return;
+            long size = 1L << node.Level;
+            long x = task.X - Origin.x;
+            long y = task.Y - Origin.y;
+            if (x >= VisibleCells || y >= VisibleCells || x + size <= 0 || y + size <= 0)
+                return;
+            if (size <= VisibleCells / TextureSize)
             {
-                LifeDrawTask task = Stack[Stack.Length - 1];
-                Stack.RemoveAt(Stack.Length - 1);
-                LifeNode node = Nodes[task.Root];
-                if (node.Population == 0)
-                    continue;
-                long size = 1L << node.Level;
-                long x = task.X - Origin.x;
-                long y = task.Y - Origin.y;
-                if (x >= VisibleCells || y >= VisibleCells || x + size <= 0 || y + size <= 0)
-                    continue;
-                if (size <= VisibleCells / TextureSize)
-                {
-                    Fill(new int2(PixelBegin(x), PixelBegin(y)),
-                        new int2(PixelEnd(x + size), PixelEnd(y + size)), color, preserveBoard);
-                    continue;
-                }
-                if (node.Level == 4)
-                {
-                    for (int row = 0; row < 16; row++)
-                    {
-                        if (y + row < 0 || y + row >= VisibleCells)
-                            continue;
-                        uint bits = node.Bits.GetRow(row);
-                        while (bits != 0)
-                        {
-                            int column = math.tzcnt(bits);
-                            bits &= bits - 1;
-                            if (x + column >= 0 && x + column < VisibleCells)
-                                Fill(new int2(PixelBegin(x + column), PixelBegin(y + row)),
-                                    new int2(PixelEnd(x + column + 1), PixelEnd(y + row + 1)), color, preserveBoard);
-                        }
-                    }
-                    continue;
-                }
-                long half = size >> 1;
-                Stack.Add(new LifeDrawTask { Root = node.Children.x, X = task.X, Y = task.Y });
-                Stack.Add(new LifeDrawTask { Root = node.Children.y, X = task.X + half, Y = task.Y });
-                Stack.Add(new LifeDrawTask { Root = node.Children.z, X = task.X, Y = task.Y + half });
-                Stack.Add(new LifeDrawTask { Root = node.Children.w, X = task.X + half, Y = task.Y + half });
+                Fill(new int2(PixelBegin(x), PixelBegin(y)),
+                    new int2(PixelEnd(x + size), PixelEnd(y + size)), color, preserveBoard);
+                return;
             }
+            if (node.Level == 4)
+            {
+                for (int row = 0; row < 16; row++)
+                {
+                    if (y + row < 0 || y + row >= VisibleCells)
+                        continue;
+                    uint bits = node.Bits.GetRow(row);
+                    while (bits != 0)
+                    {
+                        int column = math.tzcnt(bits);
+                        bits &= bits - 1;
+                        if (x + column >= 0 && x + column < VisibleCells)
+                            Fill(new int2(PixelBegin(x + column), PixelBegin(y + row)),
+                                new int2(PixelEnd(x + column + 1), PixelEnd(y + row + 1)), color, preserveBoard);
+                    }
+                }
+                return;
+            }
+            long half = size >> 1;
+            Stack.Add(new LifeDrawTask { Root = node.Children.x, X = task.X, Y = task.Y });
+            Stack.Add(new LifeDrawTask { Root = node.Children.y, X = task.X + half, Y = task.Y });
+            Stack.Add(new LifeDrawTask { Root = node.Children.z, X = task.X, Y = task.Y + half });
+            Stack.Add(new LifeDrawTask { Root = node.Children.w, X = task.X + half, Y = task.Y + half });
         }
 
         public int PixelBegin(long cell)
@@ -163,9 +199,21 @@ namespace GameOfLife
                 for (int x = begin.x; x < end.x; x++)
                 {
                     int pixel = y * TextureSize + x;
-                    if (!preserveBoard || BoardPixels[pixel].r == 0)
+                    if (!preserveBoard || !BoardIsWhite(x, y))
                         Pixels[pixel] = color;
                 }
+        }
+
+        bool BoardIsWhite(int x, int y)
+        {
+            long side = BoardBounds.MaxX - BoardBounds.MinX;
+            long relativeX = ((long)Origin.x - BoardBounds.MinX) * TextureSize + (long)x * VisibleCells + VisibleCells / 2;
+            long relativeY = ((long)Origin.y - BoardBounds.MinY) * TextureSize + (long)y * VisibleCells + VisibleCells / 2;
+            if (relativeX < 0 || relativeY < 0 || relativeX >= side * TextureSize || relativeY >= side * TextureSize)
+                return false;
+            int boardX = (int)(relativeX / side);
+            int boardY = (int)(relativeY / side);
+            return BoardPixels[boardY * TextureSize + boardX].r != 0;
         }
 
         public void DrawDashedBorder(int2 begin, int2 end, bool2 lowVisible, bool2 highVisible)

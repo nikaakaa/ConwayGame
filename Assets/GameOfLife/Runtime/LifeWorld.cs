@@ -134,6 +134,14 @@ namespace GameOfLife
             WriteCore(kernel);
         }
 
+        public void SetRenderRoot(int root)
+        {
+            Core kernel = ReadCore();
+            kernel.State.RenderRoot = root;
+            kernel.Track(root);
+            WriteCore(kernel);
+        }
+
         public void BeginCollection(IReadOnlyList<LifeShape> retainedShapes)
         {
             Core kernel = ReadCore();
@@ -199,6 +207,7 @@ namespace GameOfLife
             public int Editing;
             public int Advancing;
             public int PendingResult;
+            public int RenderRoot;
             public int CollectionPhase;
             public int CollectionEpoch;
             public int SweepCursor;
@@ -981,6 +990,7 @@ namespace GameOfLife
                 MarkStack.Clear();
                 EpochMarkStack.Clear();
                 RetiredNodes.Clear();
+                Mark(State.RenderRoot);
                 if (State.Editing != 0)
                 {
                     Mark(State.EditShape.Root);

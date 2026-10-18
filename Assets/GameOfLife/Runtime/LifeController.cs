@@ -273,8 +273,8 @@ namespace GameOfLife
             hasPreviousCell = false;
             if (activeButton == PointerEventData.InputButton.Middle)
             {
-                panStartOrigin = View.DisplayedOrigin;
-                panStartCells = View.DisplayedCells;
+                panStartOrigin = View.Origin;
+                panStartCells = View.VisibleCells;
                 panStartPosition = eventData.position;
             }
             else if (activeButton == PointerEventData.InputButton.Left && Brush == LifeBrushMode.Select)
@@ -347,10 +347,10 @@ namespace GameOfLife
                 hasPreviousCell = false;
                 return;
             }
-            if (math.any(strokeWindowOrigin != View.DisplayedOrigin) || strokeWindowCells != View.DisplayedCells)
+            if (math.any(strokeWindowOrigin != View.Origin) || strokeWindowCells != View.VisibleCells)
                 hasPreviousCell = false;
-            strokeWindowOrigin = View.DisplayedOrigin;
-            strokeWindowCells = View.DisplayedCells;
+            strokeWindowOrigin = View.Origin;
+            strokeWindowCells = View.VisibleCells;
             if (!hasPreviousCell || math.any(cell != previousCell))
             {
                 bool stamp = activeButton != PointerEventData.InputButton.Right && Brush == LifeBrushMode.Pattern;
@@ -389,6 +389,12 @@ namespace GameOfLife
             if (eventData.scrollDelta.y == 0)
                 return;
             View.Zoom(eventData.position, eventData.enterEventCamera, eventData.scrollDelta.y > 0);
+            if (activeButton == PointerEventData.InputButton.Middle)
+            {
+                panStartOrigin = View.Origin;
+                panStartCells = View.VisibleCells;
+                panStartPosition = eventData.position;
+            }
             hasPreviousCell = false;
             UpdateHover(eventData.position, eventData.enterEventCamera);
         }

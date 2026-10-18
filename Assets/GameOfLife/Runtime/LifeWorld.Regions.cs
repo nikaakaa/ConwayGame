@@ -126,7 +126,8 @@ namespace GameOfLife
             if (kernel.Time.Viewport.Equals(viewport))
                 return;
             kernel.Time.Viewport = viewport;
-            kernel.StartRegionRequest(0, kernel.Time.Published, viewport, false);
+            if (kernel.Requests[0].Active == 0)
+                kernel.StartRegionRequest(0, kernel.Time.Published, viewport, false);
             WriteCore(kernel);
         }
 
@@ -149,6 +150,9 @@ namespace GameOfLife
         {
             Core kernel = ReadCore();
             kernel.CancelRegionRequest(0);
+            if (!kernel.Time.Frame.Snapshot.Equals(kernel.Time.Published)
+                || !kernel.Time.Frame.ValidBounds.Equals(kernel.Time.Viewport))
+                kernel.StartRegionRequest(0, kernel.Time.Published, kernel.Time.Viewport, false);
             WriteCore(kernel);
         }
 
@@ -580,6 +584,8 @@ namespace GameOfLife
                     request.CenterActive = State.Advancing;
                     request.CenterPending = State.PendingResult;
                     Requests[owner] = request;
+                    if (owner == 0 && request.Active == 0 && !request.Bounds.Equals(Time.Viewport))
+                        StartRegionRequest(0, Time.Published, Time.Viewport, false);
                 }
                 Frames = viewFrames;
             }
