@@ -12,12 +12,14 @@ namespace GameOfLife
         const double RecoveryPerFrameSeconds = 0.000125;
         const float MinimumSamplesPerSecond = 1;
         double budgetSeconds;
+        int warmedStepExponent;
 
         public double BudgetSeconds => budgetSeconds;
 
         public LifeSimulationPolicy(double initialBudgetSeconds)
         {
             budgetSeconds = initialBudgetSeconds;
+            warmedStepExponent = 0;
         }
 
         public double BeginFrame(double frameSeconds)
@@ -40,6 +42,21 @@ namespace GameOfLife
                 exponent++;
             return exponent;
         }
+
+        public int PlanStepExponent(int visibleCells, float generationsPerSecond, long generationsSinceEdit)
+        {
+            int exponent = math.min(StepExponent(visibleCells, generationsPerSecond), warmedStepExponent);
+            if (generationsSinceEdit != 0)
+                exponent = math.min(exponent, math.tzcnt((ulong)generationsSinceEdit));
+            return exponent;
+        }
+
+        public void CompleteStep(long generations)
+        {
+            warmedStepExponent = math.max(warmedStepExponent, math.tzcnt((ulong)generations) + 1);
+        }
+
+        public void ResetSteps() => warmedStepExponent = 0;
 
         public static double AccumulatorCapacity(long step, float generationsPerSecond)
         {

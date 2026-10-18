@@ -77,7 +77,7 @@ namespace GameOfLife
             long frameBudget = (long)(policy.BeginFrame(viewport.FrameSeconds) * Stopwatch.Frequency);
             long deadline = Stopwatch.GetTimestamp() + frameBudget;
             Simulation.SetViewport(viewport.PreloadOrigin, viewport.PreloadCells);
-            int stepExponent = LifeSimulationPolicy.StepExponent(viewport.VisibleCells, settings.GenerationsPerSecond);
+            int stepExponent = policy.PlanStepExponent(viewport.VisibleCells, settings.GenerationsPerSecond, Simulation.GenerationsSinceEdit);
             long step = 1L << stepExponent;
             if (state.IsRunning)
                 state.Accumulator = Math.Min(state.Accumulator + World.Time.DeltaTime * settings.GenerationsPerSecond,
@@ -135,6 +135,7 @@ namespace GameOfLife
                     if (!editing)
                     {
                         Simulation.BeginEdit();
+                        policy.ResetSteps();
                         editing = true;
                     }
                     if (!DrawStroke(command, ref editsRemaining, deadline))
@@ -176,11 +177,13 @@ namespace GameOfLife
                     case LifeCommandKind.Clear:
                         Pause(ref state);
                         Simulation.Clear();
+                        policy.ResetSteps();
                         state.Generation = Simulation.Snapshot.Generation;
                         break;
                     case LifeCommandKind.ClearArea:
                         Pause(ref state);
                         Simulation.ClearArea(command.Position, command.End);
+                        policy.ResetSteps();
                         break;
                 }
             }
@@ -190,11 +193,14 @@ namespace GameOfLife
                 commands.RemoveRange(0, consumed);
 
             PumpView(ref state, deadline);
-            stepExponent = LifeSimulationPolicy.StepExponent(viewport.VisibleCells, settings.GenerationsPerSecond);
-            step = 1L << stepExponent;
-            while (commands.Length == 0 && state.IsRunning && Simulation.IsViewCurrent && state.Accumulator >= step
+            while (commands.Length == 0 && state.IsRunning && Simulation.IsViewCurrent
                 && Stopwatch.GetTimestamp() < deadline)
             {
+                stepExponent = policy.PlanStepExponent(viewport.VisibleCells, settings.GenerationsPerSecond,
+                    Simulation.GenerationsSinceEdit);
+                step = 1L << stepExponent;
+                if (state.Accumulator < step)
+                    break;
                 Simulation.BeginAdvance(stepExponent);
                 PumpView(ref state, deadline);
                 if (Simulation.IsAdvancing)
@@ -220,6 +226,8 @@ namespace GameOfLife
         void PublishState(ref LifeState state)
         {
             long generation = Simulation.Snapshot.Generation;
+            if (generation != state.Generation)
+                policy.CompleteStep(generation - state.Generation);
             if (!explicitStep)
                 state.Accumulator -= generation - state.Generation;
             state.Generation = generation;

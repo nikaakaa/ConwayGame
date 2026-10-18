@@ -81,6 +81,14 @@ namespace GameOfLife
         ExportOperation currentExport;
 
         public LifeSnapshot Snapshot => timeline[0].Published;
+        public long GenerationsSinceEdit
+        {
+            get
+            {
+                LifeSnapshot snapshot = Snapshot;
+                return snapshot.Generation - core.Epochs[core.EpochSlots[snapshot.Epoch]].BaseGeneration;
+            }
+        }
         public LifeViewFrame ViewFrame => timeline[0].Frame;
         public LifePopulationSample PopulationSample => timeline[0].Population;
         public int RegionCacheCount => timeline[0].RegionCount;
