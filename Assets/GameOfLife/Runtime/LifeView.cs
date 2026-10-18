@@ -22,6 +22,8 @@ namespace GameOfLife
 
         public const int TextureSize = 1024;
         Texture2D texture;
+        Texture2D overlayTexture;
+        RawImage overlayImage;
         EntityManager manager;
         Entity boardEntity;
         LifeWorld simulation;
@@ -29,7 +31,7 @@ namespace GameOfLife
         uint renderedVersion;
         int2 displayedOrigin = new int2(-64, -64);
         int displayedCells = 128;
-        bool windowChanged = true;
+        bool overlayChanged = true;
         LifeShape ghost;
         bool hasGhost;
         bool hovering;
@@ -43,15 +45,30 @@ namespace GameOfLife
         void Awake()
         {
             drawStack = new NativeList<LifeDrawTask>(256, Allocator.Persistent);
-            texture = new Texture2D(TextureSize, TextureSize, TextureFormat.RGBA32, false)
-            {
-                name = "Life board",
-                filterMode = FilterMode.Point,
-                wrapMode = TextureWrapMode.Clamp
-            };
+            texture = CreateTexture("Life board");
+            overlayTexture = CreateTexture("Life overlays");
             BoardImage.texture = texture;
             BoardImage.uvRect = new Rect(0, 0, 1, 1);
+            var overlay = new GameObject("Life overlays", typeof(RectTransform), typeof(RawImage));
+            overlay.transform.SetParent(BoardImage.transform, false);
+            overlay.transform.SetAsFirstSibling();
+            overlayImage = overlay.GetComponent<RawImage>();
+            overlayImage.texture = overlayTexture;
+            overlayImage.raycastTarget = false;
+            overlayImage.enabled = false;
+            RectTransform rect = overlayImage.rectTransform;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
         }
+
+        static Texture2D CreateTexture(string name) => new Texture2D(TextureSize, TextureSize, TextureFormat.RGBA32, false)
+        {
+            name = name,
+            filterMode = FilterMode.Point,
+            wrapMode = TextureWrapMode.Clamp
+        };
 
         public void Bind(EntityManager entityManager, Entity entity, LifeWorld world)
         {
@@ -78,32 +95,52 @@ namespace GameOfLife
             });
             previousFrameTicks = frameTicks;
             LifeViewFrame frame = simulation.ViewFrame;
-            if (!windowChanged && renderedVersion == frame.Version)
+            bool boardChanged = renderedVersion != frame.Version;
+            if (!overlayChanged && !boardChanged)
                 return;
             displayedOrigin = new int2((int)frame.ValidBounds.MinX, (int)frame.ValidBounds.MinY);
             displayedCells = (int)(frame.ValidBounds.MaxX - frame.ValidBounds.MinX);
             if (hovering)
                 hoverCell = displayedOrigin + (int2)math.floor(hoverNormalized * displayedCells);
-            LifeShape preview = ghost;
-            preview.X += hoverCell.x;
-            preview.Y += hoverCell.y;
-            new LifeRasterJob
+            NativeArray<Color32> boardPixels = texture.GetRawTextureData<Color32>();
+            if (boardChanged)
             {
-                Nodes = simulation.Nodes,
-                Shape = frame.Shape,
-                Pixels = texture.GetRawTextureData<Color32>(),
-                Stack = drawStack,
-                Origin = displayedOrigin,
-                VisibleCells = displayedCells,
-                Ghost = preview,
-                ShowGhost = hovering && hasGhost,
-                HasSelection = hasSelection,
-                SelectionMin = selectionMin,
-                SelectionMax = selectionMax
-            }.Run();
-            texture.Apply(false, false);
+                new LifeRasterJob
+                {
+                    Nodes = simulation.Nodes,
+                    Shape = frame.Shape,
+                    Pixels = boardPixels,
+                    Stack = drawStack,
+                    Origin = displayedOrigin,
+                    VisibleCells = displayedCells
+                }.Run();
+                texture.Apply(false, false);
+            }
+            bool showOverlay = hovering && hasGhost || hasSelection;
+            overlayImage.enabled = showOverlay;
+            if (showOverlay)
+            {
+                LifeShape preview = ghost;
+                preview.X += hoverCell.x;
+                preview.Y += hoverCell.y;
+                new LifeOverlayRasterJob
+                {
+                    Nodes = simulation.Nodes,
+                    BoardPixels = texture.GetRawTextureData<Color32>(),
+                    Pixels = overlayTexture.GetRawTextureData<Color32>(),
+                    Stack = drawStack,
+                    Origin = displayedOrigin,
+                    VisibleCells = displayedCells,
+                    Ghost = preview,
+                    ShowGhost = hovering && hasGhost,
+                    HasSelection = hasSelection,
+                    SelectionMin = selectionMin,
+                    SelectionMax = selectionMax
+                }.Run();
+                overlayTexture.Apply(false, false);
+            }
             renderedVersion = frame.Version;
-            windowChanged = false;
+            overlayChanged = false;
         }
 
         public bool TryGetCell(Vector2 screenPosition, Camera eventCamera, out int2 cell)
@@ -126,7 +163,7 @@ namespace GameOfLife
         {
             hasGhost = visible;
             ghost = shape;
-            windowChanged |= hovering;
+            overlayChanged |= hovering;
         }
 
         public void SetHover(Vector2 position, Camera eventCamera)
@@ -137,13 +174,13 @@ namespace GameOfLife
                 return;
             hovering = visible;
             hoverCell = cell;
-            windowChanged |= hasGhost;
+            overlayChanged |= hasGhost;
         }
 
         public void ClearHover()
         {
             hovering = false;
-            windowChanged |= hasGhost;
+            overlayChanged |= hasGhost;
         }
 
         public void SetSelection(bool visible, int2 minimum, int2 maximum)
@@ -153,7 +190,7 @@ namespace GameOfLife
             hasSelection = visible;
             selectionMin = minimum;
             selectionMax = maximum;
-            windowChanged = true;
+            overlayChanged = true;
         }
 
         public void Pan(int2 offset)
@@ -161,14 +198,12 @@ namespace GameOfLife
             if (math.all(offset == 0))
                 return;
             Origin += offset;
-            windowChanged = true;
         }
 
         public void ResetWindow()
         {
             VisibleCells = 128;
             Origin = new int2(-64, -64);
-            windowChanged = true;
         }
 
         public void Zoom(Vector2 position, Camera eventCamera, bool zoomIn)
@@ -181,13 +216,13 @@ namespace GameOfLife
             int2 anchor = displayedOrigin + (int2)math.floor(normalized * displayedCells);
             Origin = anchor - (int2)math.floor(normalized * nextSize);
             VisibleCells = nextSize;
-            windowChanged = true;
         }
 
         void OnDestroy()
         {
             drawStack.Dispose();
             Destroy(texture);
+            Destroy(overlayTexture);
         }
     }
 }

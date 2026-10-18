@@ -20,6 +20,27 @@ namespace GameOfLife
         public NativeArray<Color32> Pixels;
         public NativeList<LifeDrawTask> Stack;
         public LifeShape Shape;
+        public int2 Origin;
+        public int VisibleCells;
+
+        public void Execute()
+        {
+            var raster = new LifeRasterizer
+            {
+                Nodes = Nodes, Pixels = Pixels, Stack = Stack, Origin = Origin, VisibleCells = VisibleCells
+            };
+            raster.Clear(new Color32(0, 0, 0, 255));
+            raster.DrawTree(Shape, new Color32(255, 255, 255, 255), false);
+        }
+    }
+
+    [BurstCompile]
+    public struct LifeOverlayRasterJob : IJob
+    {
+        [ReadOnly] public NativeArray<LifeNode> Nodes;
+        [ReadOnly] public NativeArray<Color32> BoardPixels;
+        public NativeArray<Color32> Pixels;
+        public NativeList<LifeDrawTask> Stack;
         public LifeShape Ghost;
         public int2 Origin;
         public int VisibleCells;
@@ -28,36 +49,55 @@ namespace GameOfLife
         public int2 SelectionMin;
         public int2 SelectionMax;
 
-        static readonly Color32 Black = new Color32(0, 0, 0, 255);
-        static readonly Color32 White = new Color32(255, 255, 255, 255);
         static readonly Color32 SelectionFill = new Color32(22, 22, 22, 255);
         static readonly Color32 GhostColor = new Color32(78, 78, 78, 255);
-        static readonly Color32 DashDim = new Color32(110, 110, 110, 255);
-        const int TextureSize = LifeView.TextureSize;
-        const int DashLength = 6;
 
         public void Execute()
         {
-            for (int i = 0; i < Pixels.Length; i++)
-                Pixels[i] = Black;
+            var raster = new LifeRasterizer
+            {
+                Nodes = Nodes, BoardPixels = BoardPixels, Pixels = Pixels, Stack = Stack,
+                Origin = Origin, VisibleCells = VisibleCells
+            };
+            raster.Clear(default);
             long lowX = (long)SelectionMin.x - Origin.x;
             long lowY = (long)SelectionMin.y - Origin.y;
             long highX = (long)SelectionMax.x + 1 - Origin.x;
             long highY = (long)SelectionMax.y + 1 - Origin.y;
-            int2 selectionBegin = new int2(PixelBegin(lowX), PixelBegin(lowY));
-            int2 selectionEnd = new int2(PixelEnd(highX), PixelEnd(highY));
+            int2 selectionBegin = new int2(raster.PixelBegin(lowX), raster.PixelBegin(lowY));
+            int2 selectionEnd = new int2(raster.PixelEnd(highX), raster.PixelEnd(highY));
             if (HasSelection)
-                Fill(selectionBegin, selectionEnd, SelectionFill);
+                raster.Fill(selectionBegin, selectionEnd, SelectionFill, true);
             if (ShowGhost)
-                DrawTree(Ghost, GhostColor);
-            DrawTree(Shape, White);
+                raster.DrawTree(Ghost, GhostColor, true);
             if (HasSelection)
-                DrawDashedBorder(selectionBegin, selectionEnd,
+                raster.DrawDashedBorder(selectionBegin, selectionEnd,
                     new bool2(lowX >= 0 && lowX <= VisibleCells, lowY >= 0 && lowY <= VisibleCells),
                     new bool2(highX >= 0 && highX <= VisibleCells, highY >= 0 && highY <= VisibleCells));
         }
+    }
 
-        void DrawTree(LifeShape shape, Color32 color)
+    struct LifeRasterizer
+    {
+        public NativeArray<LifeNode> Nodes;
+        public NativeArray<Color32> BoardPixels;
+        public NativeArray<Color32> Pixels;
+        public NativeList<LifeDrawTask> Stack;
+        public int2 Origin;
+        public int VisibleCells;
+
+        const int TextureSize = LifeView.TextureSize;
+        const int DashLength = 6;
+        static readonly Color32 White = new Color32(255, 255, 255, 255);
+        static readonly Color32 DashDim = new Color32(110, 110, 110, 255);
+
+        public void Clear(Color32 color)
+        {
+            for (int i = 0; i < Pixels.Length; i++)
+                Pixels[i] = color;
+        }
+
+        public void DrawTree(LifeShape shape, Color32 color, bool preserveBoard)
         {
             Stack.Clear();
             Stack.Add(new LifeDrawTask { Root = shape.Root, X = shape.X, Y = shape.Y });
@@ -76,7 +116,7 @@ namespace GameOfLife
                 if (size <= VisibleCells / TextureSize)
                 {
                     Fill(new int2(PixelBegin(x), PixelBegin(y)),
-                        new int2(PixelEnd(x + size), PixelEnd(y + size)), color);
+                        new int2(PixelEnd(x + size), PixelEnd(y + size)), color, preserveBoard);
                     continue;
                 }
                 if (node.Level == 4)
@@ -92,7 +132,7 @@ namespace GameOfLife
                             bits &= bits - 1;
                             if (x + column >= 0 && x + column < VisibleCells)
                                 Fill(new int2(PixelBegin(x + column), PixelBegin(y + row)),
-                                    new int2(PixelEnd(x + column + 1), PixelEnd(y + row + 1)), color);
+                                    new int2(PixelEnd(x + column + 1), PixelEnd(y + row + 1)), color, preserveBoard);
                         }
                     }
                     continue;
@@ -105,26 +145,30 @@ namespace GameOfLife
             }
         }
 
-        int PixelBegin(long cell)
+        public int PixelBegin(long cell)
         {
             cell = cell < 0 ? 0 : cell > VisibleCells ? VisibleCells : cell;
             return (int)(cell * TextureSize / VisibleCells);
         }
 
-        int PixelEnd(long cell)
+        public int PixelEnd(long cell)
         {
             cell = cell < 0 ? 0 : cell > VisibleCells ? VisibleCells : cell;
             return (int)((cell * TextureSize + VisibleCells - 1) / VisibleCells);
         }
 
-        void Fill(int2 begin, int2 end, Color32 color)
+        public void Fill(int2 begin, int2 end, Color32 color, bool preserveBoard)
         {
             for (int y = begin.y; y < end.y; y++)
                 for (int x = begin.x; x < end.x; x++)
-                    Pixels[y * TextureSize + x] = color;
+                {
+                    int pixel = y * TextureSize + x;
+                    if (!preserveBoard || BoardPixels[pixel].r == 0)
+                        Pixels[pixel] = color;
+                }
         }
 
-        void DrawDashedBorder(int2 begin, int2 end, bool2 lowVisible, bool2 highVisible)
+        public void DrawDashedBorder(int2 begin, int2 end, bool2 lowVisible, bool2 highVisible)
         {
             if (begin.x >= end.x || begin.y >= end.y)
                 return;
