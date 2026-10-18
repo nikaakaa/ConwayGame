@@ -1,0 +1,155 @@
+{
+  "date": "2026-10-18",
+  "unity": "6000.3.3f1",
+  "inputSystem": "1.17.0",
+  "parentCommit": "9eb68e11058ccdf7cff19a84ad9773d459f35b66",
+  "scope": "目标 Editor CLI 基本运行检查；非真实鼠标端到端验收、非 Player、非性能测量",
+  "compilation": {
+    "completed": true,
+    "errors": 0,
+    "warnings": 0
+  },
+  "sourceHashFormat": "SHA256，工作区原始文件字节",
+  "sources": {
+    "Assets/GameOfLife/Editor/LifeSceneBuilder.cs": "244d2eb04a8e75b11168af7cc383b9deee0364f480a84081c309f30234e25b36",
+    "Assets/GameOfLife/Runtime/LifeBits.cs": "8aa42aba9b8368094a1d096c8165bddb18fbf703c4910a4b76c097adcbdc5556",
+    "Assets/GameOfLife/Runtime/LifeCellIcon.cs": "f58142bbc510afd38bb8b66586b95f25b3b09f87c7a17745eaeefdc8f0a443ef",
+    "Assets/GameOfLife/Runtime/LifeComponents.cs": "91315c69b78d95897eb04182e09c692c71dc289f0cc9ed3a2c89715d7023c94e",
+    "Assets/GameOfLife/Runtime/LifeController.cs": "9c2860acfd52aa388ec524f93010d8c3d6c378bc9c8e31c0ccee821a62699257",
+    "Assets/GameOfLife/Runtime/LifeEditorToolbar.cs": "7c8cb3ace483feeef13c7a359297bd86254f5fdc2604edbb6741be49f1739ec4",
+    "Assets/GameOfLife/Runtime/LifeIcons.cs": "f527467b23325d9e5bc7d7d1e8f5f8bc0b8a40f602fe03a189ab9525eb473e16",
+    "Assets/GameOfLife/Runtime/LifeMainMenu.cs": "432b57276a4b62d2d80828f092a8711c0dab2f3ba11dbe7e883819c8f93cdfd3",
+    "Assets/GameOfLife/Runtime/LifeNode.cs": "71fe1d90e73759b9b3266ed60dd31add26b4531f4d73526660e748acd093f873",
+    "Assets/GameOfLife/Runtime/LifeNumber.cs": "1c98d9600c812c971a2b283083280aeedd74bc5ed774d52b8107c8973219fd16",
+    "Assets/GameOfLife/Runtime/LifePatternBitmap.cs": "c68cf37d9ba92b0465287770255cf783364ba5f278316e043f073e83e966b27b",
+    "Assets/GameOfLife/Runtime/LifePatternLibrary.cs": "143623166e862bec344aa4faffbead3b85aec08173066e151c129b2d4e6b7dc2",
+    "Assets/GameOfLife/Runtime/LifePatterns.cs": "ca7a6c22b2216693d898e5927e02624270010431c3e14a5a6cd02e372fb616d1",
+    "Assets/GameOfLife/Runtime/LifePatternStore.cs": "05d984b428d1b5b02427fee92a55ced4f7d51612a53e7ffdb6af685652be3870",
+    "Assets/GameOfLife/Runtime/LifePatternText.cs": "fd0d69b9d0cca2822b1ccf18097a4056e18a1c429b0180c5b0a944842a1450b1",
+    "Assets/GameOfLife/Runtime/LifePreviewPng.cs": "183c9c78fb3a9d1fc5eb0079b77b48904e785aad401a2e37d781db7fe8acb611",
+    "Assets/GameOfLife/Runtime/LifeRasterJob.cs": "bf6f6a3bfc516a7a38d819a97843c18df5d4f27a0d01b06484df189dfcce50a5",
+    "Assets/GameOfLife/Runtime/LifeSceneFlow.cs": "ffba4a1535671d3853e56fe98ee7501c6638aa1557914f4408b2d5836f0ec6a5",
+    "Assets/GameOfLife/Runtime/LifeSelectionGraphic.cs": "1bdbd4fe63f9f34d11d32b72d244f60894ac07408b65f555f1b5fabca0c790da",
+    "Assets/GameOfLife/Runtime/LifeSession.cs": "efb0a133e6cb4ca4109df3507fd73e6f7a94bb447fd5c063e1fe256c52d81586",
+    "Assets/GameOfLife/Runtime/LifeSimulationPolicy.cs": "adaab04e342253abac23788092fce57d36a15b2568c1a100f346d4f1b81d9142",
+    "Assets/GameOfLife/Runtime/LifeSimulationSystem.cs": "005a424edc1f466115b2dd4adfd60345e56f635e58852cf1e9d75223573f2d8c",
+    "Assets/GameOfLife/Runtime/LifeStartScreen.cs": "8f427c41bbc5b224adb528766275b60d5b4ba3f1891995eef6973e695c39659b",
+    "Assets/GameOfLife/Runtime/LifeUiResources.cs": "205988e8480a05fbbbb42ed97278f209aceb396ccd41b82fb0dd968aea514ed0",
+    "Assets/GameOfLife/Runtime/LifeView.cs": "22df68ce1b53abf10c1830926e77d4f70decf94c182b787ee2de38951667b769",
+    "Assets/GameOfLife/Runtime/LifeWorld.cs": "22ddd9d50aa85feaf9b9d9793bb001ac061db3126181bc3f494a499fe31e9a30",
+    "Assets/GameOfLife/Runtime/LifeWorld.Regions.cs": "a64e18f884157b63733a5ed68e94e294eb775add91acbd3847e9d3d25e0e26bf",
+    "Assets/GameOfLife/Runtime/LifeWorldStore.cs": "d9608c0189a587e15cdaeac86eff146e224ed657e68b29f8a18d3e286ca4a38b",
+    "Assets/GameOfLife/Scenes/GameOfLife.unity": "6964fa1cd38eba9c2d77ae56e9d57bbec9e4b5f8636521c22cb21cf97c03eb46",
+    "Assets/GameOfLife/Scenes/MainMenu.unity": "58a5c5d99ddb8a5e282e49946d0ff37234b41e39b981a0c10b011105f6da6879",
+    "Assets/GameOfLife/UI/LifeEditorPanel.asset": "264952e7fe9604df85f989263c2d4000f9a4bd66f681fb4df8248bf9aa885389",
+    "Assets/InputSystem_Actions.inputactions": "1c6cbb519d65ecfe19a29231735b7f54741a20ac1a8ad4f46a18e1bfb28a3c39",
+    "ProjectSettings/EditorBuildSettings.asset": "bf4bb91606ff5866eb69bb413ac90f5db4646d4f4ad759d641f7dc492d156156"
+  },
+  "observations": [
+    {
+      "phase": "new",
+      "code": "UnityEngine.Application.runInBackground = true;\nvar s = Unity.Entities.World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<GameOfLife.LifeSimulationSystem>();\ns.Session.NewWorld(); GameOfLife.LifeSceneFlow.OpenGame(); return s.Session.HasWorld;",
+      "result": true
+    },
+    {
+      "phase": "first",
+      "code": "\nvar c = UnityEngine.Object.FindFirstObjectByType<GameOfLife.LifeController>();\nvar s = Unity.Entities.World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<GameOfLife.LifeSimulationSystem>();\nvar rect = c.View.BoardImage.rectTransform;\nvar center = UnityEngine.RectTransformUtility.WorldToScreenPoint(null, rect.TransformPoint(rect.rect.center));\nvar pointer = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current) { position = center, button = UnityEngine.EventSystems.PointerEventData.InputButton.Left };\nvar hits = new System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult>();\nUnityEngine.EventSystems.EventSystem.current.RaycastAll(pointer, hits);\npointer.pointerCurrentRaycast = hits[0];\npointer.pointerPressRaycast = hits[0];\nUnityEngine.EventSystems.ExecuteEvents.Execute(hits[0].gameObject, pointer, UnityEngine.EventSystems.ExecuteEvents.pointerDownHandler);\nUnityEngine.EventSystems.ExecuteEvents.Execute(hits[0].gameObject, pointer, UnityEngine.EventSystems.ExecuteEvents.pointerUpHandler);\nvar input = UnityEngine.Object.FindFirstObjectByType<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();\nreturn new { scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name, controller = c.GetInstanceID(), session = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(c.Session), hitNames = hits.ConvertAll(h => h.gameObject.name).ToArray(), commands = s.EntityManager.GetBuffer<GameOfLife.LifeCommand>(s.Board).Length, point = input.point.action.enabled, click = input.leftClick.action.enabled, panel = UnityEngine.Object.FindFirstObjectByType<UnityEngine.UIElements.UIDocument>().panelSettings.name, menus = UnityEngine.Object.FindObjectsByType<GameOfLife.LifeMainMenu>(UnityEngine.FindObjectsSortMode.None).Length, eventSystems = UnityEngine.Object.FindObjectsByType<UnityEngine.EventSystems.EventSystem>(UnityEngine.FindObjectsSortMode.None).Length };\n",
+      "result": {
+        "scene": "GameOfLife",
+        "controller": 62872,
+        "session": -11444112,
+        "hitNames": [
+          "Board"
+        ],
+        "commands": 1,
+        "point": true,
+        "click": true,
+        "panel": "LifeEditorPanel(Clone)",
+        "menus": 0,
+        "eventSystems": 1
+      }
+    },
+    {
+      "phase": "leave",
+      "code": "\nvar c = UnityEngine.Object.FindFirstObjectByType<GameOfLife.LifeController>();\nvar s = Unity.Entities.World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<GameOfLife.LifeSimulationSystem>();\nc.View.Pan(new Unity.Mathematics.int2(16, 8));\nvar result = new { scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name, population = s.Simulation.Nodes[s.Simulation.ViewFrame.Shape.Root].Population, generation = c.State.Generation, origin = c.View.Origin.ToString(), visible = c.View.VisibleCells, session = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(c.Session), commands = s.EntityManager.GetBuffer<GameOfLife.LifeCommand>(s.Board).Length };\nGameOfLife.LifeSceneFlow.OpenMenu(c.Session);\nreturn result;\n",
+      "result": {
+        "scene": "GameOfLife",
+        "population": 1,
+        "generation": 0,
+        "origin": "int2(-48, -56)",
+        "visible": 128,
+        "session": -11444112,
+        "commands": 0
+      }
+    },
+    {
+      "phase": "menu",
+      "code": "\nvar menu = UnityEngine.Object.FindFirstObjectByType<GameOfLife.LifeMainMenu>();\nvar screen = (GameOfLife.LifeStartScreen)menu.GetType().GetField(\"screen\", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(menu);\nvar items = (System.Collections.Generic.List<(string, System.Action)>)screen.GetType().GetField(\"items\", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(screen);\nvar result = new {\n    scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name,\n    controllers = UnityEngine.Object.FindObjectsByType<GameOfLife.LifeController>(UnityEngine.FindObjectsSortMode.None).Length,\n    views = UnityEngine.Object.FindObjectsByType<GameOfLife.LifeView>(UnityEngine.FindObjectsSortMode.None).Length,\n    toolbars = UnityEngine.Object.FindObjectsByType<GameOfLife.LifeEditorToolbar>(UnityEngine.FindObjectsSortMode.None).Length,\n    eventSystems = UnityEngine.Object.FindObjectsByType<UnityEngine.EventSystems.EventSystem>(UnityEngine.FindObjectsSortMode.None).Length,\n    boardTextures = System.Array.FindAll(UnityEngine.Resources.FindObjectsOfTypeAll<UnityEngine.Texture2D>(), texture => texture.name == \"Life board\" || texture.name == \"Life board back buffer\" || texture.name == \"Life overlays\").Length,\n    menuItems = items.ConvertAll(item => item.Item1).ToArray()\n};\nitems.Find(item => item.Item1 == \"继续\").Item2();\nreturn result;\n",
+      "result": {
+        "scene": "MainMenu",
+        "controllers": 0,
+        "views": 0,
+        "toolbars": 0,
+        "eventSystems": 1,
+        "boardTextures": 0,
+        "menuItems": [
+          "新世界",
+          "继续",
+          "存档",
+          "地图",
+          "退出程序"
+        ]
+      }
+    },
+    {
+      "phase": "second",
+      "code": "\nvar c = UnityEngine.Object.FindFirstObjectByType<GameOfLife.LifeController>();\nvar s = Unity.Entities.World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<GameOfLife.LifeSimulationSystem>();\nvar rect = c.View.BoardImage.rectTransform;\nvar center = UnityEngine.RectTransformUtility.WorldToScreenPoint(null, rect.TransformPoint(rect.rect.center));\nvar pointer = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current) { position = center, button = UnityEngine.EventSystems.PointerEventData.InputButton.Left };\nvar hits = new System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult>();\nUnityEngine.EventSystems.EventSystem.current.RaycastAll(pointer, hits);\npointer.pointerCurrentRaycast = hits[0];\npointer.pointerPressRaycast = hits[0];\nUnityEngine.EventSystems.ExecuteEvents.Execute(hits[0].gameObject, pointer, UnityEngine.EventSystems.ExecuteEvents.pointerDownHandler);\nUnityEngine.EventSystems.ExecuteEvents.Execute(hits[0].gameObject, pointer, UnityEngine.EventSystems.ExecuteEvents.pointerUpHandler);\nvar input = UnityEngine.Object.FindFirstObjectByType<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();\nreturn new { populationBeforeUpdate = s.Simulation.Nodes[s.Simulation.ViewFrame.Shape.Root].Population, origin = c.View.Origin.ToString(), visible = c.View.VisibleCells, generation = c.State.Generation, scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name, controller = c.GetInstanceID(), session = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(c.Session), hitNames = hits.ConvertAll(h => h.gameObject.name).ToArray(), commands = s.EntityManager.GetBuffer<GameOfLife.LifeCommand>(s.Board).Length, point = input.point.action.enabled, click = input.leftClick.action.enabled, panel = UnityEngine.Object.FindFirstObjectByType<UnityEngine.UIElements.UIDocument>().panelSettings.name, menus = UnityEngine.Object.FindObjectsByType<GameOfLife.LifeMainMenu>(UnityEngine.FindObjectsSortMode.None).Length, eventSystems = UnityEngine.Object.FindObjectsByType<UnityEngine.EventSystems.EventSystem>(UnityEngine.FindObjectsSortMode.None).Length };\n",
+      "result": {
+        "populationBeforeUpdate": 1,
+        "origin": "int2(-48, -56)",
+        "visible": 128,
+        "generation": 0,
+        "scene": "GameOfLife",
+        "controller": 63002,
+        "session": -11444112,
+        "hitNames": [
+          "Board"
+        ],
+        "commands": 1,
+        "point": true,
+        "click": true,
+        "panel": "LifeEditorPanel(Clone)",
+        "menus": 0,
+        "eventSystems": 1
+      }
+    },
+    {
+      "phase": "last",
+      "code": "\nvar c = UnityEngine.Object.FindFirstObjectByType<GameOfLife.LifeController>();\nvar s = Unity.Entities.World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<GameOfLife.LifeSimulationSystem>();\nvar result = new {\n    scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name,\n    population = s.Simulation.Nodes[s.Simulation.ViewFrame.Shape.Root].Population,\n    generation = c.State.Generation,\n    commands = s.EntityManager.GetBuffer<GameOfLife.LifeCommand>(s.Board).Length,\n    controllers = UnityEngine.Object.FindObjectsByType<GameOfLife.LifeController>(UnityEngine.FindObjectsSortMode.None).Length,\n    views = UnityEngine.Object.FindObjectsByType<GameOfLife.LifeView>(UnityEngine.FindObjectsSortMode.None).Length,\n    toolbars = UnityEngine.Object.FindObjectsByType<GameOfLife.LifeEditorToolbar>(UnityEngine.FindObjectsSortMode.None).Length,\n    documents = UnityEngine.Object.FindObjectsByType<UnityEngine.UIElements.UIDocument>(UnityEngine.FindObjectsSortMode.None).Length,\n    eventSystems = UnityEngine.Object.FindObjectsByType<UnityEngine.EventSystems.EventSystem>(UnityEngine.FindObjectsSortMode.None).Length,\n    boardTextures = System.Array.FindAll(UnityEngine.Resources.FindObjectsOfTypeAll<UnityEngine.Texture2D>(), texture => texture.name == \"Life board\" || texture.name == \"Life board back buffer\" || texture.name == \"Life overlays\").Length\n};\nUnityEngine.Application.runInBackground = false;\nreturn result;\n",
+      "result": {
+        "scene": "GameOfLife",
+        "population": 2,
+        "generation": 0,
+        "commands": 0,
+        "controllers": 1,
+        "views": 1,
+        "toolbars": 1,
+        "documents": 1,
+        "eventSystems": 1,
+        "boardTextures": 3
+      }
+    }
+  ],
+  "cleanup": {
+    "playStopped": true,
+    "runInBackgroundRestoredTo": false
+  },
+  "notCovered": [
+    "真实鼠标操作",
+    "大型地图加载",
+    "保存或存入结构期间切换场景",
+    "内存峰值",
+    "性能对比"
+  ],
+  "implementationCommit": "8b4115c62c97fb04d81bee0a62f6041bfb9cae45"
+}

@@ -25,14 +25,14 @@ git clone https://github.com/nikaakaa/ConwayGame.git
 工程与全部 16 张地图通过普通 Git 保存。最大地图 `metaglider-0e0p.rle.gz` 约 75.7 MB，使用 gzip 完整无损压缩，由游戏载入时自动解压；地图预览与工程配置随仓库提供。
 
 1. 使用 Unity **6000.3.3f1** 打开工程，等待包解析与编译完成。
-2. 打开 `Assets/GameOfLife/Scenes/GameOfLife.unity`，进入 Play。
-3. 在开始界面选择“新世界”，进入第零代、暂停的空棋盘。首次运行默认速度每秒 10 代，当前工具为单格笔刷；从已有世界新建时保留当前速度和工具。
+2. 打开 `Assets/GameOfLife/Scenes/MainMenu.unity`，进入 Play。
+3. 在主菜单选择“新世界”，切换到 `GameOfLife.unity`，进入第零代、暂停的空棋盘。首次运行默认速度每秒 10 代；从已有世界新建时保留当前速度。每次进入游戏场景都默认使用单格笔刷。
 
 第一次体验可按 `L` 打开结构库，选择 `Glider` 后按回车，左键放置，再按 `Space` 开始演化。已有演示场景无需重新生成。
 
 主要依赖：Entities 1.4.8、Burst 1.8.29、Collections 2.6.8、Mathematics 1.3.3、Input System 1.17.0、URP 17.3.0 和 UGUI 2.0.0。菜单与工具栏使用 UI Toolkit。
 
-构建场景列表已将 `GameOfLife.unity` 设为首个场景。需要独立程序时，在 Unity 的 Build Profiles 中选择目标平台后构建，产物可放在已忽略的 `Builds/` 目录。
+构建场景列表只包含 `MainMenu.unity` 和 `GameOfLife.unity`，主菜单排在首位。`Tools/Game of Life/Create Demo Scenes` 可重新生成两个场景和这份列表。本轮没有重新构建，`Builds/` 中现有 EXE 与 ZIP 仍是旧版本，不包含双场景与菜单改动；构建入口与已有产物记录见[构建与运行](Docs/路径/构建与运行.md)。
 
 ## 操作
 
@@ -73,15 +73,15 @@ git clone https://github.com/nikaakaa/ConwayGame.git
 | --- | --- |
 | 演化（时钟，运行时全亮） | 运行/暂停、单步、减速、速度（可滚轮调整）、加速 |
 | 编辑（显示当前工具，盖章时为结构缩略图） | 画笔、框选、盖章（当前结构）、结构库 |
-| 世界 | 清空、重置、保存、开始界面、帮助、退出程序 |
+| 世界 | 清空、重置、保存、主菜单、帮助、退出程序 |
 
 二级再点一次一级图标或按 Esc 收起，鼠标移开不收起。操作结果在滑翔机右侧短暂提示。保存先提示“保存中”，固定调用时的世界快照并分帧收集细胞，再在后台编码、写文件和生成缩略图，写完提示“已保存”。完成收集时仍需复制细胞数组，大世界仍有计算和内存成本。
 
-## 开始界面、存档与地图
+## 主菜单、存档与地图
 
-开始界面菜单为新世界、继续（有当前世界或存档时）、存档、地图、退出程序，鼠标或方向键加回车选择。“继续”优先回到当前棋盘；刚启动、尚未进入世界时载入最近存档。从编辑界面回到菜单后，Esc 也可继续当前棋盘。
+主菜单提供新世界、继续（有当前世界或存档时）、存档、地图、退出程序，鼠标或方向键加回车选择。“世界”菜单中的“主菜单”会暂停世界并切换场景。“继续”重新进入游戏场景，保留当前细胞、代数、速度和视野，不重新载入棋盘；工具恢复为单格笔刷。刚启动、尚未进入世界时，“继续”载入最近存档。从游戏回到菜单后，Esc 也可继续当前棋盘。
 
-退出入口位于开始菜单底部和“世界”二级菜单的电源图标。需要保留当前棋盘时，请先保存并等待完成；退出不会自动保存。发行版关闭程序，Unity Editor 中停止 Play。
+退出入口位于主菜单底部和“世界”二级菜单的电源图标。需要保留当前棋盘时，请先保存并等待完成；退出不会自动保存。发行版关闭程序，Unity Editor 中停止 Play。
 
 - 存档保存整个世界，写入 `Application.persistentDataPath/Saves`：同名的 `.rle`（世界，以 `#C life-anchor x,y` 记录左上角，载入后细胞回到原来的位置）、`.json`（名称）和 `.png`（缩略图），三者都在保存时于后台写好。存档列表与地图一样只读名称和缩略图，选中才解析世界。存档按保存时间从新到旧排列，“继续”载入最新一个。编辑中点菜单的保存：来自存档的世界覆盖该存档，新世界或地图新建存档。存档可以改名（只改名称文件）、两步删除。
 - 地图是收录的大型结构，只读，选中后作为新世界放在原点。当前共 16 张，包含 Gunstar、P690 飞船工厂、Breeder 1、c/5 灰船、Primer、图灵机、空间填充器、**Life in Life：OTCA 银河（15×15）**，以及 Gemini、Caterpillar、Waterbear、Demonoid、Linear propagator、π 计算机、Hexadecimal 与 **0E0P 自构造宏滑翔机**。文件位于 `Assets/StreamingAssets/LifePatterns/`，[来源记录](Docs/参考/复杂结构来源.md)列出规模、行为、作者和下载地址。地图列表不读取地图文件：名称和缩略图来自离线生成的 `maps.json` 与同名 PNG，选中某个地图后才读取、解析并载入，期间显示“载入中”。新增或修改地图后运行 `python -I Tools/MapPreviews/generate_previews.py` 重新生成；缺少预览的地图显示文件名和统一图标。新增巨构未测解析与载入耗时。载入后视野默认是中心 128 格，用滚轮缩小查看全貌。运行中外部新增地图后，重新打开地图列表即可更新。
@@ -132,9 +132,10 @@ git clone https://github.com/nikaakaa/ConwayGame.git
 | 路径 | 职责 |
 | --- | --- |
 | `Assets/GameOfLife/Runtime/` | 输入、演化、显示、结构库与存档 |
-| `Assets/GameOfLife/Scenes/GameOfLife.unity` | 可直接运行的演示场景 |
+| `Assets/GameOfLife/Scenes/MainMenu.unity` | 启动场景，主菜单、存档与地图列表 |
+| `Assets/GameOfLife/Scenes/GameOfLife.unity` | 游戏场景，棋盘、鼠标编辑与工具栏 |
 | `Assets/GameOfLife/UI/` | UI Toolkit 样式与面板配置 |
-| `Assets/GameOfLife/Editor/LifeSceneBuilder.cs` | `Tools/Game of Life/Create Demo Scene` 场景生成入口 |
+| `Assets/GameOfLife/Editor/LifeSceneBuilder.cs` | `Tools/Game of Life/Create Demo Scenes` 双场景生成入口 |
 | `Assets/StreamingAssets/LifePatterns/` | 16 张地图、缩略图、索引及上游许可 |
 | `Tools/MapPreviews/` | 离线生成地图缩略图与索引 |
 | `Tools/Benchmarks/` | 核心采样、交互回放工具与已有结果 |
@@ -142,7 +143,7 @@ git clone https://github.com/nikaakaa/ConwayGame.git
 
 `LifeController` 接收鼠标、键盘和工具栏操作，将编辑动作写入 `LifeCommand` 缓冲区。`LifeSimulationSystem` 按顺序消费指令，调用唯一的 `LifeWorld` 修改棋盘、推进视野区域请求和处理导出。`LifeWorld.cs` 负责位图树与 HashLife，`LifeWorld.Regions.cs` 负责世界版本、代数快照和区域缓存。视野请求完成后发布区域结果和实际代数，`LifeView` 再通过 `LifeRasterJob` 绘制可见区域。棋盘使用一个 Entity，细胞存于共享树中。
 
-`LifePatternStore` 管理可编辑的结构文件，`LifeWorldStore` 管理世界存档和只读地图。文件读取、解析与保存围绕这两个模块进行，演化过程不读取文件。
+`LifeSimulationSystem` 创建唯一的 `LifeSession`，由会话持有 `LifePatternStore`、`LifeWorldStore`、当前存档和保存任务。`LifeSceneFlow` 使用 `Single` 模式切换主菜单与游戏场景，Entities 世界与会话保留，控制器、显示、UI 和各场景的 EventSystem 重新建立。字体、面板副本、棋盘纹理和列表预览随所属场景释放，旧界面不跨场景保留。保存完成后的存档关联由会话处理，不依赖已经卸载的工具栏。演化过程不读取文件。
 
 ## 实现与限制
 
