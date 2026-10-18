@@ -8,7 +8,7 @@ namespace GameOfLife
 {
     /// <summary>
     /// 开始界面：背景是一门 Gosper 枪在暗处持续演化，中间为滑翔机标志与菜单。
-    /// 菜单为 返回（从编辑界面回来时）、新世界、继续（有存档时）、存档、地图、退出程序；鼠标或方向键加回车选择。
+    /// 菜单为新世界、继续（有当前世界或存档时）、存档、地图、退出程序；鼠标或方向键加回车选择。
     /// 背景使用独立的定长网格模拟，越出边界的细胞直接丢弃，不影响正式世界。
     /// 载入存档或地图时菜单换成一行“载入中”，滑翔机继续飞行；同步编译期间画面停在最后一帧。
     /// </summary>
@@ -24,7 +24,6 @@ namespace GameOfLife
         // 编辑界面保存时临时盖上开始界面，结束后再移除。
         bool addedForLoading;
 
-        public event Action ResumeRequested;
         public event Action NewWorldRequested;
         public event Action ContinueRequested;
         public event Action SavesRequested;
@@ -84,13 +83,10 @@ namespace GameOfLife
         }
 
         /// <summary>显示开始界面。</summary>
-        /// <param name="canResume">从编辑界面返回时提供“返回”。</param>
-        /// <param name="canContinue">有存档时提供“继续”。</param>
-        public void Show(bool canResume, bool canContinue)
+        /// <param name="canContinue">有当前世界或存档时提供“继续”。</param>
+        public void Show(bool canContinue)
         {
             items.Clear();
-            if (canResume)
-                items.Add(("返回", () => ResumeRequested?.Invoke()));
             items.Add(("新世界", () => NewWorldRequested?.Invoke()));
             if (canContinue)
                 items.Add(("继续", () => ContinueRequested?.Invoke()));
@@ -153,13 +149,13 @@ namespace GameOfLife
                 labels[i].EnableInClassList("life-start__item--on", i == selected);
         }
 
-        /// <summary>由宿主每帧调用；acceptInput 为 false 时（例如存档列表打开）只推进背景。</summary>
-        public void Tick(bool acceptInput)
+        /// <summary>由宿主每帧调用；acceptInput 为 false 时只推进背景，resumeWithEscape 决定 Esc 是否继续当前世界。</summary>
+        public void Tick(bool acceptInput, bool resumeWithEscape)
         {
             if (!IsVisible)
                 return;
             if (acceptInput && !IsLoading)
-                HandleKeyboard();
+                HandleKeyboard(resumeWithEscape);
 
             stepTimer += Time.unscaledDeltaTime;
             if (stepTimer < StepInterval)
@@ -170,7 +166,7 @@ namespace GameOfLife
                 logo.SetShape(LifeIcons.GliderPhases[generation / 3 & 3]);
         }
 
-        void HandleKeyboard()
+        void HandleKeyboard(bool resumeWithEscape)
         {
             Keyboard keyboard = Keyboard.current;
             if (keyboard == null || items.Count == 0)
@@ -181,8 +177,8 @@ namespace GameOfLife
                 Select((selected + items.Count - 1) % items.Count);
             if (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame)
                 items[selected].Action();
-            else if (keyboard.escapeKey.wasPressedThisFrame && ResumeRequested != null && items[0].Label == "返回")
-                ResumeRequested.Invoke();
+            else if (keyboard.escapeKey.wasPressedThisFrame && resumeWithEscape)
+                ContinueRequested?.Invoke();
         }
 
         void SeedBackground()

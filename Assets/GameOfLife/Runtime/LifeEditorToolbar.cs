@@ -195,13 +195,12 @@ namespace GameOfLife
             mapsLibrary.OpenChanged += _ => UpdateShortcuts();
 
             startScreen = new LifeStartScreen(root, monoFont);
-            startScreen.ResumeRequested += HideStart;
             startScreen.NewWorldRequested += () =>
             {
                 Controller.NewWorld();
                 HideStart();
             };
-            startScreen.ContinueRequested += () => EnterWorld(Controller.Worlds.Saves[0]);
+            startScreen.ContinueRequested += ContinueWorld;
             startScreen.SavesRequested += () => savesLibrary.Open(Controller.CurrentSave);
             startScreen.MapsRequested += OpenMaps;
             startScreen.QuitRequested += QuitApplication;
@@ -369,8 +368,16 @@ namespace GameOfLife
             startVisible = true;
             startCanResume = canResume;
             Controller.Worlds.ReloadSaves();
-            startScreen.Show(canResume, Controller.Worlds.Saves.Count > 0);
+            startScreen.Show(canResume || Controller.Worlds.Saves.Count > 0);
             UpdateShortcuts();
+        }
+
+        void ContinueWorld()
+        {
+            if (startCanResume)
+                HideStart();
+            else
+                EnterWorld(Controller.Worlds.Saves[0]);
         }
 
         void HideStart()
@@ -699,7 +706,7 @@ namespace GameOfLife
             mapsLibrary.Tick();
             if (startVisible)
             {
-                startScreen.Tick(!overlayOpen);
+                startScreen.Tick(!overlayOpen, startCanResume);
                 return;
             }
             Keyboard keyboard = Keyboard.current;
