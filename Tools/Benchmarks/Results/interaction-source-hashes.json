@@ -1,0 +1,48 @@
+{
+  "capturedAtUtc": "2026-10-18T10:43:54.765809+00:00",
+  "runtimeCommit": "b4174034ed6503d374ff7245ae84864aaa7a6448",
+  "runtimeSourcesAtCapture": {
+    "Assets/GameOfLife/Runtime/LifeView.cs": "54664ed3ee800c2db3dcb203b2051ff4ae15be8643aed57a52505767cbc6d014",
+    "Assets/GameOfLife/Runtime/LifeRasterJob.cs": "5f897a68d7c0677457a7afe72b5449eee436f2aaeae1b0ad564ab58d4f4bce19",
+    "Assets/GameOfLife/Runtime/LifeWorld.cs": "22ddd9d50aa85feaf9b9d9793bb001ac061db3126181bc3f494a499fe31e9a30",
+    "Assets/GameOfLife/Runtime/LifeWorld.Regions.cs": "a64e18f884157b63733a5ed68e94e294eb775add91acbd3847e9d3d25e0e26bf",
+    "Assets/GameOfLife/Runtime/LifeController.cs": "f909c8adf0c0e406c03c6ff1d467a5a97b3653e8a7fce4e9a58ed7a56af92ba3"
+  },
+  "uiWorkspaceSourcesAtCapture": {
+    "Assets/GameOfLife/Runtime/LifeEditorToolbar.cs": "764d5134c85d2019a0f3b878f14ce96fb0e051e73a7c5d5502cb45644790286d",
+    "Assets/GameOfLife/Runtime/LifeWorldStore.cs": "181892331a5d1d159bfc7a0eaab853487c98e777ef070b749c439dbea96c204f",
+    "Assets/GameOfLife/Runtime/LifeStartScreen.cs": "cf40624ad4b2bb0cf227914e3c2e6d9c61b54b8eaca69eddcd28c9b4f455a5e9",
+    "Assets/GameOfLife/Runtime/LifePatternLibrary.cs": "5e8de73ceee848f0e01c2273fba64ce2046a9993856df3ca6b5107c3b11f303c"
+  },
+  "diagnosticSourcesAtCapture": {
+    "Tools/Benchmarks/MeasureLifeInteraction.cs": "fefb76c5d7b24cec7e4f3edeacc80036662c76bb130f785c0d9a78bc4baa852a",
+    "Tools/Benchmarks/RestoreLifeInteraction.cs": "f53dee5bcca88d30e3f80111fcf0ca1a31f4af26162c5ac4f7a9e3d56f3f7f72",
+    "Tools/Benchmarks/MeasureLife.cs": "6298913096478a2bc27b4b2493783a01790aed6e67fc68bd715f4a14722c1bdc",
+    "Tools/Benchmarks/MeasureLifeViewport.cs": "fa2f2c939d98d1f9a9f9c0c1280543e58e6cc8299ed3e92b9891f333a8513baf"
+  },
+  "artifacts": {
+    "Tools/Benchmarks/Results/interaction-before.json": "640fbff85c2d8247f7226bc308fc31edd749f18903255987f2d0ebe046807aaa",
+    "Tools/Benchmarks/Results/interaction-after.json": "754f52c05361f447c26967e302f5729af9c52cf1691ab4736ae7573584803f6d",
+    "Tools/Benchmarks/Results/interaction-incremental.json": "12dc241d41e5d6ef863faf4f7c0cd808730e272a360e1515ea6398f55f27d7df",
+    "Tools/Benchmarks/Results/interaction-restored.json": "2589a554880af5d65bfd80f507af46d74b5549f80c9c8004ed8600b7c026fb68",
+    "Tools/Benchmarks/Results/interaction-fixed-input.json": "2ec9898a2105c6197b71edc507b850f635b82701371a000dc910820546c32849",
+    "Tools/Benchmarks/Results/interaction-running.json": "757a6ecc2e0a0e88afa8767c49cb203e8f28dce868ba85717a1acd6032b28617",
+    "Tools/Benchmarks/Results/interaction-summary.json": "aafaab39fe402af346d306db00679d885bf02d2daa410c7ed079bdddd2f8b194",
+    "Tools/Benchmarks/Results/interaction-core.json": "0bae15df129bc4665449cc384ee0bd30d2d87684f5143a4c1b805211354f64d1",
+    "Tools/Benchmarks/Results/interaction-camera.json": "7794c3a5e79cb0bbd615ea3bc88bbff0ecc40c6997ca3ab1a22a3eadcd31e149",
+    "Tools/Benchmarks/Results/interaction-lifecycle.json": "dcdd8d44612badcedd99ae1ed5c6f23ae9091d1cd852bbbef2e18093248b4fbd",
+    "Tools/Benchmarks/Results/viewport-interaction-current.json": "c3c1355c11d9864300e5e388fb978220136c726b93a25a56f30a5a5e285fbd4c"
+  },
+  "restoredInput": {
+    "path": "D:\\Unity_Project\\麦吉太文笔试\\Tools\\Benchmarks\\Work\\interaction-input-initial.rle",
+    "sha256": "18b9dbcf6d59e911c15ca2870823f8d7100de5135817692be83ff1502bcea73b",
+    "bytes": 16168355,
+    "populationAfterFormalParse": 6435151,
+    "originX": -15317,
+    "originY": -21004,
+    "visibleCells": 32768,
+    "restoredGeneration": 0,
+    "sourceGenerationRecordedAtCaptureStart": 135696
+  },
+  "limits": "交互最终两轮使用已编译当前运行时。早期回放期间工具签名、Marker和相机干扰记录逐步补齐；此处最终工具哈希不冒充各历史回放的源码哈希。UI仍为另一方未提交工作区内容。存档不包含原代数，源代数是采集开始读数，不能当作存档携带的正式快照身份。"
+}

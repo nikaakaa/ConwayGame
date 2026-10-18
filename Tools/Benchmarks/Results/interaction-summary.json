@@ -1,0 +1,1110 @@
+{
+  "completedAtUtc": "2026-10-18T10:43:54.765809+00:00",
+  "percentileRule": "p99 = sorted[floor(.99 * (count - 1))]; median uses the two central values for even count",
+  "scope": "before/after为旧显示及一次性整窗绘图诊断；旧Burst Marker零值不解释成零耗时。incremental/restored输入未固定，仅保留探索记录。fixed-input与running均为0代重新载入同一6435151细胞存档、32768格视野、五轮540帧，无额外相机变化；前者暂停、后者实际播放。不同Editor负载、时间基底与缓存条件不能形成精确加速比。不测GPU完成、鼠标到像素延迟或整个Game的GC.Alloc。",
+  "replays": {
+    "before": {
+      "reason": "completed",
+      "count": 540,
+      "sourceGeneration": 135696,
+      "originX": -15317,
+      "originY": -21004,
+      "size": 32768,
+      "speed": 1280.0,
+      "uncontaminatedCameraReplay": null,
+      "hitFailures": null,
+      "recordedSizes": [
+        16384,
+        32768
+      ],
+      "phase": {
+        "idle": {
+          "count": 60,
+          "gapMs": {
+            "median": 3.8372,
+            "p99": 4.3564,
+            "max": 4.6655
+          },
+          "inputMs": {
+            "median": 0.0009,
+            "p99": 0.0012,
+            "max": 0.0054
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "lateMs": {
+            "median": 0.02225,
+            "p99": 0.0291,
+            "max": 0.0344
+          },
+          "simulationMs": {
+            "median": 0.026750000000000003,
+            "p99": 0.0312,
+            "max": 0.0315
+          }
+        },
+        "hover": {
+          "count": 120,
+          "gapMs": {
+            "median": 11.447700000000001,
+            "p99": 14.3392,
+            "max": 17.4083
+          },
+          "inputMs": {
+            "median": 0.0191,
+            "p99": 0.0264,
+            "max": 3.7315
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "lateMs": {
+            "median": 6.8353,
+            "p99": 8.279,
+            "max": 8.39
+          },
+          "simulationMs": {
+            "median": 0.0257,
+            "p99": 0.0343,
+            "max": 0.0348
+          }
+        },
+        "drag": {
+          "count": 240,
+          "gapMs": {
+            "median": 11.26575,
+            "p99": 16.6376,
+            "max": 18.3924
+          },
+          "inputMs": {
+            "median": 0.025,
+            "p99": 0.037,
+            "max": 0.1053
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "lateMs": {
+            "median": 6.4962,
+            "p99": 9.9506,
+            "max": 13.201
+          },
+          "simulationMs": {
+            "median": 0.0556,
+            "p99": 0.0779,
+            "max": 0.0932
+          }
+        },
+        "zoom": {
+          "count": 120,
+          "gapMs": {
+            "median": 4.03265,
+            "p99": 13.2067,
+            "max": 15.5127
+          },
+          "inputMs": {
+            "median": 0.0009,
+            "p99": 0.0233,
+            "max": 0.0834
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "lateMs": {
+            "median": 0.024149999999999998,
+            "p99": 8.2412,
+            "max": 9.8398
+          },
+          "simulationMs": {
+            "median": 0.0263,
+            "p99": 0.059,
+            "max": 0.07
+          }
+        }
+      }
+    },
+    "after": {
+      "reason": "completed",
+      "count": 540,
+      "sourceGeneration": 0,
+      "originX": -15317,
+      "originY": -21004,
+      "size": 32768,
+      "speed": 1280.0,
+      "uncontaminatedCameraReplay": null,
+      "hitFailures": 0,
+      "recordedSizes": [
+        16384,
+        32768
+      ],
+      "phase": {
+        "idle": {
+          "count": 60,
+          "gapMs": {
+            "median": 9.1326,
+            "p99": 14.5628,
+            "max": 17.2432
+          },
+          "inputMs": {
+            "median": 0.0021,
+            "p99": 0.0042,
+            "max": 0.0109
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "lateMs": {
+            "median": 0.047799999999999995,
+            "p99": 0.083,
+            "max": 0.1683
+          },
+          "simulationMs": {
+            "median": 0.045399999999999996,
+            "p99": 0.0561,
+            "max": 0.1193
+          }
+        },
+        "hover": {
+          "count": 120,
+          "gapMs": {
+            "median": 11.53735,
+            "p99": 15.6408,
+            "max": 37.6225
+          },
+          "inputMs": {
+            "median": 0.0273,
+            "p99": 0.0571,
+            "max": 1.6423
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "overlayMs": {
+            "median": 1.3963,
+            "p99": 3.6968,
+            "max": 24.7693
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "overlayUploadMs": {
+            "median": 0.038900000000000004,
+            "p99": 0.0563,
+            "max": 0.0784
+          },
+          "lateMs": {
+            "median": 1.5357500000000002,
+            "p99": 3.8259,
+            "max": 25.9472
+          },
+          "simulationMs": {
+            "median": 0.043050000000000005,
+            "p99": 0.0543,
+            "max": 0.0643
+          }
+        },
+        "drag": {
+          "count": 240,
+          "gapMs": {
+            "median": 23.7399,
+            "p99": 33.8355,
+            "max": 43.1923
+          },
+          "inputMs": {
+            "median": 0.10905000000000001,
+            "p99": 0.1994,
+            "max": 1.8686
+          },
+          "rasterMs": {
+            "median": 10.9696,
+            "p99": 19.0584,
+            "max": 19.8877
+          },
+          "overlayMs": {
+            "median": 1.96475,
+            "p99": 4.2438,
+            "max": 7.1448
+          },
+          "boardUploadMs": {
+            "median": 0.04355,
+            "p99": 0.0767,
+            "max": 0.3406
+          },
+          "overlayUploadMs": {
+            "median": 0.029449999999999997,
+            "p99": 0.0449,
+            "max": 0.2172
+          },
+          "lateMs": {
+            "median": 13.25355,
+            "p99": 22.8229,
+            "max": 24.4541
+          },
+          "simulationMs": {
+            "median": 0.0524,
+            "p99": 0.0856,
+            "max": 0.164
+          }
+        },
+        "zoom": {
+          "count": 120,
+          "gapMs": {
+            "median": 10.210999999999999,
+            "p99": 31.3109,
+            "max": 55.0115
+          },
+          "inputMs": {
+            "median": 0.0019,
+            "p99": 0.1248,
+            "max": 0.659
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 14.4101,
+            "max": 18.4702
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 3.6108,
+            "max": 3.8555
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0524,
+            "max": 0.0525
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0482,
+            "max": 0.0619
+          },
+          "lateMs": {
+            "median": 0.0499,
+            "p99": 16.9818,
+            "max": 20.7732
+          },
+          "simulationMs": {
+            "median": 0.044649999999999995,
+            "p99": 0.0851,
+            "max": 0.0917
+          }
+        }
+      }
+    },
+    "incremental": {
+      "reason": "completed",
+      "count": 540,
+      "sourceGeneration": 13568,
+      "originX": -7228,
+      "originY": -12829,
+      "size": 16384,
+      "speed": 640.0,
+      "uncontaminatedCameraReplay": null,
+      "hitFailures": 0,
+      "recordedSizes": [
+        8192,
+        16384
+      ],
+      "phase": {
+        "idle": {
+          "count": 60,
+          "gapMs": {
+            "median": 10.4672,
+            "p99": 14.1569,
+            "max": 17.6473
+          },
+          "inputMs": {
+            "median": 0.00165,
+            "p99": 0.0061,
+            "max": 0.0063
+          },
+          "rasterMs": {
+            "median": 1.0023,
+            "p99": 1.0224,
+            "max": 1.0573
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 2.0305,
+            "max": 2.0987
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0315,
+            "max": 0.0336
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0467,
+            "max": 0.0487
+          },
+          "lateMs": {
+            "median": 1.0903,
+            "p99": 2.8456,
+            "max": 3.0822
+          },
+          "simulationMs": {
+            "median": 0.04035,
+            "p99": 0.0547,
+            "max": 0.0577
+          }
+        },
+        "hover": {
+          "count": 120,
+          "gapMs": {
+            "median": 10.629950000000001,
+            "p99": 18.2021,
+            "max": 20.1365
+          },
+          "inputMs": {
+            "median": 0.0258,
+            "p99": 0.0352,
+            "max": 0.0371
+          },
+          "rasterMs": {
+            "median": 1.0019,
+            "p99": 1.0066,
+            "max": 1.0111
+          },
+          "overlayMs": {
+            "median": 0.96245,
+            "p99": 2.6553,
+            "max": 2.9055
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0224,
+            "max": 0.0249
+          },
+          "overlayUploadMs": {
+            "median": 0.03615,
+            "p99": 0.0557,
+            "max": 0.0655
+          },
+          "lateMs": {
+            "median": 1.8847999999999998,
+            "p99": 3.1115,
+            "max": 3.905
+          },
+          "simulationMs": {
+            "median": 0.03955,
+            "p99": 0.0667,
+            "max": 0.0759
+          }
+        },
+        "drag": {
+          "count": 240,
+          "gapMs": {
+            "median": 12.2538,
+            "p99": 21.1335,
+            "max": 27.6733
+          },
+          "inputMs": {
+            "median": 0.1065,
+            "p99": 0.2068,
+            "max": 0.2451
+          },
+          "rasterMs": {
+            "median": 1.0021,
+            "p99": 1.0324,
+            "max": 1.0947
+          },
+          "overlayMs": {
+            "median": 1.1311499999999999,
+            "p99": 2.4581,
+            "max": 3.0543
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0281,
+            "max": 0.0343
+          },
+          "overlayUploadMs": {
+            "median": 0.03675,
+            "p99": 0.0561,
+            "max": 0.0718
+          },
+          "lateMs": {
+            "median": 2.1897,
+            "p99": 3.613,
+            "max": 4.2004
+          },
+          "simulationMs": {
+            "median": 0.08795,
+            "p99": 0.1484,
+            "max": 0.1733
+          }
+        },
+        "zoom": {
+          "count": 120,
+          "gapMs": {
+            "median": 10.68095,
+            "p99": 16.4101,
+            "max": 16.5902
+          },
+          "inputMs": {
+            "median": 0.0018,
+            "p99": 0.127,
+            "max": 0.1596
+          },
+          "rasterMs": {
+            "median": 1.0026,
+            "p99": 1.0122,
+            "max": 1.0428
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 1.868,
+            "max": 2.3152
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0235,
+            "max": 0.0246
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0528,
+            "max": 0.1631
+          },
+          "lateMs": {
+            "median": 1.09875,
+            "p99": 3.0795,
+            "max": 3.4921
+          },
+          "simulationMs": {
+            "median": 0.047,
+            "p99": 0.1183,
+            "max": 0.1468
+          }
+        }
+      }
+    },
+    "restored": {
+      "reason": "completed",
+      "count": 540,
+      "sourceGeneration": 0,
+      "originX": -15317,
+      "originY": -21004,
+      "size": 32768,
+      "speed": 1280.0,
+      "uncontaminatedCameraReplay": null,
+      "hitFailures": 0,
+      "recordedSizes": [
+        8,
+        16,
+        32,
+        64,
+        128,
+        262144
+      ],
+      "phase": {
+        "idle": {
+          "count": 60,
+          "gapMs": {
+            "median": 5.5085,
+            "p99": 7.6212,
+            "max": 9.6097
+          },
+          "inputMs": {
+            "median": 0.00135,
+            "p99": 0.006,
+            "max": 0.0074
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 0.4049,
+            "max": 1.0019
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 0.8945,
+            "max": 1.0194
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0205
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0311,
+            "max": 0.0374
+          },
+          "lateMs": {
+            "median": 0.028749999999999998,
+            "p99": 1.0503,
+            "max": 1.5558
+          },
+          "simulationMs": {
+            "median": 0.0312,
+            "p99": 0.0467,
+            "max": 0.0474
+          }
+        },
+        "hover": {
+          "count": 120,
+          "gapMs": {
+            "median": 6.266,
+            "p99": 9.9445,
+            "max": 10.749
+          },
+          "inputMs": {
+            "median": 0.0195,
+            "p99": 0.0316,
+            "max": 0.0332
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 0.0896,
+            "max": 1.008
+          },
+          "overlayMs": {
+            "median": 0.66795,
+            "p99": 1.3054,
+            "max": 1.6246
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0242
+          },
+          "overlayUploadMs": {
+            "median": 0.0233,
+            "p99": 0.0348,
+            "max": 0.056
+          },
+          "lateMs": {
+            "median": 0.7392,
+            "p99": 1.7845,
+            "max": 2.138
+          },
+          "simulationMs": {
+            "median": 0.03185,
+            "p99": 0.0714,
+            "max": 0.1322
+          }
+        },
+        "drag": {
+          "count": 240,
+          "gapMs": {
+            "median": 6.8681,
+            "p99": 12.1463,
+            "max": 86.4294
+          },
+          "inputMs": {
+            "median": 0.03315,
+            "p99": 0.1191,
+            "max": 0.7571
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 1.0217,
+            "max": 1.0412
+          },
+          "overlayMs": {
+            "median": 0.7003999999999999,
+            "p99": 1.3294,
+            "max": 1.7504
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0321,
+            "max": 0.0869
+          },
+          "overlayUploadMs": {
+            "median": 0.0122,
+            "p99": 0.0337,
+            "max": 0.0669
+          },
+          "lateMs": {
+            "median": 0.8318,
+            "p99": 2.3757,
+            "max": 2.6891
+          },
+          "simulationMs": {
+            "median": 0.0344,
+            "p99": 0.0801,
+            "max": 0.1334
+          }
+        },
+        "zoom": {
+          "count": 120,
+          "gapMs": {
+            "median": 5.7582,
+            "p99": 9.4369,
+            "max": 12.3739
+          },
+          "inputMs": {
+            "median": 0.0012499999999999998,
+            "p99": 0.0861,
+            "max": 0.117
+          },
+          "rasterMs": {
+            "median": 0.0,
+            "p99": 0.8691,
+            "max": 1.0241
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 1.1638,
+            "max": 1.1749
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0277,
+            "max": 0.0294
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0265,
+            "max": 0.0276
+          },
+          "lateMs": {
+            "median": 0.03265,
+            "p99": 2.0349,
+            "max": 2.1917
+          },
+          "simulationMs": {
+            "median": 0.03265,
+            "p99": 0.0546,
+            "max": 0.0754
+          }
+        }
+      }
+    },
+    "fixed-input": {
+      "reason": "completed",
+      "count": 540,
+      "sourceGeneration": 0,
+      "originX": -15317,
+      "originY": -21004,
+      "size": 32768,
+      "speed": 1280.0,
+      "uncontaminatedCameraReplay": true,
+      "hitFailures": 0,
+      "recordedSizes": [
+        16384,
+        32768
+      ],
+      "phase": {
+        "idle": {
+          "count": 60,
+          "gapMs": {
+            "median": 9.889299999999999,
+            "p99": 15.9226,
+            "max": 18.6249
+          },
+          "inputMs": {
+            "median": 0.0019,
+            "p99": 0.0046,
+            "max": 0.0125
+          },
+          "rasterMs": {
+            "median": 1.0021499999999999,
+            "p99": 1.0066,
+            "max": 1.0944
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0,
+            "max": 0.0
+          },
+          "lateMs": {
+            "median": 1.0617,
+            "p99": 1.1505,
+            "max": 1.1569
+          },
+          "simulationMs": {
+            "median": 0.0417,
+            "p99": 0.0621,
+            "max": 0.0634
+          }
+        },
+        "hover": {
+          "count": 120,
+          "gapMs": {
+            "median": 11.63185,
+            "p99": 28.9068,
+            "max": 42.1373
+          },
+          "inputMs": {
+            "median": 0.0275,
+            "p99": 0.0706,
+            "max": 0.3433
+          },
+          "rasterMs": {
+            "median": 1.0008,
+            "p99": 1.0054,
+            "max": 1.0476
+          },
+          "overlayMs": {
+            "median": 1.3504,
+            "p99": 2.668,
+            "max": 7.5447
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0237,
+            "max": 0.0289
+          },
+          "overlayUploadMs": {
+            "median": 0.0382,
+            "p99": 0.06,
+            "max": 0.1506
+          },
+          "lateMs": {
+            "median": 2.2818,
+            "p99": 3.6893,
+            "max": 7.6737
+          },
+          "simulationMs": {
+            "median": 0.0424,
+            "p99": 0.0731,
+            "max": 0.0863
+          }
+        },
+        "drag": {
+          "count": 240,
+          "gapMs": {
+            "median": 11.988600000000002,
+            "p99": 18.4066,
+            "max": 28.7927
+          },
+          "inputMs": {
+            "median": 0.10800000000000001,
+            "p99": 0.1473,
+            "max": 0.2972
+          },
+          "rasterMs": {
+            "median": 1.0024,
+            "p99": 1.0799,
+            "max": 1.1056
+          },
+          "overlayMs": {
+            "median": 1.335,
+            "p99": 2.6326,
+            "max": 3.1467
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0208,
+            "max": 0.0305
+          },
+          "overlayUploadMs": {
+            "median": 0.039,
+            "p99": 0.0553,
+            "max": 0.0728
+          },
+          "lateMs": {
+            "median": 2.4453,
+            "p99": 3.7663,
+            "max": 4.2754
+          },
+          "simulationMs": {
+            "median": 0.0538,
+            "p99": 0.0818,
+            "max": 0.1565
+          }
+        },
+        "zoom": {
+          "count": 120,
+          "gapMs": {
+            "median": 10.529,
+            "p99": 15.1964,
+            "max": 18.6231
+          },
+          "inputMs": {
+            "median": 0.0017,
+            "p99": 0.1264,
+            "max": 0.5361
+          },
+          "rasterMs": {
+            "median": 1.0023,
+            "p99": 1.0352,
+            "max": 1.1741
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 1.9773,
+            "max": 2.4728
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0288,
+            "max": 0.03
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0454,
+            "max": 0.0484
+          },
+          "lateMs": {
+            "median": 1.0715,
+            "p99": 3.0272,
+            "max": 3.4406
+          },
+          "simulationMs": {
+            "median": 0.0464,
+            "p99": 0.0658,
+            "max": 0.1154
+          }
+        }
+      }
+    },
+    "running": {
+      "reason": "completed",
+      "count": 540,
+      "sourceGeneration": 0,
+      "originX": -15317,
+      "originY": -21004,
+      "size": 32768,
+      "speed": 1280.0,
+      "uncontaminatedCameraReplay": true,
+      "hitFailures": 0,
+      "recordedSizes": [
+        16384,
+        32768
+      ],
+      "phase": {
+        "idle": {
+          "count": 60,
+          "gapMs": {
+            "median": 6.98135,
+            "p99": 10.7066,
+            "max": 12.2638
+          },
+          "inputMs": {
+            "median": 0.0015,
+            "p99": 0.0033,
+            "max": 0.0081
+          },
+          "rasterMs": {
+            "median": 1.001,
+            "p99": 1.0051,
+            "max": 1.0593
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 1.0984,
+            "max": 1.2712
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0201,
+            "max": 0.0245
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0147,
+            "max": 0.0178
+          },
+          "lateMs": {
+            "median": 1.0399500000000002,
+            "p99": 1.8103,
+            "max": 2.2599
+          },
+          "simulationMs": {
+            "median": 0.035250000000000004,
+            "p99": 2.7381,
+            "max": 2.9046
+          }
+        },
+        "hover": {
+          "count": 120,
+          "gapMs": {
+            "median": 7.79335,
+            "p99": 14.7093,
+            "max": 19.0582
+          },
+          "inputMs": {
+            "median": 0.01935,
+            "p99": 0.0276,
+            "max": 0.0393
+          },
+          "rasterMs": {
+            "median": 1.00155,
+            "p99": 1.0175,
+            "max": 1.1517
+          },
+          "overlayMs": {
+            "median": 0.7020500000000001,
+            "p99": 1.7931,
+            "max": 2.2909
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0208,
+            "max": 0.0231
+          },
+          "overlayUploadMs": {
+            "median": 0.0276,
+            "p99": 0.0379,
+            "max": 0.0391
+          },
+          "lateMs": {
+            "median": 1.8016999999999999,
+            "p99": 3.0268,
+            "max": 3.5538
+          },
+          "simulationMs": {
+            "median": 0.035500000000000004,
+            "p99": 3.1295,
+            "max": 3.9037
+          }
+        },
+        "drag": {
+          "count": 240,
+          "gapMs": {
+            "median": 7.26,
+            "p99": 11.9659,
+            "max": 13.2162
+          },
+          "inputMs": {
+            "median": 0.0706,
+            "p99": 0.1087,
+            "max": 0.2871
+          },
+          "rasterMs": {
+            "median": 1.0012500000000002,
+            "p99": 1.006,
+            "max": 1.0269
+          },
+          "overlayMs": {
+            "median": 0.68255,
+            "p99": 1.3746,
+            "max": 1.7683
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0181,
+            "max": 0.0225
+          },
+          "overlayUploadMs": {
+            "median": 0.0243,
+            "p99": 0.0391,
+            "max": 0.0589
+          },
+          "lateMs": {
+            "median": 1.7647499999999998,
+            "p99": 2.5261,
+            "max": 3.0157
+          },
+          "simulationMs": {
+            "median": 0.07175000000000001,
+            "p99": 2.8012,
+            "max": 3.7035
+          }
+        },
+        "zoom": {
+          "count": 120,
+          "gapMs": {
+            "median": 6.8538499999999996,
+            "p99": 10.8311,
+            "max": 11.066
+          },
+          "inputMs": {
+            "median": 0.0012,
+            "p99": 0.0907,
+            "max": 0.0952
+          },
+          "rasterMs": {
+            "median": 1.0013,
+            "p99": 1.0069,
+            "max": 1.0649
+          },
+          "overlayMs": {
+            "median": 0.0,
+            "p99": 1.056,
+            "max": 1.3787
+          },
+          "boardUploadMs": {
+            "median": 0.0,
+            "p99": 0.0187,
+            "max": 0.0232
+          },
+          "overlayUploadMs": {
+            "median": 0.0,
+            "p99": 0.0293,
+            "max": 0.0441
+          },
+          "lateMs": {
+            "median": 1.0504,
+            "p99": 2.0011,
+            "max": 2.1687
+          },
+          "simulationMs": {
+            "median": 0.037000000000000005,
+            "p99": 4.0342,
+            "max": 4.0401
+          }
+        }
+      },
+      "generationRange": [
+        0,
+        5248
+      ],
+      "runningFrames": 539
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "success": true,
+  "command": "command eval",
+  "data": {
+    "command": "eval",
+    "parameters": {
+      "code": "var c=UnityEngine.Object.FindFirstObjectByType<GameOfLife.LifeController>(); var v=c.View; var oldOrigin=v.Origin; int oldSize=v.VisibleCells; var rect=v.BoardImage.rectTransform; UnityEngine.Vector2 Point(float x,float y)=>UnityEngine.RectTransformUtility.WorldToScreenPoint(null,rect.TransformPoint(new UnityEngine.Vector3(rect.rect.xMin+rect.rect.width*x,rect.rect.yMin+rect.rect.height*y))); v.ResetWindow(); v.Pan(new Unity.Mathematics.int2(64,64)); var quarter=Point(.25f,.25f); v.TryGetCell(quarter,null,out var firstAnchor); v.Zoom(quarter,null,true); v.TryGetCell(quarter,null,out var firstAfter); int quarterX=v.Origin.x; int quarterSize=v.VisibleCells; var threeQuarter=Point(.75f,.75f); v.TryGetCell(threeQuarter,null,out var secondAnchor); v.Zoom(threeQuarter,null,true); v.TryGetCell(threeQuarter,null,out var secondAfter); int threeQuarterX=v.Origin.x; int threeQuarterSize=v.VisibleCells; var pointer=new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current){button=UnityEngine.EventSystems.PointerEventData.InputButton.Middle,position=Point(.5f,.5f),scrollDelta=new UnityEngine.Vector2(0,1)}; c.OnPointerDown(pointer); c.OnScroll(pointer); var afterScroll=v.Origin; int afterScrollSize=v.VisibleCells; c.OnDrag(pointer); bool dragKeptZoomOrigin=Unity.Mathematics.math.all(v.Origin==afterScroll); c.OnPointerUp(pointer); while(v.VisibleCells!=oldSize)v.Zoom(Point(.5f,.5f),null,v.VisibleCells>oldSize); v.Pan(oldOrigin-v.Origin); return new{quarterX,quarterSize,firstAnchorPreserved=Unity.Mathematics.math.all(firstAnchor==firstAfter),threeQuarterX,threeQuarterSize,secondAnchorPreserved=Unity.Mathematics.math.all(secondAnchor==secondAfter),afterScrollX=afterScroll.x,afterScrollSize,dragKeptZoomOrigin,restoredX=v.Origin.x,restoredY=v.Origin.y,restoredSize=v.VisibleCells};"
+    },
+    "result": {
+      "output": null,
+      "diagnostics": [],
+      "success": true,
+      "result": {
+        "quarterX": 16,
+        "quarterSize": 64,
+        "firstAnchorPreserved": true,
+        "threeQuarterX": 40,
+        "threeQuarterSize": 32,
+        "secondAnchorPreserved": true,
+        "afterScrollX": 48,
+        "afterScrollSize": 16,
+        "dragKeptZoomOrigin": true,
+        "restoredX": -64,
+        "restoredY": -64,
+        "restoredSize": 128
+      }
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "D:\\Unity_Project\\麦吉太文笔试"
+    }
+  },
+  "errors": [],
+  "warnings": []
+}

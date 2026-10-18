@@ -1,0 +1,39 @@
+{
+  "success": true,
+  "command": "command eval",
+  "data": {
+    "command": "eval",
+    "parameters": {
+      "code": "var bits = new GameOfLife.LifeBits(); bits.Set(0,0,true); bits.Set(1,0,true); bits.Set(0,1,true); bits.Set(1,1,true); using var w = new GameOfLife.LifeWorld(); var shape = w.BuildShape(new[] { new GameOfLife.LifeTile { Position = Unity.Mathematics.int2.zero, Bits = bits } }); using var pixels = new Unity.Collections.NativeArray<UnityEngine.Color32>(1048576,Unity.Collections.Allocator.TempJob); using var stack = new Unity.Collections.NativeList<GameOfLife.LifeDrawTask>(256,Unity.Collections.Allocator.TempJob); using var progress = new Unity.Collections.NativeArray<GameOfLife.LifeRasterProgress>(1,Unity.Collections.Allocator.TempJob); stack.Add(new GameOfLife.LifeDrawTask {Root=shape.Root,X=shape.X,Y=shape.Y}); var job = new GameOfLife.LifeRasterJob { Nodes=w.Nodes,Pixels=pixels,Stack=stack,Progress=progress,WorkBudget=1,Origin=Unity.Mathematics.int2.zero,VisibleCells=128 }; w.SetRenderRoot(shape.Root); Unity.Jobs.IJobExtensions.Run(job); int cursorBeforeCollection=progress[0].ClearCursor; w.BeginCollection(System.Array.Empty<GameOfLife.LifeShape>()); while(!w.ContinueCollection(128)) {} long retainedPopulation=w.Nodes[shape.Root].Population; int beforeGrowth=w.Nodes.Length; var tiles = new GameOfLife.LifeTile[256]; for(int i=0;i<256;i++){var b=new GameOfLife.LifeBits(); b.Set(i&15,i>>4,true); tiles[i]=new GameOfLife.LifeTile {Position=new Unity.Mathematics.int2(i*16,0),Bits=b};} w.BuildShape(tiles); int afterGrowth=w.Nodes.Length; int batches=1; job.WorkBudget=64; while(progress[0].Stage!=GameOfLife.LifeRasterStage.Complete){job.Nodes=w.Nodes; Unity.Jobs.IJobExtensions.Run(job); batches++;} int white=0; for(int i=0;i<pixels.Length;i++) if(pixels[i].r==255)white++; w.SetRenderRoot(0); w.BeginCollection(System.Array.Empty<GameOfLife.LifeShape>()); while(!w.ContinueCollection(128)){} int releasedLevel=w.Nodes[shape.Root].Level; using var roi=new GameOfLife.LifeWorld(); var seed=roi.BuildShape(new[] {new GameOfLife.LifeTile {Position=Unity.Mathematics.int2.zero,Bits=bits}}); roi.BeginEdit(); roi.Stamp(seed,Unity.Mathematics.int2.zero); roi.EndEdit(); while(!roi.IsViewCurrent) roi.Pump(128); roi.BeginAdvance(4); roi.Pump(1); bool advancingBeforeCancel=roi.IsAdvancing; roi.SetViewport(new Unity.Mathematics.int2(4096,4096),128); roi.CancelAdvance(); bool pendingAfterCancel=roi.HasPendingWork; int pumps=0; while(!roi.IsViewCurrent && pumps<10000){roi.Pump(128); pumps++;} return new {cursorBeforeCollection,retainedPopulation,beforeGrowth,afterGrowth,batches,white,expectedWhite=256,releasedLevel,advancingBeforeCancel,pendingAfterCancel,pumps,viewCurrent=roi.IsViewCurrent,minX=roi.ViewFrame.ValidBounds.MinX,minY=roi.ViewFrame.ValidBounds.MinY,generation=roi.Snapshot.Generation};"
+    },
+    "result": {
+      "output": null,
+      "diagnostics": [],
+      "success": true,
+      "result": {
+        "cursorBeforeCollection": 1024,
+        "retainedPopulation": 4,
+        "beforeGrowth": 4,
+        "afterGrowth": 521,
+        "batches": 18,
+        "white": 256,
+        "expectedWhite": 256,
+        "releasedLevel": -1,
+        "advancingBeforeCancel": true,
+        "pendingAfterCancel": false,
+        "pumps": 0,
+        "viewCurrent": true,
+        "minX": 4096,
+        "minY": 4096,
+        "generation": 0
+      }
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "D:\\Unity_Project\\麦吉太文笔试"
+    }
+  },
+  "errors": [],
+  "warnings": []
+}

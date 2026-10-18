@@ -373,6 +373,7 @@ using (var entityWorld = new Unity.Entities.World("Life input benchmark", Unity.
 }
 using (var world = new GameOfLife.LifeWorld())
 using (var stack = new Unity.Collections.NativeList<GameOfLife.LifeDrawTask>(256, Unity.Collections.Allocator.Persistent))
+using (var progress = new Unity.Collections.NativeArray<GameOfLife.LifeRasterProgress>(1, Unity.Collections.Allocator.Persistent))
 {
     Put(world, world.BuildShape(blocks.Tiles));
     var texture = new Texture2D(1024, 1024, TextureFormat.RGBA32, false);
@@ -389,14 +390,28 @@ using (var stack = new Unity.Collections.NativeList<GameOfLife.LifeDrawTask>(256
         for (int run = -1; run < repetitions; run++)
         {
             var pixels = texture.GetRawTextureData<Color32>();
+            stack.Clear();
+            stack.Add(new GameOfLife.LifeDrawTask { Root = frame.Shape.Root, X = frame.Shape.X, Y = frame.Shape.Y });
+            const int rasterWorkBudget = 128;
             var job = new GameOfLife.LifeRasterJob {
-                Nodes = world.Nodes, Shape = frame.Shape, Pixels = pixels, Stack = stack,
-                Origin = origin, VisibleCells = visible
+                Nodes = world.Nodes, Pixels = pixels, Stack = stack, Progress = progress,
+                WorkBudget = rasterWorkBudget, Origin = origin, VisibleCells = visible
             };
+            job.Progress[0] = default;
             var stopwatch = new System.Diagnostics.Stopwatch();
+            var batchWatch = new System.Diagnostics.Stopwatch();
+            int rasterBatches = 0;
+            double maxRasterBatchMs = 0;
             using var gcRecorder = StartGcAllocationRecording();
             stopwatch.Start();
-            Unity.Jobs.IJobExtensions.Run(job);
+            do
+            {
+                batchWatch.Restart();
+                Unity.Jobs.IJobExtensions.Run(job);
+                batchWatch.Stop();
+                maxRasterBatchMs = Math.Max(maxRasterBatchMs, batchWatch.Elapsed.TotalMilliseconds);
+                rasterBatches++;
+            } while (progress[0].Stage != GameOfLife.LifeRasterStage.Complete);
             stopwatch.Stop();
             var gcAllocations = ReadGcAllocationResult(gcRecorder);
             double rasterMs = stopwatch.Elapsed.TotalMilliseconds;
@@ -414,6 +429,7 @@ using (var stack = new Unity.Collections.NativeList<GameOfLife.LifeDrawTask>(256
                 results.Add(new {
                     operation = "raster", name = "1048576-cells", run, visible,
                     milliseconds = rasterMs, uploadCpuMilliseconds = stopwatch.Elapsed.TotalMilliseconds,
+                    rasterWorkBudget, rasterBatches, maxRasterBatchMs,
                     gcAllocations, whitePixels, valid,
                     materializeMilliseconds = materializeWatch.Elapsed.TotalMilliseconds
                 });
@@ -426,7 +442,7 @@ var result = new {
     unity = Application.unityVersion, burstEnabled = Unity.Burst.BurstCompiler.IsEnabled,
     processor = SystemInfo.processorType, logicalProcessors = SystemInfo.processorCount,
     repetitions, budget, limitSeconds, gcAllocationCalibration, failures, results,
-    scope = "advance/sequential 固定视野覆盖输入向外扩展请求代数的保守支持；milliseconds 与 GC.Alloc 只计视野推进。精确人口、坐标与指纹由显式全图导出取得，另计 exportMilliseconds，exactCompletionMilliseconds 合计两阶段。stroke 计命令消费，不冒充画面就绪延迟，导出验证另计。raster 从完成 ViewFrame 绘制，区域准备计 materializeMilliseconds 并排除在 raster/上传计时之外。新口径不能把局部发布当作全图完成，也不能直接与旧根推进计时计算加速比。"
+    scope = "advance/sequential 固定视野覆盖输入向外扩展请求代数的保守支持；milliseconds 与 GC.Alloc 只计视野推进。精确人口、坐标与指纹由显式全图导出取得，另计 exportMilliseconds，exactCompletionMilliseconds 合计两阶段。stroke 计命令消费，不冒充画面就绪延迟，导出验证另计。raster 从完成 ViewFrame 初始化栈与进度后开始计时，按小批次续跑到全部像素完成才上传；区域准备计 materializeMilliseconds，栈与进度初始化均排除在 raster/上传计时之外。单节点矩形填充仍是软预算，不构成批次耗时硬上限。新口径不能把局部发布当作全图完成，也不能直接与旧根推进计时计算加速比。"
 };
 System.IO.Directory.CreateDirectory("Temp/LifeBenchmarks");
 System.IO.File.WriteAllText("Temp/LifeBenchmarks/MeasureLife-result.json",
