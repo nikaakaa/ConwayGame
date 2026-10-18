@@ -75,9 +75,9 @@ namespace GameOfLife
         public LifeTile[] Build(bool relative)
         {
             Dictionary<int2, LifeBits> result = tiles;
-            if (relative)
+            int2 origin = relative ? Center(minimum, maximum) : int2.zero;
+            if (math.any(origin != int2.zero))
             {
-                int2 origin = Center(minimum, maximum);
                 result = new Dictionary<int2, LifeBits>(tiles.Count);
                 foreach (KeyValuePair<int2, LifeBits> tile in tiles)
                     for (int y = 0; y < 16; y++)

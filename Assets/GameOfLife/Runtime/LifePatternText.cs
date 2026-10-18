@@ -143,14 +143,16 @@ namespace GameOfLife
                 return false;
             }
 
-            string trimmed = text.Trim();
+            int first = 0;
+            while (char.IsWhiteSpace(text[first]))
+                first++;
             string name = fallbackName;
             var builder = new LifePatternBuilder();
             bool parsed;
-            if (trimmed[0] == '{')
-                parsed = ReadJson(trimmed, ref name, builder, out error);
-            else if (LooksLikeRle(trimmed))
-                parsed = ReadRle(trimmed, ref name, builder, out error);
+            if (text[first] == '{')
+                parsed = ReadJson(text.Trim(), ref name, builder, out error);
+            else if (LooksLikeRle(text))
+                parsed = ReadRle(text, ref name, builder, out error);
             else
                 parsed = ReadPlaintext(text, ref name, builder, out error);
             if (!parsed)
@@ -217,6 +219,8 @@ namespace GameOfLife
             int x = 0;
             int row = 0;
             bool bodyStarted = false;
+            int2 minimum = new int2(int.MaxValue);
+            int2 maximum = new int2(int.MinValue);
             int lineNumber = 0;
             using var reader = new StringReader(text);
             string raw;
@@ -282,6 +286,7 @@ namespace GameOfLife
                     {
                         if (!hasCount)
                         {
+                            PackRleRelative(text, LifePatternBuilder.Center(minimum, maximum), builder);
                             error = string.Empty;
                             return true;
                         }
@@ -323,7 +328,10 @@ namespace GameOfLife
                         return false;
                     }
                     if (alive)
-                        builder.AddRun(x, -row, run);
+                    {
+                        minimum = math.min(minimum, new int2(x, -row));
+                        maximum = math.max(maximum, new int2((int)end - 1, -row));
+                    }
                     x = (int)end;
                 }
                 if (hasCount)
@@ -334,6 +342,47 @@ namespace GameOfLife
             }
             error = "RLE 缺少结束标记 !";
             return false;
+        }
+
+        static void PackRleRelative(string text, int2 origin, LifePatternBuilder builder)
+        {
+            int x = 0;
+            int row = 0;
+            using var reader = new StringReader(text);
+            string raw;
+            while ((raw = reader.ReadLine()) != null)
+            {
+                string line = raw.Trim();
+                if (line.Length == 0 || line[0] == '#' || line[0] == 'x' || line[0] == 'X')
+                    continue;
+                int count = 0;
+                for (int i = 0; i < line.Length; i++)
+                {
+                    char c = line[i];
+                    if (c >= '0' && c <= '9')
+                    {
+                        count = count * 10 + c - '0';
+                        continue;
+                    }
+                    if (char.IsWhiteSpace(c))
+                        continue;
+                    if (c == '!')
+                        return;
+                    int run = count == 0 ? 1 : count;
+                    count = 0;
+                    if (c == '$')
+                    {
+                        row += run;
+                        x = 0;
+                    }
+                    else
+                    {
+                        if (c == 'o' || c == 'O')
+                            builder.AddRun(x - origin.x, -row - origin.y, run);
+                        x += run;
+                    }
+                }
+            }
         }
 
         static bool ReadHeader(string line, out int width, out int height, out string error)
