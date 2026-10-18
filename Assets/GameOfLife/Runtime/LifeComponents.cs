@@ -8,6 +8,13 @@ namespace GameOfLife
         public float GenerationsPerSecond;
     }
 
+    public struct LifeViewport : IComponentData
+    {
+        public int2 Origin;
+        public int VisibleCells;
+        public double FrameSeconds;
+    }
+
     public struct LifeState : IComponentData
     {
         public bool IsRunning;
