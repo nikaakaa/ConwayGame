@@ -111,7 +111,7 @@ namespace GameOfLife
             core.FullNodes = new NativeList<int>(64, Allocator.Persistent);
             Core kernel = ReadCore();
             LifeShape empty = kernel.EmptyShape();
-            int epoch = kernel.AddEpoch(new WorldEpoch { Kind = 0, Initial = empty, World = 0 });
+            int epoch = kernel.AddEpoch(new WorldEpoch { Kind = 0, Initial = empty, World = 0, GridX = empty.X, GridY = empty.Y });
             kernel.Time.Published = new LifeSnapshot(epoch, 0);
             kernel.Time.Viewport = new LifeRegion(-64, -64, 64, 64);
             kernel.Time.Frame = new LifeViewFrame(kernel.Time.Published, kernel.Time.Viewport, empty, 1);
@@ -291,6 +291,8 @@ namespace GameOfLife
             public LifeRegion Support;
             public int HasSupport;
             public long BaseGeneration;
+            public long GridX;
+            public long GridY;
         }
 
         struct SpatialKey : IEquatable<SpatialKey>
@@ -465,6 +467,8 @@ namespace GameOfLife
                 {
                     Kind = 1,
                     World = source.World,
+                    GridX = source.GridX,
+                    GridY = source.GridY,
                     Source = Time.EditSource,
                     BaseGeneration = Time.EditSource.Generation,
                     Alive = State.EditShape,
@@ -476,6 +480,8 @@ namespace GameOfLife
                 {
                     changed.Kind = 0;
                     changed.Initial = State.EditShape;
+                    changed.GridX = State.EditShape.X;
+                    changed.GridY = State.EditShape.Y;
                 }
                 int id = AddEpoch(changed);
                 Time.Published = new LifeSnapshot(id, Time.EditSource.Generation);
@@ -495,7 +501,7 @@ namespace GameOfLife
                 State.EditShape = EmptyShape();
                 State.EditDead = State.EditShape;
                 Time.World++;
-                int id = AddEpoch(new WorldEpoch { Kind = 0, Initial = State.EditShape, World = Time.World });
+                int id = AddEpoch(new WorldEpoch { Kind = 0, Initial = State.EditShape, World = Time.World, GridX = State.EditShape.X, GridY = State.EditShape.Y });
                 Time.Published = new LifeSnapshot(id, 0);
                 Time.EditSource = Time.Published;
                 Time.Population = new LifePopulationSample(Time.Published, 0);
@@ -545,8 +551,8 @@ namespace GameOfLife
                     Active = 1,
                     Target = snapshot,
                     Bounds = bounds,
-                    X = bounds.MinX & -side,
-                    Y = bounds.MinY & -side,
+                    X = ((bounds.MinX - epoch.GridX) & -side) + epoch.GridX,
+                    Y = ((bounds.MinY - epoch.GridY) & -side) + epoch.GridY,
                     Level = level + 1,
                     Children = new int4(Empty(level)),
                     Pending = -1,
@@ -714,7 +720,7 @@ namespace GameOfLife
                 WorldEpoch epoch = Epoch(space.Epoch);
                 if (frame.Phase == 0)
                 {
-                    if (TryRegion(frame.Key, epoch.MaxCachedLevel, out int cached))
+                    if (TryRegion(frame.Key, epoch, out int cached))
                     {
                         FinishRegion(stack, ref request, cached);
                         return;
@@ -758,7 +764,7 @@ namespace GameOfLife
                     }
                     if (space.Level == 4)
                     {
-                        DelegateParent(stack, frame, index);
+                        DelegateParent(stack, frame, index, epoch);
                         return;
                     }
                     long elapsed = frame.Key.Generation - epoch.BaseGeneration;
@@ -766,7 +772,7 @@ namespace GameOfLife
                     long amount = 1L << exponent;
                     if (amount > (1L << (space.Level - 1)))
                     {
-                        DelegateParent(stack, frame, index);
+                        DelegateParent(stack, frame, index, epoch);
                         return;
                     }
                     long sourceGeneration = frame.Key.Generation - amount;
@@ -826,7 +832,7 @@ namespace GameOfLife
                 if (frame.Phase == 5)
                 {
                     long half = 1L << space.Level;
-                    int quadrant = ((space.X & half) != 0 ? 1 : 0) | ((space.Y & half) != 0 ? 2 : 0);
+                    int quadrant = (((space.X - epoch.GridX) & half) != 0 ? 1 : 0) | (((space.Y - epoch.GridY) & half) != 0 ? 2 : 0);
                     int result = Nodes[request.Pending].Children[quadrant];
                     request.Pending = -1;
                     CompleteSample(stack, ref request, frame.Key, result);
@@ -837,13 +843,14 @@ namespace GameOfLife
                 CompleteSample(stack, ref request, frame.Key, patched);
             }
 
-            void DelegateParent(NativeList<RegionWork> stack, RegionWork frame, int index)
+            void DelegateParent(NativeList<RegionWork> stack, RegionWork frame, int index, WorldEpoch epoch)
             {
                 frame.Phase = 5;
                 stack[index] = frame;
                 long side = 1L << (frame.Key.Space.Level + 1);
                 stack.Add(Sample(new LifeSnapshot(frame.Key.Space.Epoch, frame.Key.Generation),
-                    frame.Key.Space.X & -side, frame.Key.Space.Y & -side, frame.Key.Space.Level + 1));
+                    ((frame.Key.Space.X - epoch.GridX) & -side) + epoch.GridX,
+                    ((frame.Key.Space.Y - epoch.GridY) & -side) + epoch.GridY, frame.Key.Space.Level + 1));
             }
 
             void StepGather(NativeList<RegionWork> stack, ref RegionRequest request, RegionWork frame, int index)
@@ -857,7 +864,9 @@ namespace GameOfLife
                         FinishRegion(stack, ref request, Empty(space.Level));
                         return;
                     }
-                    bool aligned = (space.X & (side - 1)) == 0 && (space.Y & (side - 1)) == 0;
+                    WorldEpoch epoch = Epoch(space.Epoch);
+                    bool aligned = ((space.X - epoch.GridX) & (side - 1)) == 0
+                        && ((space.Y - epoch.GridY) & (side - 1)) == 0;
                     if (space.Level == 4 || aligned)
                     {
                         frame.Phase = 2;
@@ -996,15 +1005,15 @@ namespace GameOfLife
                 FinishRegion(stack, ref request, root);
             }
 
-            bool TryRegion(RegionKey key, int maximumLevel, out int root)
+            bool TryRegion(RegionKey key, WorldEpoch epoch, out int root)
             {
                 RegionKey probe = key;
-                for (int level = key.Space.Level; level <= maximumLevel; level++)
+                for (int level = key.Space.Level; level <= epoch.MaxCachedLevel; level++)
                 {
                     long side = 1L << level;
                     probe.Space.Level = level;
-                    probe.Space.X = key.Space.X & -side;
-                    probe.Space.Y = key.Space.Y & -side;
+                    probe.Space.X = ((key.Space.X - epoch.GridX) & -side) + epoch.GridX;
+                    probe.Space.Y = ((key.Space.Y - epoch.GridY) & -side) + epoch.GridY;
                     if (!Regions.TryGetValue(probe, out root) || !Frontiers.TryGetValue(probe.Space, out RegionFrontier frontier))
                         continue;
                     frontier.LastRequest = Time.RequestClock;
@@ -1012,7 +1021,8 @@ namespace GameOfLife
                     for (int childLevel = level - 1; childLevel >= key.Space.Level; childLevel--)
                     {
                         long half = 1L << childLevel;
-                        int quadrant = ((key.Space.X & half) != 0 ? 1 : 0) | ((key.Space.Y & half) != 0 ? 2 : 0);
+                        int quadrant = (((key.Space.X - epoch.GridX) & half) != 0 ? 1 : 0)
+                            | (((key.Space.Y - epoch.GridY) & half) != 0 ? 2 : 0);
                         root = Nodes[root].Children[quadrant];
                     }
                     Track(root);
