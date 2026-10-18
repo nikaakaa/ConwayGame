@@ -10,7 +10,7 @@ namespace GameOfLife
         const double MaximumBudgetSeconds = 0.004;
         const double FrameToleranceSeconds = 0.0005;
         const double RecoveryPerFrameSeconds = 0.000125;
-        const float MinimumSamplesPerSecond = 15;
+        const float MinimumSamplesPerSecond = 1;
         double budgetSeconds;
 
         public double BudgetSeconds => budgetSeconds;
