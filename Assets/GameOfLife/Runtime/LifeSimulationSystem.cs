@@ -14,7 +14,9 @@ namespace GameOfLife
         const int EditBudget = 2048;
         const int CollectionBudget = 1024;
         const int FirstCollection = 262144;
-        static readonly long FrameBudgetTicks = Stopwatch.Frequency / 500;
+        const int InitialAutomaticExponent = 5;
+        static readonly long FrameBudgetTicks = Stopwatch.Frequency / 125;
+        static readonly long AdvanceTargetTicks = Stopwatch.Frequency / 30;
 
         public LifeWorld Simulation { get; private set; }
         public LifeShape CellShape { get; private set; }
@@ -25,6 +27,8 @@ namespace GameOfLife
         NativeList<LifeShape> collectionRoots;
         int nextCollection = FirstCollection;
         long advanceAmount;
+        long advanceWorkTicks;
+        int automaticExponent = InitialAutomaticExponent;
         bool explicitStep;
         bool strokeStarted;
         int2 strokePosition;
@@ -105,11 +109,16 @@ namespace GameOfLife
             {
                 if (explicitStep || commands.Length == 0)
                 {
+                    bool wasExplicitStep = explicitStep;
                     ContinueAdvance(ref state, deadline);
-                    EntityManager.SetComponentData(board, state);
-                    return;
+                    if (wasExplicitStep || Simulation.IsAdvancing)
+                    {
+                        EntityManager.SetComponentData(board, state);
+                        return;
+                    }
                 }
-                Simulation.CancelAdvance();
+                else
+                    Simulation.CancelAdvance();
             }
 
             int consumed = 0;
@@ -147,6 +156,7 @@ namespace GameOfLife
                     case LifeCommandKind.Play:
                         state.IsRunning = true;
                         state.Accumulator = 0;
+                        automaticExponent = InitialAutomaticExponent;
                         break;
                     case LifeCommandKind.Pause:
                         Pause(ref state);
@@ -155,6 +165,7 @@ namespace GameOfLife
                         Pause(ref state);
                         explicitStep = true;
                         advanceAmount = 1;
+                        advanceWorkTicks = 0;
                         Simulation.BeginAdvance(0);
                         ContinueAdvance(ref state, deadline);
                         commands.RemoveRange(0, consumed);
@@ -163,6 +174,7 @@ namespace GameOfLife
                     case LifeCommandKind.SetSpeed:
                         settings.GenerationsPerSecond = command.Speed;
                         state.Accumulator = 0;
+                        automaticExponent = InitialAutomaticExponent;
                         EntityManager.SetComponentData(board, settings);
                         break;
                     case LifeCommandKind.Clear:
@@ -187,15 +199,18 @@ namespace GameOfLife
             if (consumed > 0)
                 commands.RemoveRange(0, consumed);
 
-            if (commands.Length == 0 && state.IsRunning && state.Accumulator >= 1)
+            while (commands.Length == 0 && state.IsRunning && state.Accumulator >= 1
+                && Stopwatch.GetTimestamp() < deadline)
             {
                 int exponent = 0;
-                while (exponent < 30 && (1L << (exponent + 1)) <= state.Accumulator)
+                while (exponent < automaticExponent && (1L << (exponent + 1)) <= state.Accumulator)
                     exponent++;
                 advanceAmount = 1L << exponent;
-                explicitStep = false;
+                advanceWorkTicks = 0;
                 Simulation.BeginAdvance(exponent);
                 ContinueAdvance(ref state, deadline);
+                if (Simulation.IsAdvancing)
+                    break;
             }
             EntityManager.SetComponentData(board, state);
         }
@@ -203,18 +218,40 @@ namespace GameOfLife
         void ContinueAdvance(ref LifeState state, long deadline)
         {
             LifeShape before = Simulation.Shape;
+            long start = Stopwatch.GetTimestamp();
             bool complete;
             do
                 complete = Simulation.ContinueAdvance(AdvanceBudget);
             while (!complete && Stopwatch.GetTimestamp() < deadline);
+            advanceWorkTicks += Stopwatch.GetTimestamp() - start;
             if (!complete)
                 return;
             state.Generation += advanceAmount;
             if (Changed(before, Simulation.Shape))
                 state.Revision++;
             if (!explicitStep)
+            {
                 state.Accumulator -= advanceAmount;
+                AdjustAutomaticExponent();
+            }
             explicitStep = false;
+        }
+
+        void AdjustAutomaticExponent()
+        {
+            int exponent = math.tzcnt((ulong)advanceAmount);
+            if (advanceWorkTicks > AdvanceTargetTicks * 2)
+            {
+                long estimatedTicks = advanceWorkTicks;
+                while (exponent > 0 && estimatedTicks > AdvanceTargetTicks)
+                {
+                    exponent--;
+                    estimatedTicks >>= 1;
+                }
+                automaticExponent = exponent;
+            }
+            else if (exponent == automaticExponent && advanceWorkTicks < AdvanceTargetTicks)
+                automaticExponent = math.min(30, automaticExponent + 1);
         }
 
         static void Pause(ref LifeState state)
