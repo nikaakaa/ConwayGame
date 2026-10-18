@@ -282,7 +282,7 @@ namespace GameOfLife
                 HideTip();
                 SetHelp(true);
             });
-            SubItem(parent, LifeIcons.Quit, "退出程序", LifeSceneFlow.Quit);
+            SubItem(parent, LifeIcons.Quit, "退出", LifeSceneFlow.Quit);
         }
 
         void SaveWorld()

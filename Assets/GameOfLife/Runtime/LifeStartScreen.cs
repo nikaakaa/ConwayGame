@@ -8,7 +8,7 @@ namespace GameOfLife
 {
     /// <summary>
     /// 开始界面：背景是一门 Gosper 枪在暗处持续演化，中间为滑翔机标志与菜单。
-    /// 菜单为新世界、继续（有当前世界或存档时）、存档、地图、退出程序；鼠标或方向键加回车选择。
+    /// 菜单为新世界、继续（有当前世界或存档时）、存档、地图、退出；鼠标或方向键加回车选择。
     /// 背景使用独立的定长网格模拟，越出边界的细胞直接丢弃，不影响正式世界。
     /// 载入存档或地图时菜单换成一行“载入中”，滑翔机继续飞行；同步编译期间画面停在最后一帧。
     /// </summary>
@@ -89,7 +89,7 @@ namespace GameOfLife
                 items.Add(("继续", () => ContinueRequested?.Invoke()));
             items.Add(("存档", () => SavesRequested?.Invoke()));
             items.Add(("地图", () => MapsRequested?.Invoke()));
-            items.Add(("退出程序", () => QuitRequested?.Invoke()));
+            items.Add(("退出", () => QuitRequested?.Invoke()));
 
             menu.Clear();
             labels.Clear();
