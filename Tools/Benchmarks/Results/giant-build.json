@@ -1,0 +1,32 @@
+{
+  "sourceCommit": "b174a4f751ce0e8215026b07138357d4fe174aed",
+  "unity": "6000.3.3f1",
+  "target": "StandaloneWindows64",
+  "result": "Succeeded",
+  "buildId": "build_592d09e5ec0f",
+  "outputDirectory": "Builds/Windows-Giant",
+  "scenes": [
+    "Assets/GameOfLife/Scenes/MainMenu.unity",
+    "Assets/GameOfLife/Scenes/GameOfLife.unity"
+  ],
+  "errors": 0,
+  "warnings": [
+    {
+      "message": "Pipeline: No RuntimePipelineConfig asset found (Project Settings > Pipeline > Runtime). Pipeline will be disabled in Player builds."
+    }
+  ],
+  "buildTimeMs": 13646,
+  "buildReportBytes": 249425897,
+  "archiveBytes": 128404634,
+  "archiveSha256": "68e1c810cba7ceeeb4c81398a0b729de43adbe1564704bc6b2c1a753d98f714b",
+  "packagedFiles": 228,
+  "zipIntegrity": "passed",
+  "startup": {
+    "pid": 191464,
+    "aliveAfterSixSeconds": true,
+    "utc": "2026-10-18T14:04:33.9379303Z",
+    "scope": "新构建启动六秒；检查引擎与程序集初始化，不操作界面，不加载巨构。",
+    "exceptionsInLog": []
+  },
+  "limits": "巨构运行证据来自目标 Editor；本包仅进行启动检查，尚未进行用户界面端到端验收及巨构 Player 性能测量。"
+}

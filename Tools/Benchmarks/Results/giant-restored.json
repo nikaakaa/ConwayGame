@@ -1,0 +1,19 @@
+{
+  "sourceGeneration": 48846,
+  "population": 6694214,
+  "anchor": [
+    0,
+    1
+  ],
+  "origin": [
+    -22136,
+    -33771
+  ],
+  "visibleCells": 65536,
+  "speed": 1280,
+  "resumed": true,
+  "generationRestartsAtZero": true,
+  "backgroundRestored": false,
+  "profilerHistoryRestored": true,
+  "scope": "正式 RestoreLifeInteraction.Main(true) 载入检查前的新存档并恢复相机；世界从保存棋盘重新计代，后续后台运行遵从原配置。"
+}

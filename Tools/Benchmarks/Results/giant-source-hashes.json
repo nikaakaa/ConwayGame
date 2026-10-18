@@ -1,0 +1,182 @@
+{
+  "scope": "最大地图 0E0P metaglider，完整世界一次性加载；不存在世界分块磁盘流式加载。源码哈希捕获对应冷启动步长修改工作区；前置修复分三个提交。",
+  "sourceHead": "75ba16f071239323ffe2c468d86a9ed81cec5553",
+  "sourceFiles": [
+    {
+      "path": "Assets/StreamingAssets/LifePatterns/metaglider-0e0p.rle.gz",
+      "bytes": 75695760,
+      "sha256": "abdb0544a0cd98318e446d837d13ba77fc9bf5d8b41661935da03ab571db7b60"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeSession.cs",
+      "bytes": 4518,
+      "sha256": "bc6919bbd2c637b5919c836b565f87d9f262e44878362f82ad7d0ebb347ad470"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifePatternText.cs",
+      "bytes": 19343,
+      "sha256": "8708012fa6de883f431e623a5054375f6bf50965c6057c13904cd1a40299cfd6"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifePatterns.cs",
+      "bytes": 8321,
+      "sha256": "63193af2ae562fa2015912ca5f626fa2ed86d59d3842fd3b8f85088dc19a12b4"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeWorld.Regions.cs",
+      "bytes": 57054,
+      "sha256": "42e21ef9dc7c8d1eba53a9dd4df6479552216ec2d41c735a6714269257afd659"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeSimulationPolicy.cs",
+      "bytes": 2495,
+      "sha256": "9e8e84ddceb4c00c25808c807d0bb97b899475f7e7daaf33668147a112a5a7f5"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeSimulationSystem.cs",
+      "bytes": 12508,
+      "sha256": "95eeef4cf88ed9c4e7c53684c55f4d446ab719af18b21deb9ffca65c5b3b0a35"
+    },
+    {
+      "path": "Tools/Benchmarks/ObserveLifeFrames.cs",
+      "bytes": 9863,
+      "sha256": "7e624e6befc7a7853cfc81d8cc7932152b0e8e8aa79c8818638d5ce1c8c10576"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeInteraction.cs",
+      "bytes": 12328,
+      "sha256": "c2aaa9769c63d376bc1acf3b6d071cc78d0582e0a1955c045530477fa300895a"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeViewport.cs",
+      "bytes": 15683,
+      "sha256": "fa2f2c939d98d1f9a9f9c0c1280543e58e6cc8299ed3e92b9891f333a8513baf"
+    },
+    {
+      "path": "Tools/Benchmarks/Work/metaglider-prefix.rle",
+      "bytes": 1048382,
+      "sha256": "29821d851a6037832502d12ecfd9ed13f6527da554629402ed73d7a2b1091664"
+    },
+    {
+      "path": "Tools/Benchmarks/Work/metaglider-tiles.bin",
+      "bytes": 921002404,
+      "sha256": "19b38b8cb6cc50c08dfae50817f8773eff33dee206cd77e2a342aaaa7a90ab72"
+    }
+  ],
+  "prefixPreparation": "保留 gzip 解压后 RLE 头部与前约 1 MiB，截至最后一个 $，追加 ! 和换行；这是一份有界诊断输入，不代表完整巨构。",
+  "preparedInput": "metaglider-tiles.bin 由正式 LifeWorldStore.LoadAsync 完整解析后写出 count(int32 little-endian) 与原 LifeTile 数组字节。仅避免多次解析相同 RLE；模拟仍调用正式 Session.LoadWorld。缓存读取耗时不能作为 RLE 加载耗时。",
+  "fullInput": {
+    "population": 93235805,
+    "tiles": 23025060
+  },
+  "limitations": [
+    "顺序单次诊断，非交替多轮性能基准，不报告加速倍数。",
+    "Mono Process.PrivateMemorySize64 返回 0，无效；Unity managedUsedBytes 是阶段已用读数，不是峰值或进程总占用。",
+    "旧版本留下的 managed heap reserved 高水位会延续，未证明进程内存上限。",
+    "帧回放不测物理鼠标到像素延迟或 GPU 完成时间。"
+  ],
+  "runtimeSourceCommit": "b174a4f751ce0e8215026b07138357d4fe174aed",
+  "measurements": [
+    {
+      "input": "life-frames-giant-grid.json",
+      "samples": 2948,
+      "reason": "completed",
+      "generations": [
+        0
+      ],
+      "gapMs": {
+        "median": 9.8223,
+        "p99": 20.525,
+        "max": 99.8994
+      },
+      "simulationMs": {
+        "median": 4.0393,
+        "p99": 4.0707,
+        "max": 93.365
+      }
+    },
+    {
+      "input": "life-frames-giant-warmup-full.json",
+      "samples": 3321,
+      "reason": "completed",
+      "generations": [
+        0,
+        1
+      ],
+      "gapMs": {
+        "median": 8.9718,
+        "p99": 11.4845,
+        "max": 153.1793
+      },
+      "simulationMs": {
+        "median": 4.047,
+        "p99": 4.1264,
+        "max": 147.705
+      }
+    },
+    {
+      "input": "life-frames-giant-warmup-running.json",
+      "samples": 3183,
+      "reason": "completed",
+      "generations": [
+        4,
+        8,
+        16
+      ],
+      "gapMs": {
+        "median": 9.226,
+        "p99": 12.3681,
+        "max": 100.2923
+      },
+      "simulationMs": {
+        "median": 4.0393,
+        "p99": 4.1065,
+        "max": 6.0119
+      }
+    }
+  ],
+  "interaction": {
+    "input": "interaction-giant-full.json",
+    "samples": 540,
+    "reason": "completed",
+    "generations": [
+      4
+    ],
+    "gapMs": {
+      "median": 9.4804,
+      "p99": 11.2721,
+      "max": 12.0228
+    },
+    "simulationMs": {
+      "median": 4.0481,
+      "p99": 4.1067,
+      "max": 4.8728
+    }
+  },
+  "fullViewColdStart": {
+    "generationAtPlay": 0,
+    "cacheEntriesAtPlay": 0,
+    "playCommandUtc": "2026-10-18T13:58:10.4815104Z",
+    "visibleCells": 1048576,
+    "origin": [
+      -524288,
+      -524288
+    ],
+    "preparedReadMs": 3276.0157,
+    "buildMs": 4997.1326,
+    "population": 93235805,
+    "tiles": 23025060,
+    "initialNodes": 725639,
+    "firstPublishedGeneration": 1,
+    "firstChangeAfterRecordedMs": 23200.8633,
+    "note": "约 23 秒为记录累计间隔，采样有 2 秒预热且播放通过随后一条命令提交；不是精确的启动到显示延迟。之后现场已发布第 16 代，见 giant-runtime-memory.json。"
+  },
+  "localViewObservation": "life-frames-giant-warmup-running.json 固定为 65536 格视野，从第4代到第16代，不能与旧1048576格基线作加速对照。interaction-giant-warmup.json 在32768和65536格之间回放。",
+  "interactionLimits": "全景540帧回放从第4代开始并保持第4代，推进在途；采样不证明5秒内完成下一次代数发布。绘图计时为零时表示这段没有完成棋盘栅格更新，不能解读为巨构重绘免费。",
+  "editorOsSnapshot": {
+    "source": "PowerShell Get-Process -Id 90536，停止诊断Play之前",
+    "privateBytes": 30330441728,
+    "workingSetBytes": 4362121216,
+    "note": "同一个Editor保留了旧解析的CLR堆高水位；不是新EXE启动后的占用。"
+  }
+}

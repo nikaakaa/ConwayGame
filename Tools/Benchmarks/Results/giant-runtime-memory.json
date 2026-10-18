@@ -1,0 +1,207 @@
+{
+  "utc": "2026-10-18T14:00:03.9233826Z",
+  "project": "D:/Unity_Project/麦吉太文笔试/Assets",
+  "scene": "GameOfLife",
+  "frame": 20085,
+  "generation": 16,
+  "running": true,
+  "viewport": {
+    "x": -524288,
+    "y": -524288,
+    "cells": 1048576
+  },
+  "speed": 1280.0,
+  "population": 93235805,
+  "nodes": 7914501,
+  "cache": 14274362,
+  "regions": 52,
+  "collecting": false,
+  "advancing": true,
+  "current": true,
+  "tree": {
+    "root": 7828771,
+    "x": -4587376,
+    "y": -4587376
+  },
+  "nativeContainerDataBytes": 1116233136,
+  "containers": [
+    {
+      "name": "Nodes",
+      "capacity": 8388608,
+      "length": 7914501,
+      "bytes": 402653184
+    },
+    {
+      "name": "Leaves",
+      "capacity": 8192,
+      "length": -1,
+      "bytes": 393216
+    },
+    {
+      "name": "Branches",
+      "capacity": 8388608,
+      "length": -1,
+      "bytes": 268435456
+    },
+    {
+      "name": "Cache",
+      "capacity": 16777216,
+      "length": -1,
+      "bytes": 402653184
+    },
+    {
+      "name": "EmptyNodes",
+      "capacity": 64,
+      "length": 23,
+      "bytes": 256
+    },
+    {
+      "name": "FreeNodes",
+      "capacity": 1048576,
+      "length": 0,
+      "bytes": 4194304
+    },
+    {
+      "name": "RetiredNodes",
+      "capacity": 1048576,
+      "length": 0,
+      "bytes": 4194304
+    },
+    {
+      "name": "Marks",
+      "capacity": 8388608,
+      "length": 7914501,
+      "bytes": 33554432
+    },
+    {
+      "name": "MarkStack",
+      "capacity": 8192,
+      "length": 0,
+      "bytes": 32768
+    },
+    {
+      "name": "Frames",
+      "capacity": 64,
+      "length": 19,
+      "bytes": 9216
+    },
+    {
+      "name": "EditedTiles",
+      "capacity": 128,
+      "length": -1,
+      "bytes": 6656
+    },
+    {
+      "name": "EditedDeadTiles",
+      "capacity": 128,
+      "length": -1,
+      "bytes": 6656
+    },
+    {
+      "name": "Epochs",
+      "capacity": 16,
+      "length": 3,
+      "bytes": 2816
+    },
+    {
+      "name": "EpochSlots",
+      "capacity": 16,
+      "length": -1,
+      "bytes": 320
+    },
+    {
+      "name": "FreeEpochs",
+      "capacity": 16,
+      "length": 2,
+      "bytes": 64
+    },
+    {
+      "name": "EpochMarkStack",
+      "capacity": 16,
+      "length": 0,
+      "bytes": 64
+    },
+    {
+      "name": "Regions",
+      "capacity": 256,
+      "length": -1,
+      "bytes": 14336
+    },
+    {
+      "name": "RegionKeys",
+      "capacity": 256,
+      "length": 52,
+      "bytes": 10240
+    },
+    {
+      "name": "NewRegionKeys",
+      "capacity": 64,
+      "length": 0,
+      "bytes": 2560
+    },
+    {
+      "name": "Frontiers",
+      "capacity": 256,
+      "length": -1,
+      "bytes": 15360
+    },
+    {
+      "name": "FrontierKeys",
+      "capacity": 256,
+      "length": 40,
+      "bytes": 8192
+    },
+    {
+      "name": "NewFrontierKeys",
+      "capacity": 64,
+      "length": 0,
+      "bytes": 2048
+    },
+    {
+      "name": "ViewWork",
+      "capacity": 128,
+      "length": 1,
+      "bytes": 14336
+    },
+    {
+      "name": "ExportWork",
+      "capacity": 128,
+      "length": 0,
+      "bytes": 14336
+    },
+    {
+      "name": "ExportFrames",
+      "capacity": 64,
+      "length": 0,
+      "bytes": 9216
+    },
+    {
+      "name": "ExportWalk",
+      "capacity": 128,
+      "length": 0,
+      "bytes": 3072
+    },
+    {
+      "name": "ExportCells",
+      "capacity": 256,
+      "length": 0,
+      "bytes": 2048
+    },
+    {
+      "name": "Requests",
+      "capacity": 2,
+      "length": 2,
+      "bytes": 240
+    },
+    {
+      "name": "FullNodes",
+      "capacity": 64,
+      "length": 0,
+      "bytes": 256
+    }
+  ],
+  "managedUsedBytes": 1009827840,
+  "managedHeapBytes": 18906910720,
+  "unityAllocatedBytes": 4761891097,
+  "unityReservedBytes": 5952217088
+}

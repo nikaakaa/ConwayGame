@@ -1,0 +1,37 @@
+{
+  "phase": "loaded",
+  "before": {
+    "privateBytes": 0,
+    "managedUsedBytes": 952692736,
+    "managedHeapBytes": 18906910720,
+    "unityAllocatedBytes": 3535994294,
+    "unityReservedBytes": 4738588672
+  },
+  "parsed": {
+    "privateBytes": 0,
+    "managedUsedBytes": 3742670848,
+    "managedHeapBytes": 18906910720,
+    "unityAllocatedBytes": 3535398900,
+    "unityReservedBytes": 4737929216
+  },
+  "ready": {
+    "privateBytes": 0,
+    "managedUsedBytes": 903266304,
+    "managedHeapBytes": 18906910720,
+    "unityAllocatedBytes": 3730290739,
+    "unityReservedBytes": 4924596224
+  },
+  "parseMs": 85365.128900000011,
+  "buildMs": 6504.9442,
+  "population": 93235805,
+  "tiles": 23025060,
+  "generation": 0,
+  "nodes": 725632,
+  "regions": 0,
+  "cache": 0,
+  "root": 725631,
+  "x": -393072,
+  "y": -393072,
+  "frame": 30674,
+  "visibleCells": 1048576
+}
