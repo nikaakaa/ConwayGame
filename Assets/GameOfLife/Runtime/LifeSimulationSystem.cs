@@ -14,9 +14,6 @@ namespace GameOfLife
         const int EditBudget = 2048;
         const int CollectionBudget = 1024;
         const int FirstCollection = 262144;
-        const int InitialAutomaticExponent = 5;
-        static readonly long FrameBudgetTicks = Stopwatch.Frequency / 125;
-        static readonly long AdvanceTargetTicks = Stopwatch.Frequency / 30;
 
         public LifeWorld Simulation { get; private set; }
         public LifeShape CellShape { get; private set; }
@@ -26,9 +23,7 @@ namespace GameOfLife
         readonly List<LifeShape> retainedPatterns = new List<LifeShape>();
         NativeList<LifeShape> collectionRoots;
         int nextCollection = FirstCollection;
-        long advanceAmount;
-        long advanceWorkTicks;
-        int automaticExponent = InitialAutomaticExponent;
+        LifeSimulationPolicy policy = new LifeSimulationPolicy(0.001);
         bool explicitStep;
         bool strokeStarted;
         int2 strokePosition;
@@ -46,10 +41,14 @@ namespace GameOfLife
             Simulation.Stamp(PatternShape(LifePatterns.Items[0]), int2.zero);
             Simulation.EndEdit();
 
-            board = EntityManager.CreateEntity(typeof(LifeSettings), typeof(LifeState), typeof(LifeCommand));
+            board = EntityManager.CreateEntity(typeof(LifeSettings), typeof(LifeState), typeof(LifeViewport), typeof(LifeCommand));
             EntityManager.SetName(board, "Conway Board");
             EntityManager.SetComponentData(board, new LifeSettings { GenerationsPerSecond = 10f });
             EntityManager.SetComponentData(board, new LifeState { Revision = 1 });
+            EntityManager.SetComponentData(board, new LifeViewport
+            {
+                Origin = new int2(-64, -64), VisibleCells = 128, FrameSeconds = 1.0 / 60
+            });
         }
 
         public void LoadPatterns(IReadOnlyList<LifePattern> patterns)
@@ -73,15 +72,21 @@ namespace GameOfLife
         protected override void OnUpdate()
         {
             Dependency.Complete();
-            long deadline = Stopwatch.GetTimestamp() + FrameBudgetTicks;
             LifeState state = EntityManager.GetComponentData<LifeState>(board);
             LifeSettings settings = EntityManager.GetComponentData<LifeSettings>(board);
+            LifeViewport viewport = EntityManager.GetComponentData<LifeViewport>(board);
             DynamicBuffer<LifeCommand> commands = EntityManager.GetBuffer<LifeCommand>(board);
+            long frameBudget = (long)(policy.BeginFrame(viewport.FrameSeconds) * Stopwatch.Frequency);
+            long deadline = Stopwatch.GetTimestamp() + frameBudget;
+            if (!explicitStep)
+                Simulation.SetViewport(viewport.Origin, viewport.VisibleCells);
+            int stepExponent = LifeSimulationPolicy.StepExponent(viewport.VisibleCells, settings.GenerationsPerSecond);
+            long step = 1L << stepExponent;
             if (state.IsRunning)
                 state.Accumulator = Math.Min(state.Accumulator + World.Time.DeltaTime * settings.GenerationsPerSecond,
-                    settings.GenerationsPerSecond);
+                    LifeSimulationPolicy.AccumulatorCapacity(step, settings.GenerationsPerSecond));
 
-            if (!Simulation.IsCollecting && Simulation.NodeCount >= nextCollection)
+            if (!Simulation.IsCollecting && Simulation.NodeCount + Simulation.RegionCacheCount >= nextCollection)
             {
                 collectionRoots.Clear();
                 for (int i = 0; i < retainedPatterns.Count; i++)
@@ -94,15 +99,15 @@ namespace GameOfLife
 
             if (Simulation.IsCollecting)
             {
-                long collectionDeadline = state.IsRunning || Simulation.IsAdvancing || commands.Length != 0
-                    ? Stopwatch.GetTimestamp() + FrameBudgetTicks / 4
+                long collectionDeadline = state.IsRunning || Simulation.HasPendingWork || commands.Length != 0
+                    ? Stopwatch.GetTimestamp() + frameBudget / 4
                     : deadline;
                 bool collected;
                 do
                     collected = Simulation.ContinueCollection(CollectionBudget);
                 while (!collected && Stopwatch.GetTimestamp() < collectionDeadline);
                 if (collected)
-                    nextCollection = Math.Max(FirstCollection, Simulation.NodeCount * 2);
+                    nextCollection = Math.Max(FirstCollection, (Simulation.NodeCount + Simulation.RegionCacheCount) * 2);
             }
 
             if (Simulation.IsAdvancing)
@@ -110,7 +115,7 @@ namespace GameOfLife
                 if (explicitStep || commands.Length == 0)
                 {
                     bool wasExplicitStep = explicitStep;
-                    ContinueAdvance(ref state, deadline);
+                    PumpView(ref state, deadline);
                     if (wasExplicitStep || Simulation.IsAdvancing)
                     {
                         EntityManager.SetComponentData(board, state);
@@ -124,7 +129,6 @@ namespace GameOfLife
             int consumed = 0;
             int editsRemaining = EditBudget;
             bool editing = false;
-            LifeShape beforeEdit = default;
             while (consumed < commands.Length)
             {
                 LifeCommand command = commands[consumed];
@@ -133,7 +137,6 @@ namespace GameOfLife
                     Pause(ref state);
                     if (!editing)
                     {
-                        beforeEdit = Simulation.Shape;
                         Simulation.BeginEdit();
                         editing = true;
                     }
@@ -147,7 +150,7 @@ namespace GameOfLife
 
                 if (editing)
                 {
-                    FinishEdits(beforeEdit, ref state);
+                    Simulation.EndEdit();
                     editing = false;
                 }
                 consumed++;
@@ -156,7 +159,6 @@ namespace GameOfLife
                     case LifeCommandKind.Play:
                         state.IsRunning = true;
                         state.Accumulator = 0;
-                        automaticExponent = InitialAutomaticExponent;
                         break;
                     case LifeCommandKind.Pause:
                         Pause(ref state);
@@ -164,94 +166,69 @@ namespace GameOfLife
                     case LifeCommandKind.Step:
                         Pause(ref state);
                         explicitStep = true;
-                        advanceAmount = 1;
-                        advanceWorkTicks = 0;
                         Simulation.BeginAdvance(0);
-                        ContinueAdvance(ref state, deadline);
+                        PumpView(ref state, deadline);
                         commands.RemoveRange(0, consumed);
                         EntityManager.SetComponentData(board, state);
                         return;
                     case LifeCommandKind.SetSpeed:
                         settings.GenerationsPerSecond = command.Speed;
                         state.Accumulator = 0;
-                        automaticExponent = InitialAutomaticExponent;
                         EntityManager.SetComponentData(board, settings);
                         break;
                     case LifeCommandKind.Clear:
                         Pause(ref state);
-                        beforeEdit = Simulation.Shape;
                         Simulation.Clear();
-                        state.Generation = 0;
-                        if (Changed(beforeEdit, Simulation.Shape))
-                            state.Revision++;
+                        state.Generation = Simulation.Snapshot.Generation;
                         break;
                     case LifeCommandKind.ClearArea:
                         Pause(ref state);
-                        beforeEdit = Simulation.Shape;
                         Simulation.ClearArea(command.Position, command.End);
-                        if (Changed(beforeEdit, Simulation.Shape))
-                            state.Revision++;
                         break;
                 }
             }
             if (editing)
-                FinishEdits(beforeEdit, ref state);
+                Simulation.EndEdit();
             if (consumed > 0)
                 commands.RemoveRange(0, consumed);
 
-            while (commands.Length == 0 && state.IsRunning && state.Accumulator >= 1
+            PumpView(ref state, deadline);
+            stepExponent = LifeSimulationPolicy.StepExponent(viewport.VisibleCells, settings.GenerationsPerSecond);
+            step = 1L << stepExponent;
+            while (commands.Length == 0 && state.IsRunning && Simulation.IsViewCurrent && state.Accumulator >= step
                 && Stopwatch.GetTimestamp() < deadline)
             {
-                int exponent = 0;
-                while (exponent < automaticExponent && (1L << (exponent + 1)) <= state.Accumulator)
-                    exponent++;
-                advanceAmount = 1L << exponent;
-                advanceWorkTicks = 0;
-                Simulation.BeginAdvance(exponent);
-                ContinueAdvance(ref state, deadline);
+                Simulation.BeginAdvance(stepExponent);
+                PumpView(ref state, deadline);
                 if (Simulation.IsAdvancing)
                     break;
             }
+            while (Simulation.HasPendingWork && Stopwatch.GetTimestamp() < deadline)
+            {
+                Simulation.Pump(AdvanceBudget);
+            }
+            PublishState(ref state);
             EntityManager.SetComponentData(board, state);
         }
 
-        void ContinueAdvance(ref LifeState state, long deadline)
+        void PumpView(ref LifeState state, long deadline)
         {
-            LifeShape before = Simulation.Shape;
-            long start = Stopwatch.GetTimestamp();
-            bool complete;
-            do
-                complete = Simulation.ContinueAdvance(AdvanceBudget);
-            while (!complete && Stopwatch.GetTimestamp() < deadline);
-            advanceWorkTicks += Stopwatch.GetTimestamp() - start;
-            if (!complete)
-                return;
-            state.Generation += advanceAmount;
-            if (Changed(before, Simulation.Shape))
-                state.Revision++;
-            if (!explicitStep)
+            while ((Simulation.IsAdvancing || !Simulation.IsViewCurrent) && Stopwatch.GetTimestamp() < deadline)
             {
-                state.Accumulator -= advanceAmount;
-                AdjustAutomaticExponent();
+                Simulation.Pump(AdvanceBudget);
             }
-            explicitStep = false;
+            PublishState(ref state);
         }
 
-        void AdjustAutomaticExponent()
+        void PublishState(ref LifeState state)
         {
-            int exponent = math.tzcnt((ulong)advanceAmount);
-            if (advanceWorkTicks > AdvanceTargetTicks * 2)
-            {
-                long estimatedTicks = advanceWorkTicks;
-                while (exponent > 0 && estimatedTicks > AdvanceTargetTicks)
-                {
-                    exponent--;
-                    estimatedTicks >>= 1;
-                }
-                automaticExponent = exponent;
-            }
-            else if (exponent == automaticExponent && advanceWorkTicks < AdvanceTargetTicks)
-                automaticExponent = math.min(30, automaticExponent + 1);
+            long generation = Simulation.Snapshot.Generation;
+            if (!explicitStep)
+                state.Accumulator -= generation - state.Generation;
+            state.Generation = generation;
+            state.Revision = Simulation.ViewFrame.Version;
+            if (!Simulation.IsAdvancing)
+                explicitStep = false;
         }
 
         static void Pause(ref LifeState state)
@@ -259,16 +236,6 @@ namespace GameOfLife
             state.IsRunning = false;
             state.Accumulator = 0;
         }
-
-        void FinishEdits(LifeShape before, ref LifeState state)
-        {
-            Simulation.EndEdit();
-            if (Changed(before, Simulation.Shape))
-                state.Revision++;
-        }
-
-        static bool Changed(LifeShape before, LifeShape after) =>
-            before.Root != after.Root || before.X != after.X || before.Y != after.Y;
 
         bool DrawStroke(LifeCommand command, ref int remaining, long deadline)
         {

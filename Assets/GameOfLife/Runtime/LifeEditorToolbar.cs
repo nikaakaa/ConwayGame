@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
@@ -38,6 +40,7 @@ namespace GameOfLife
         bool editingSpeed;
         long shownGeneration = -1;
         long shownPopulation = -1;
+        LifeSnapshot shownPopulationSnapshot;
         int shownPhase = -1;
         float toastHideTime;
 
@@ -59,7 +62,7 @@ namespace GameOfLife
             Add(header, new VisualElement(), "life-spacer");
             Add(header, new VisualElement(), "life-population-cell");
             populationValue = Mono(header, "life-population");
-            populationValue.tooltip = "活细胞";
+            populationValue.tooltip = "快照人口；播放时不结算全图";
             Add(header, new Button(ToggleToolbar) { text = "—", tooltip = "Tab", focusable = false }, "life-button--square");
 
             VisualElement brushes = Row();
@@ -104,7 +107,7 @@ namespace GameOfLife
             patternName.RegisterCallback<FocusOutEvent>(_ => Controller.KeyboardShortcutsEnabled = true);
             StyleSelection(patternName.textSelection);
             storage.Add(patternName);
-            save = AddButton(storage, "保存", Controller.SaveCells);
+            save = AddButton(storage, "保存", SavePattern);
             save.tooltip = "有选区时只保存选区";
             AddButton(storage, "刷新", Controller.ReloadPatterns);
             AddButton(storage, "目录", () => Application.OpenURL(new Uri(Controller.PatternsDirectory).AbsoluteUri));
@@ -188,7 +191,8 @@ namespace GameOfLife
         void LateUpdate()
         {
             LifeState state = Controller.State;
-            long population = Controller.Population;
+            LifePopulationSample populationSample = Controller.PopulationSample;
+            long population = populationSample.Count;
 
             cellBrush.EnableInClassList(OnClass, Controller.Brush == LifeBrushMode.Cell);
             patternBrush.EnableInClassList(OnClass, Controller.Brush == LifeBrushMode.Pattern);
@@ -197,7 +201,7 @@ namespace GameOfLife
             run.EnableInClassList(OnClass, state.IsRunning);
             presets.SetValueWithoutNotify(Controller.SelectedPattern);
             run.text = state.IsRunning ? "暂停" : "运行";
-            save.SetEnabled(population != 0 && patternName.value.Length != 0);
+            save.SetEnabled(patternName.value.Length != 0);
             if (!editingSpeed)
                 speed.SetValueWithoutNotify(Controller.Speed);
 
@@ -206,10 +210,12 @@ namespace GameOfLife
                 shownGeneration = state.Generation;
                 generationValue.SetValue(shownGeneration);
             }
-            if (population != shownPopulation)
+            if (population != shownPopulation || !shownPopulationSnapshot.Equals(populationSample.Snapshot))
             {
                 shownPopulation = population;
+                shownPopulationSnapshot = populationSample.Snapshot;
                 populationValue.SetValue(population);
+                populationValue.tooltip = "第 " + populationSample.Snapshot.Generation + " 代快照人口；播放时不结算全图";
             }
 
             int phase = (int)(state.Generation & 3);
@@ -239,6 +245,21 @@ namespace GameOfLife
         void Zoom(bool zoomIn)
         {
             View.Zoom(new Vector2(Screen.width * 0.5f, Screen.height * 0.5f), null, zoomIn);
+        }
+
+        void SavePattern()
+        {
+            StartCoroutine(SavePatternSnapshot());
+        }
+
+        IEnumerator SavePatternSnapshot()
+        {
+            Task<LifePattern> capture = Controller.StoreCellsAsync(Controller.PatternName);
+            while (!capture.IsCompleted)
+                yield return null;
+            LifePattern pattern = capture.GetAwaiter().GetResult();
+            if (pattern != null)
+                Controller.SelectPattern(pattern);
         }
 
         void ShowToast(string message)

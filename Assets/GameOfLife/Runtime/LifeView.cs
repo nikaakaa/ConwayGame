@@ -4,6 +4,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.UI;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace GameOfLife
 {
@@ -16,6 +17,8 @@ namespace GameOfLife
 
         public int2 Origin { get; private set; } = new int2(-64, -64);
         public int VisibleCells { get; private set; } = 128;
+        public int2 DisplayedOrigin => displayedOrigin;
+        public int DisplayedCells => displayedCells;
 
         public const int TextureSize = 1024;
         Texture2D texture;
@@ -23,15 +26,19 @@ namespace GameOfLife
         Entity boardEntity;
         LifeWorld simulation;
         NativeList<LifeDrawTask> drawStack;
-        uint renderedRevision;
+        uint renderedVersion;
+        int2 displayedOrigin = new int2(-64, -64);
+        int displayedCells = 128;
         bool windowChanged = true;
         LifeShape ghost;
         bool hasGhost;
         bool hovering;
+        float2 hoverNormalized;
         int2 hoverCell;
         bool hasSelection;
         int2 selectionMin;
         int2 selectionMax;
+        long previousFrameTicks;
 
         void Awake()
         {
@@ -51,24 +58,43 @@ namespace GameOfLife
             manager = entityManager;
             boardEntity = entity;
             simulation = world;
+            previousFrameTicks = Stopwatch.GetTimestamp();
+            manager.SetComponentData(boardEntity, new LifeViewport
+            {
+                Origin = Origin,
+                VisibleCells = VisibleCells,
+                FrameSeconds = 1.0 / 60
+            });
         }
 
         void LateUpdate()
         {
-            LifeState state = manager.GetComponentData<LifeState>(boardEntity);
-            if (!windowChanged && renderedRevision == state.Revision)
+            long frameTicks = Stopwatch.GetTimestamp();
+            manager.SetComponentData(boardEntity, new LifeViewport
+            {
+                Origin = Origin,
+                VisibleCells = VisibleCells,
+                FrameSeconds = (frameTicks - previousFrameTicks) / (double)Stopwatch.Frequency
+            });
+            previousFrameTicks = frameTicks;
+            LifeViewFrame frame = simulation.ViewFrame;
+            if (!windowChanged && renderedVersion == frame.Version)
                 return;
+            displayedOrigin = new int2((int)frame.ValidBounds.MinX, (int)frame.ValidBounds.MinY);
+            displayedCells = (int)(frame.ValidBounds.MaxX - frame.ValidBounds.MinX);
+            if (hovering)
+                hoverCell = displayedOrigin + (int2)math.floor(hoverNormalized * displayedCells);
             LifeShape preview = ghost;
             preview.X += hoverCell.x;
             preview.Y += hoverCell.y;
             new LifeRasterJob
             {
                 Nodes = simulation.Nodes,
-                Shape = simulation.Shape,
+                Shape = frame.Shape,
                 Pixels = texture.GetRawTextureData<Color32>(),
                 Stack = drawStack,
-                Origin = Origin,
-                VisibleCells = VisibleCells,
+                Origin = displayedOrigin,
+                VisibleCells = displayedCells,
                 Ghost = preview,
                 ShowGhost = hovering && hasGhost,
                 HasSelection = hasSelection,
@@ -76,14 +102,14 @@ namespace GameOfLife
                 SelectionMax = selectionMax
             }.Run();
             texture.Apply(false, false);
-            renderedRevision = state.Revision;
+            renderedVersion = frame.Version;
             windowChanged = false;
         }
 
         public bool TryGetCell(Vector2 screenPosition, Camera eventCamera, out int2 cell)
         {
             bool inside = TryGetNormalized(screenPosition, eventCamera, out float2 normalized);
-            cell = Origin + (int2)math.floor(normalized * VisibleCells);
+            cell = displayedOrigin + (int2)math.floor(normalized * displayedCells);
             return inside;
         }
 
@@ -103,12 +129,20 @@ namespace GameOfLife
             windowChanged |= hovering;
         }
 
-        public void SetHover(bool visible, int2 cell)
+        public void SetHover(Vector2 position, Camera eventCamera)
         {
+            bool visible = TryGetNormalized(position, eventCamera, out hoverNormalized);
+            int2 cell = displayedOrigin + (int2)math.floor(hoverNormalized * displayedCells);
             if (visible == hovering && (!visible || math.all(cell == hoverCell)))
                 return;
             hovering = visible;
             hoverCell = cell;
+            windowChanged |= hasGhost;
+        }
+
+        public void ClearHover()
+        {
+            hovering = false;
             windowChanged |= hasGhost;
         }
 
@@ -144,7 +178,7 @@ namespace GameOfLife
             int nextSize = math.clamp(zoomIn ? VisibleCells / 2 : VisibleCells * 2, MinVisibleCells, MaxVisibleCells);
             if (nextSize == VisibleCells)
                 return;
-            int2 anchor = Origin + (int2)math.floor(normalized * VisibleCells);
+            int2 anchor = displayedOrigin + (int2)math.floor(normalized * displayedCells);
             Origin = anchor - (int2)math.floor(normalized * nextSize);
             VisibleCells = nextSize;
             windowChanged = true;

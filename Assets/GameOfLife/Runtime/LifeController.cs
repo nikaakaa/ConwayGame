@@ -1,6 +1,7 @@
 using System;
-using System.Collections.Generic;
+using System.Collections;
 using System.IO;
+using System.Threading.Tasks;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -29,7 +30,7 @@ namespace GameOfLife
         public LifePattern SelectedPattern { get; private set; } = LifePatterns.Items[0];
         public LifeState State => manager.GetComponentData<LifeState>(boardEntity);
         public float Speed => manager.GetComponentData<LifeSettings>(boardEntity).GenerationsPerSecond;
-        public long Population => simulation.Simulation.Population;
+        public LifePopulationSample PopulationSample => simulation.Simulation.PopulationSample;
         public LifePatternStore Store { get; private set; }
         public string PatternsDirectory { get; private set; }
         public string PatternName { get; set; } = "新结构";
@@ -49,13 +50,15 @@ namespace GameOfLife
         PointerEventData.InputButton activeButton;
         bool hasPreviousCell;
         int2 previousCell;
+        int2 strokeWindowOrigin;
+        int strokeWindowCells;
         int2 panStartOrigin;
+        int panStartCells;
         Vector2 panStartPosition;
         float nextSpeedRepeatTime;
         int2 selectionAnchor;
         int2 selectionEnd;
         bool selectionMoved;
-        readonly List<int2> scratch = new List<int2>();
 
         void Awake()
         {
@@ -148,26 +151,21 @@ namespace GameOfLife
             View.SetSelection(false, default, default);
         }
 
-        /// <summary>有选区时取框内活细胞，否则取整个棋盘。</summary>
-        List<int2> CollectTargetCells()
+        public async Task<LifePattern> StoreCellsAsync(string name)
         {
-            simulation.Simulation.CollectCells(scratch, HasSelection, SelectionMin, SelectionMax);
-            return scratch;
-        }
-
-        public void SaveCells()
-        {
-            List<int2> cells = CollectTargetCells();
-            if (cells.Count == 0)
+            bool selected = HasSelection;
+            Notify(selected ? "正在收集选区" : "正在收集世界快照");
+            int2[] cells = await simulation.Simulation.CollectCellsAsync(selected, SelectionMin, SelectionMax);
+            if (cells.Length == 0)
             {
-                Notify(HasSelection ? "选区内没有活细胞" : "棋盘是空的");
-                return;
+                Notify(selected ? "选区内没有活细胞" : "棋盘是空的");
+                return null;
             }
-            LifePattern pattern = Store.Save(PatternName, cells);
+            LifePattern pattern = Store.Save(name, cells);
             simulation.LoadPatterns(Store.Patterns);
             PatternsChanged?.Invoke();
-            SelectPattern(pattern);
             Notify("已保存 " + pattern.Name);
+            return pattern;
         }
 
         public void DeleteSelection()
@@ -179,14 +177,25 @@ namespace GameOfLife
 
         public void CopyToClipboard()
         {
-            List<int2> cells = CollectTargetCells();
-            if (cells.Count == 0)
+            StartCoroutine(CopySnapshot());
+        }
+
+        IEnumerator CopySnapshot()
+        {
+            bool selected = HasSelection;
+            string name = PatternName;
+            Notify(selected ? "正在收集选区" : "正在收集世界快照");
+            Task<int2[]> capture = simulation.Simulation.CollectCellsAsync(selected, SelectionMin, SelectionMax);
+            while (!capture.IsCompleted)
+                yield return null;
+            int2[] cells = capture.GetAwaiter().GetResult();
+            if (cells.Length == 0)
             {
-                Notify(HasSelection ? "选区内没有活细胞" : "棋盘是空的");
-                return;
+                Notify(selected ? "选区内没有活细胞" : "棋盘是空的");
+                yield break;
             }
-            GUIUtility.systemCopyBuffer = LifePatternText.ToRle(PatternName, cells);
-            Notify("已复制 " + cells.Count + " 格");
+            GUIUtility.systemCopyBuffer = LifePatternText.ToRle(name, cells);
+            Notify("已复制 " + cells.Length + " 格");
         }
 
         public void PasteFromClipboard()
@@ -264,7 +273,8 @@ namespace GameOfLife
             hasPreviousCell = false;
             if (activeButton == PointerEventData.InputButton.Middle)
             {
-                panStartOrigin = View.Origin;
+                panStartOrigin = View.DisplayedOrigin;
+                panStartCells = View.DisplayedCells;
                 panStartPosition = eventData.position;
             }
             else if (activeButton == PointerEventData.InputButton.Left && Brush == LifeBrushMode.Select)
@@ -301,7 +311,7 @@ namespace GameOfLife
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(rect, panStartPosition, eventData.pressEventCamera, out Vector2 start);
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(rect, eventData.position, eventData.pressEventCamera, out Vector2 current);
                 Vector2 delta = current - start;
-                int2 cells = (int2)math.round(new float2(delta.x / rect.rect.width, delta.y / rect.rect.height) * View.VisibleCells);
+                int2 cells = (int2)math.round(new float2(delta.x / rect.rect.width, delta.y / rect.rect.height) * panStartCells);
                 View.Pan(panStartOrigin - cells - View.Origin);
                 UpdateHover(eventData.position, eventData.pressEventCamera);
             }
@@ -337,6 +347,10 @@ namespace GameOfLife
                 hasPreviousCell = false;
                 return;
             }
+            if (math.any(strokeWindowOrigin != View.DisplayedOrigin) || strokeWindowCells != View.DisplayedCells)
+                hasPreviousCell = false;
+            strokeWindowOrigin = View.DisplayedOrigin;
+            strokeWindowCells = View.DisplayedCells;
             if (!hasPreviousCell || math.any(cell != previousCell))
             {
                 bool stamp = activeButton != PointerEventData.InputButton.Right && Brush == LifeBrushMode.Pattern;
@@ -361,14 +375,13 @@ namespace GameOfLife
 
         void UpdateHover(Vector2 position, Camera eventCamera)
         {
-            bool inside = View.TryGetCell(position, eventCamera, out int2 cell);
-            View.SetHover(inside, cell);
+            View.SetHover(position, eventCamera);
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
             hasPreviousCell = false;
-            View.SetHover(false, default);
+            View.ClearHover();
         }
 
         public void OnScroll(PointerEventData eventData)

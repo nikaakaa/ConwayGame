@@ -7,19 +7,16 @@ using Unity.Mathematics;
 
 namespace GameOfLife
 {
-    public sealed class LifeWorld : IDisposable
+    public sealed partial class LifeWorld : IDisposable
     {
         Core core;
         NativeArray<WorldState> state;
 
         public NativeArray<LifeNode> Nodes => core.Nodes.AsArray();
-        public LifeShape Shape => state[0].Shape;
-        public long Population => core.Nodes[state[0].Shape.Root].Population;
         public int NodeCount => state[0].NodeCount;
         public int CacheCount => core.Cache.Count();
         public long CacheHits => state[0].CacheHits;
         public long CacheMisses => state[0].CacheMisses;
-        public bool IsAdvancing => state[0].Advancing != 0;
         public bool IsCollecting => state[0].CollectionPhase != 0;
 
         public LifeWorld()
@@ -36,14 +33,17 @@ namespace GameOfLife
                 Marks = new NativeList<int>(256, Allocator.Persistent),
                 MarkStack = new NativeList<int>(256, Allocator.Persistent),
                 Frames = new NativeList<AdvanceFrame>(64, Allocator.Persistent),
-                EditedTiles = new NativeParallelHashMap<int2, LifeBits>(128, Allocator.Persistent)
+                EditedTiles = new NativeParallelHashMap<int2, LifeBits>(128, Allocator.Persistent),
+                EditedDeadTiles = new NativeParallelHashMap<int2, LifeBits>(128, Allocator.Persistent)
             };
             state = new NativeArray<WorldState>(1, Allocator.Persistent);
             int leaf = core.InternLeaf(default);
             for (int i = 0; i <= 4; i++)
                 core.EmptyNodes.Add(leaf);
-            core.State.Shape = new LifeShape { Root = core.Empty(5), X = -16, Y = -16 };
+            core.State.EditShape = new LifeShape { Root = core.Empty(5), X = -16, Y = -16 };
+            core.State.EditDead = core.State.EditShape;
             state[0] = core.State;
+            InitializeRegions();
         }
 
         public LifeShape BuildShape(LifeTile[] tiles)
@@ -67,19 +67,21 @@ namespace GameOfLife
         public void BeginEdit()
         {
             Core kernel = ReadCore();
-            kernel.CancelAdvance();
-            kernel.State.EditShape = kernel.State.Shape;
-            kernel.State.Editing = 1;
-            state[0] = kernel.State;
+            kernel.BeginRegionEdit();
+            WriteCore(kernel);
         }
 
         public void SetCell(int2 cell, bool alive)
         {
             int2 tile = cell & ~15;
-            if (!core.EditedTiles.TryGetValue(tile, out LifeBits bits))
-                bits = core.ReadTile(state[0].EditShape, tile.x, tile.y);
-            bits.Set(cell.x & 15, cell.y & 15, alive);
-            core.EditedTiles[tile] = bits;
+            if (!core.EditedTiles.TryGetValue(tile, out LifeBits liveBits))
+                liveBits = core.ReadTile(state[0].EditShape, tile.x, tile.y);
+            if (!core.EditedDeadTiles.TryGetValue(tile, out LifeBits deadBits))
+                deadBits = core.ReadTile(state[0].EditDead, tile.x, tile.y);
+            liveBits.Set(cell.x & 15, cell.y & 15, alive);
+            deadBits.Set(cell.x & 15, cell.y & 15, !alive);
+            core.EditedTiles[tile] = liveBits;
+            core.EditedDeadTiles[tile] = deadBits;
         }
 
         public void Stamp(LifeShape shape, int2 anchor)
@@ -91,104 +93,76 @@ namespace GameOfLife
             LifeShape edited = kernel.State.EditShape;
             kernel.Overlay(ref edited, shape);
             kernel.State.EditShape = edited;
-            state[0] = kernel.State;
+            LifeShape dead = kernel.State.EditDead;
+            dead.Root = kernel.Difference(dead.Root, dead.X, dead.Y, shape.Root, shape.X, shape.Y);
+            kernel.State.EditDead = dead;
+            WriteCore(kernel);
         }
 
         public void EndEdit()
         {
             Core kernel = ReadCore();
             kernel.FlushEdits();
-            kernel.State.Shape = kernel.Shrink(kernel.State.EditShape);
-            kernel.State.Editing = 0;
-            kernel.Track(kernel.State.Shape.Root);
-            state[0] = kernel.State;
+            kernel.EndRegionEdit();
+            WriteCore(kernel);
         }
 
         public void ClearArea(int2 min, int2 max)
         {
             Core kernel = ReadCore();
-            kernel.CancelAdvance();
+            bool commit = kernel.State.Editing == 0;
+            if (commit)
+                kernel.BeginRegionEdit();
             kernel.FlushEdits();
-            LifeShape shape = kernel.State.Editing != 0 ? kernel.State.EditShape : kernel.State.Shape;
+            LifeShape shape = kernel.State.EditShape;
             shape.Root = kernel.Erase(shape.Root, shape.X, shape.Y, min.x, min.y, (long)max.x + 1, (long)max.y + 1);
             shape = kernel.Shrink(shape);
-            if (kernel.State.Editing != 0)
-                kernel.State.EditShape = shape;
-            else
-                kernel.State.Shape = shape;
+            kernel.State.EditShape = shape;
+            LifeShape dead = kernel.State.EditDead;
+            kernel.FillRectangle(ref dead, min.x, min.y, (long)max.x + 1, (long)max.y + 1);
+            kernel.State.EditDead = dead;
             kernel.Track(shape.Root);
-            state[0] = kernel.State;
+            if (commit)
+                kernel.EndRegionEdit();
+            WriteCore(kernel);
         }
 
         public void Clear()
         {
             Core kernel = ReadCore();
-            kernel.CancelAdvance();
-            kernel.EditedTiles.Clear();
-            kernel.State.EditShape = new LifeShape { Root = kernel.Empty(5), X = -16, Y = -16 };
-            if (kernel.State.Editing == 0)
-                kernel.State.Shape = kernel.State.EditShape;
-            state[0] = kernel.State;
-        }
-
-        public bool GetCell(int2 cell)
-        {
-            LifeBits bits = core.ReadTile(state[0].Shape, cell.x & ~15, cell.y & ~15);
-            return (bits.GetRow(cell.y & 15) & (1u << (cell.x & 15))) != 0;
-        }
-
-        public void CollectCells(List<int2> output, bool selected, int2 min, int2 max)
-        {
-            output.Clear();
-            Collect(output, Shape, selected, min, max);
-        }
-
-        public void BeginAdvance(int stepExponent)
-        {
-            Core kernel = ReadCore();
-            kernel.BeginAdvance(stepExponent);
-            state[0] = kernel.State;
-        }
-
-        public bool ContinueAdvance(int workBudget)
-        {
-            new AdvanceJob { Kernel = core, State = state, WorkBudget = workBudget }.Run();
-            return state[0].Advancing == 0;
-        }
-
-        public void CancelAdvance()
-        {
-            Core kernel = ReadCore();
-            kernel.CancelAdvance();
-            state[0] = kernel.State;
+            kernel.ClearRegions();
+            WriteCore(kernel);
         }
 
         public void BeginCollection(IReadOnlyList<LifeShape> retainedShapes)
         {
             Core kernel = ReadCore();
             kernel.BeginCollection();
+            RetainRegionRoots(ref kernel);
             for (int i = 0; i < retainedShapes.Count; i++)
                 kernel.Mark(retainedShapes[i].Root);
-            state[0] = kernel.State;
+            WriteCore(kernel);
         }
 
         public void BeginCollection(NativeArray<LifeShape> retainedShapes)
         {
             Core kernel = ReadCore();
             kernel.BeginCollection();
+            RetainRegionRoots(ref kernel);
             for (int i = 0; i < retainedShapes.Length; i++)
                 kernel.Mark(retainedShapes[i].Root);
-            state[0] = kernel.State;
+            WriteCore(kernel);
         }
 
         public bool ContinueCollection(int workBudget)
         {
-            new CollectionJob { Kernel = core, State = state, WorkBudget = workBudget }.Run();
+            new CollectionJob { Kernel = core, State = state, Timeline = timeline, WorkBudget = workBudget }.Run();
             return state[0].CollectionPhase == 0;
         }
 
         public void Dispose()
         {
+            DisposeRegions();
             core.Nodes.Dispose();
             core.Leaves.Dispose();
             core.Branches.Dispose();
@@ -200,6 +174,7 @@ namespace GameOfLife
             core.MarkStack.Dispose();
             core.Frames.Dispose();
             core.EditedTiles.Dispose();
+            core.EditedDeadTiles.Dispose();
             state.Dispose();
         }
 
@@ -207,47 +182,20 @@ namespace GameOfLife
         {
             Core kernel = core;
             kernel.State = state[0];
+            kernel.Time = timeline[0];
             return kernel;
         }
 
-        void Collect(List<int2> output, LifeShape shape, bool selected, int2 min, int2 max)
+        void WriteCore(Core kernel)
         {
-            LifeNode node = core.Nodes[shape.Root];
-            long side = 1L << node.Level;
-            if (node.Population == 0 || (selected && (shape.X > max.x || shape.Y > max.y || shape.X + side <= min.x || shape.Y + side <= min.y)))
-                return;
-            if (node.Level == 4)
-            {
-                for (int y = 0; y < 16; y++)
-                {
-                    uint row = node.Bits.GetRow(y);
-                    while (row != 0)
-                    {
-                        int x = math.tzcnt(row);
-                        long worldX = shape.X + x;
-                        long worldY = shape.Y + y;
-                        if (!selected || (worldX >= min.x && worldX <= max.x && worldY >= min.y && worldY <= max.y))
-                            output.Add(new int2((int)worldX, (int)worldY));
-                        row &= row - 1;
-                    }
-                }
-                return;
-            }
-            long half = side / 2;
-            for (int i = 0; i < 4; i++)
-                Collect(output, new LifeShape
-                {
-                    Root = node.Children[i],
-                    X = shape.X + ((i & 1) != 0 ? half : 0),
-                    Y = shape.Y + ((i & 2) != 0 ? half : 0)
-                }, selected, min, max);
+            state[0] = kernel.State;
+            timeline[0] = kernel.Time;
         }
 
         struct WorldState
         {
-            public LifeShape Shape;
             public LifeShape EditShape;
-            public LifeShape AdvanceShape;
+            public LifeShape EditDead;
             public int Editing;
             public int Advancing;
             public int PendingResult;
@@ -306,36 +254,24 @@ namespace GameOfLife
         }
 
         [BurstCompile]
-        struct AdvanceJob : IJob
-        {
-            public Core Kernel;
-            public NativeArray<WorldState> State;
-            public int WorkBudget;
-
-            public void Execute()
-            {
-                Kernel.State = State[0];
-                Kernel.ContinueAdvance(WorkBudget);
-                State[0] = Kernel.State;
-            }
-        }
-
-        [BurstCompile]
         struct CollectionJob : IJob
         {
             public Core Kernel;
             public NativeArray<WorldState> State;
+            public NativeArray<TimelineState> Timeline;
             public int WorkBudget;
 
             public void Execute()
             {
                 Kernel.State = State[0];
+                Kernel.Time = Timeline[0];
                 Kernel.ContinueCollection(WorkBudget);
                 State[0] = Kernel.State;
+                Timeline[0] = Kernel.Time;
             }
         }
 
-        struct Core
+        partial struct Core
         {
             public WorldState State;
             public NativeList<LifeNode> Nodes;
@@ -349,6 +285,7 @@ namespace GameOfLife
             public NativeList<int> MarkStack;
             public NativeList<AdvanceFrame> Frames;
             public NativeParallelHashMap<int2, LifeBits> EditedTiles;
+            public NativeParallelHashMap<int2, LifeBits> EditedDeadTiles;
 
             public LifeShape BuildShape(NativeArray<LifeTile> tiles, NativeArray<BuildEntry> entries)
             {
@@ -553,6 +490,17 @@ namespace GameOfLife
                 }
                 EditedTiles.Clear();
                 State.EditShape = shape;
+                shape = State.EditDead;
+                foreach (var pair in EditedDeadTiles)
+                {
+                    if (pair.Value.Population != 0)
+                        EnsureContains(ref shape, pair.Key.x, pair.Key.y, (long)pair.Key.x + 16, (long)pair.Key.y + 16);
+                    long side = 1L << Nodes[shape.Root].Level;
+                    if (pair.Key.x >= shape.X && pair.Key.y >= shape.Y && pair.Key.x < shape.X + side && pair.Key.y < shape.Y + side)
+                        shape.Root = ReplaceTile(shape.Root, shape.X, shape.Y, pair.Key, pair.Value);
+                }
+                EditedDeadTiles.Clear();
+                State.EditDead = shape;
             }
 
             int ReplaceTile(int id, long x, long y, int2 tile, LifeBits bits)
@@ -599,9 +547,17 @@ namespace GameOfLife
             }
 
             int Merge(int target, long tx, long ty, int source, long sx, long sy)
+                => Combine(target, tx, ty, source, sx, sy, false);
+
+            public int Difference(int target, long tx, long ty, int source, long sx, long sy)
+                => Combine(target, tx, ty, source, sx, sy, true);
+
+            int Combine(int target, long tx, long ty, int source, long sx, long sy, bool subtract)
             {
                 LifeNode targetNode = Nodes[target];
                 LifeNode sourceNode = Nodes[source];
+                if (subtract && targetNode.Population == 0)
+                    return target;
                 long targetSide = 1L << targetNode.Level;
                 long sourceSide = 1L << sourceNode.Level;
                 if (sourceNode.Population == 0 || tx >= sx + sourceSide || ty >= sy + sourceSide || sx >= tx + targetSide || sy >= ty + targetSide)
@@ -625,8 +581,10 @@ namespace GameOfLife
 
                 if (tx == sx && ty == sy && targetNode.Level == sourceNode.Level)
                 {
-                    if (targetNode.Population == 0 || target == source)
-                        return source;
+                    if (target == source)
+                        return subtract ? Empty(targetNode.Level) : source;
+                    if (targetNode.Population == 0)
+                        return subtract ? target : source;
                     if (targetNode.Level > 4)
                     {
                         int4 merged = default;
@@ -635,7 +593,7 @@ namespace GameOfLife
                         {
                             long x = tx + ((i & 1) != 0 ? half : 0);
                             long y = ty + ((i & 2) != 0 ? half : 0);
-                            merged[i] = Merge(targetNode.Children[i], x, y, sourceNode.Children[i], x, y);
+                            merged[i] = Combine(targetNode.Children[i], x, y, sourceNode.Children[i], x, y, subtract);
                         }
                         return InternBranch(merged);
                     }
@@ -645,13 +603,61 @@ namespace GameOfLife
                 {
                     LifeBits incoming = ReadSquare(source, sx, sy, tx, ty);
                     LifeBits current = targetNode.Bits;
-                    return InternLeaf(new LifeBits { A = current.A | incoming.A, B = current.B | incoming.B, C = current.C | incoming.C, D = current.D | incoming.D });
+                    return InternLeaf(subtract
+                        ? new LifeBits { A = current.A & ~incoming.A, B = current.B & ~incoming.B, C = current.C & ~incoming.C, D = current.D & ~incoming.D }
+                        : new LifeBits { A = current.A | incoming.A, B = current.B | incoming.B, C = current.C | incoming.C, D = current.D | incoming.D });
                 }
 
                 int4 children = targetNode.Children;
                 long childSide = targetSide / 2;
                 for (int i = 0; i < 4; i++)
-                    children[i] = Merge(children[i], tx + ((i & 1) != 0 ? childSide : 0), ty + ((i & 2) != 0 ? childSide : 0), source, sx, sy);
+                    children[i] = Combine(children[i], tx + ((i & 1) != 0 ? childSide : 0), ty + ((i & 2) != 0 ? childSide : 0), source, sx, sy, subtract);
+                return InternBranch(children);
+            }
+
+            public void FillRectangle(ref LifeShape shape, long minX, long minY, long maxX, long maxY)
+            {
+                EnsureContains(ref shape, minX, minY, maxX, maxY);
+                shape.Root = Fill(shape.Root, shape.X, shape.Y, minX, minY, maxX, maxY);
+            }
+
+            int Full(int level)
+            {
+                if (FullNodes.Length == 0)
+                {
+                    int leaf = InternLeaf(new LifeBits { A = ulong.MaxValue, B = ulong.MaxValue, C = ulong.MaxValue, D = ulong.MaxValue });
+                    for (int i = 0; i <= 4; i++)
+                        FullNodes.Add(leaf);
+                }
+                while (FullNodes.Length <= level)
+                    FullNodes.Add(InternBranch(new int4(FullNodes[FullNodes.Length - 1])));
+                return FullNodes[level];
+            }
+
+            int Fill(int id, long x, long y, long minX, long minY, long maxX, long maxY)
+            {
+                LifeNode node = Nodes[id];
+                long side = 1L << node.Level;
+                if (x >= maxX || y >= maxY || minX >= x + side || minY >= y + side)
+                    return id;
+                if (minX <= x && minY <= y && maxX >= x + side && maxY >= y + side)
+                    return Full(node.Level);
+                if (node.Level == 4)
+                {
+                    int left = (int)math.max(0L, minX - x);
+                    int right = (int)math.min(16L, maxX - x);
+                    int bottom = (int)math.max(0L, minY - y);
+                    int top = (int)math.min(16L, maxY - y);
+                    uint mask = ((1u << (right - left)) - 1) << left;
+                    LifeBits bits = node.Bits;
+                    for (int row = bottom; row < top; row++)
+                        bits.SetRow(row, (ushort)(bits.GetRow(row) | mask));
+                    return InternLeaf(bits);
+                }
+                long half = side / 2;
+                int4 children = node.Children;
+                for (int i = 0; i < 4; i++)
+                    children[i] = Fill(children[i], x + ((i & 1) != 0 ? half : 0), y + ((i & 2) != 0 ? half : 0), minX, minY, maxX, maxY);
                 return InternBranch(children);
             }
 
@@ -752,41 +758,13 @@ namespace GameOfLife
                 return InternBranch(new int4(Nodes[c.x].Children.w, Nodes[c.y].Children.z, Nodes[c.z].Children.y, Nodes[c.w].Children.x));
             }
 
-            public void BeginAdvance(int exponent)
+            public void BeginCenter(int node, int exponent)
             {
                 Frames.Clear();
                 State.PendingResult = -1;
-                LifeShape input = State.Shape;
-                // 输出只保留中心一半，空边必须覆盖本次传播距离。
-                int minimumLevel = math.max(Nodes[input.Root].Level + 2, exponent + 3);
-                minimumLevel = math.max(minimumLevel, 6);
-                while (Nodes[input.Root].Level < minimumLevel)
-                    input = Expand(input);
-                State.AdvanceShape = input;
                 State.Advancing = 1;
-                Frames.Add(new AdvanceFrame { Node = input.Root, Exponent = exponent });
-                Track(input.Root);
-            }
-
-            public void CancelAdvance()
-            {
-                Frames.Clear();
-                State.PendingResult = -1;
-                State.Advancing = 0;
-            }
-
-            public void ContinueAdvance(int workBudget)
-            {
-                for (int work = 0; work < workBudget && Frames.Length != 0; work++)
-                    AdvanceOne();
-                if (State.Advancing == 0 || Frames.Length != 0)
-                    return;
-                LifeShape input = State.AdvanceShape;
-                long offset = 1L << (Nodes[input.Root].Level - 2);
-                State.Shape = Shrink(new LifeShape { Root = State.PendingResult, X = input.X + offset, Y = input.Y + offset });
-                Track(State.Shape.Root);
-                State.PendingResult = -1;
-                State.Advancing = 0;
+                Frames.Add(new AdvanceFrame { Node = node, Exponent = exponent });
+                Track(node);
             }
 
             void AdvanceOne()
@@ -881,7 +859,7 @@ namespace GameOfLife
             {
                 Track(key.Node);
                 Track(result);
-                Cache.Add(key, result);
+                Cache[key] = result;
                 LifeNode node = Nodes[key.Node];
                 node.CachedExponents |= 1UL << key.Exponent;
                 Nodes[key.Node] = node;
@@ -987,33 +965,31 @@ namespace GameOfLife
                 State.SweepCursor = 0;
                 State.SweepLimit = Nodes.Length;
                 MarkStack.Clear();
+                EpochMarkStack.Clear();
                 RetiredNodes.Clear();
-                Mark(State.Shape.Root);
                 if (State.Editing != 0)
-                    Mark(State.EditShape.Root);
-                if (State.Advancing != 0)
                 {
-                    Mark(State.AdvanceShape.Root);
-                    if (State.PendingResult != -1)
-                        Mark(State.PendingResult);
+                    Mark(State.EditShape.Root);
+                    Mark(State.EditDead.Root);
                 }
                 for (int level = 4; level < EmptyNodes.Length; level++)
                     Mark(EmptyNodes[level]);
-                for (int i = 0; i < Frames.Length; i++)
-                {
-                    AdvanceFrame frame = Frames[i];
-                    Mark(frame.Node);
-                    for (int n = 0; n < frame.Inputs.Length; n++)
-                        Mark(frame.Inputs[n]);
-                    for (int n = 0; n < frame.Results.Length; n++)
-                        Mark(frame.Results[n]);
-                }
             }
 
             public void ContinueCollection(int workBudget)
             {
                 for (int work = 0; work < workBudget && State.CollectionPhase != 0; work++)
                 {
+                    if (EpochMarkStack.Length != 0)
+                    {
+                        MarkEpochOne();
+                        continue;
+                    }
+                    if (Time.PrunePhase != 0)
+                    {
+                        PruneRegionOne();
+                        continue;
+                    }
                     if (MarkStack.Length != 0)
                     {
                         int id = MarkStack[MarkStack.Length - 1];
