@@ -83,8 +83,8 @@ namespace GameOfLife
         public LifeSnapshot Snapshot => timeline[0].Published;
         public LifeViewFrame ViewFrame => timeline[0].Frame;
         public LifePopulationSample PopulationSample => timeline[0].Population;
-        public int RegionCacheCount => core.Regions.Count();
-        public int EpochCount => core.EpochSlots.Count();
+        public int RegionCacheCount => timeline[0].RegionCount;
+        public int EpochCount => timeline[0].EpochCount;
         public bool IsAdvancing => core.Requests[0].Active != 0 && core.Requests[0].Target.Generation > Snapshot.Generation;
         public bool HasPendingWork => core.Requests[0].Active != 0 || core.Requests[1].Active != 0;
         public bool IsViewCurrent => ViewFrame.Snapshot.Equals(Snapshot) && ViewFrame.ValidBounds.Equals(timeline[0].Viewport);
@@ -261,6 +261,8 @@ namespace GameOfLife
             public LifeRegion Viewport;
             public int NextEpoch;
             public int World;
+            public int RegionCount;
+            public int EpochCount;
             public int NextWorker;
             public long CacheClock;
             public int PrunePhase;
@@ -409,6 +411,7 @@ namespace GameOfLife
                 value.Mark = 0;
                 Epochs[slot] = value;
                 EpochSlots.Add(value.Id, slot);
+                Time.EpochCount++;
                 if (State.CollectionPhase != 0)
                     RetainEpoch(value.Id);
                 return value.Id;
@@ -964,6 +967,7 @@ namespace GameOfLife
             {
                 if (Regions.TryAdd(key, root))
                 {
+                    Time.RegionCount++;
                     if (Time.PrunePhase == 1 || Time.PrunePhase == 2)
                         NewRegionKeys.Add(key);
                     else
@@ -1267,7 +1271,10 @@ namespace GameOfLife
                             RegionKeys[Time.PruneWrite++] = key;
                         }
                         else
+                        {
                             Regions.Remove(key);
+                            Time.RegionCount--;
+                        }
                         return;
                     }
                     RegionKeys.ResizeUninitialized(Time.PruneWrite);
@@ -1284,6 +1291,7 @@ namespace GameOfLife
                     if (epoch.Kind != -1 && epoch.Mark != State.CollectionEpoch)
                     {
                         EpochSlots.Remove(epoch.Id);
+                        Time.EpochCount--;
                         epoch.Kind = -1;
                         Epochs[slot] = epoch;
                         FreeEpochs.Add(slot);

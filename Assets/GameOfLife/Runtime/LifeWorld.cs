@@ -14,7 +14,7 @@ namespace GameOfLife
 
         public NativeArray<LifeNode> Nodes => core.Nodes.AsArray();
         public int NodeCount => state[0].NodeCount;
-        public int CacheCount => core.Cache.Count();
+        public int CacheCount => state[0].CacheCount;
         public long CacheHits => state[0].CacheHits;
         public long CacheMisses => state[0].CacheMisses;
         public bool IsCollecting => state[0].CollectionPhase != 0;
@@ -204,6 +204,7 @@ namespace GameOfLife
             public int SweepCursor;
             public int SweepLimit;
             public int NodeCount;
+            public int CacheCount;
             public long CacheHits;
             public long CacheMisses;
         }
@@ -445,6 +446,7 @@ namespace GameOfLife
                     int exponent = math.tzcnt(exponents);
                     exponents &= exponents - 1;
                     Cache.Remove(new AdvanceKey { Node = id, Exponent = exponent });
+                    State.CacheCount--;
                 }
                 node.CachedExponents = 0;
             }
@@ -864,7 +866,10 @@ namespace GameOfLife
             {
                 Track(key.Node);
                 Track(result);
-                Cache[key] = result;
+                if (Cache.TryAdd(key, result))
+                    State.CacheCount++;
+                else
+                    Cache[key] = result;
                 LifeNode node = Nodes[key.Node];
                 node.CachedExponents |= 1UL << key.Exponent;
                 Nodes[key.Node] = node;
