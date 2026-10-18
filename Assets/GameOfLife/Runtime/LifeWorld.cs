@@ -519,7 +519,7 @@ namespace GameOfLife
             {
                 if (Nodes[source.Root].Population == 0)
                     return;
-                if (Nodes[target.Root].Population == 0)
+                if (Nodes[target.Root].Population == 0 && (source.X & 15) == 0 && (source.Y & 15) == 0)
                 {
                     target = source;
                     return;
