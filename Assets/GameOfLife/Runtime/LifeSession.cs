@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Unity.Entities;
@@ -45,12 +44,12 @@ namespace GameOfLife
 
         public void LoadWorld(LifePattern world, int2 anchor, LifePattern save)
         {
-            simulation.LoadPatterns(new List<LifePattern>(Patterns.Patterns) { world });
+            LifeShape shape = simulation.Simulation.BuildShape(world.Tiles);
             DynamicBuffer<LifeCommand> commands = manager.GetBuffer<LifeCommand>(board);
             commands.EnsureCapacity(commands.Length + 2);
             commands.Add(new LifeCommand { Kind = LifeCommandKind.Clear });
             commands.Add(new LifeCommand { Kind = LifeCommandKind.PatternStroke,
-                Shape = simulation.PatternShape(world), Position = anchor, End = anchor });
+                Shape = shape, Position = anchor, End = anchor });
             ResetViewport(anchor);
             CurrentSave = save;
             HasWorld = true;
