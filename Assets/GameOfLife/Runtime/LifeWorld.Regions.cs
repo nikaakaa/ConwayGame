@@ -264,7 +264,7 @@ namespace GameOfLife
             public int RegionCount;
             public int EpochCount;
             public int NextWorker;
-            public long CacheClock;
+            public long RequestClock;
             public int PrunePhase;
             public int PruneRead;
             public int PruneWrite;
@@ -315,9 +315,7 @@ namespace GameOfLife
         struct RegionFrontier
         {
             public long Latest;
-            public long Previous;
-            public int Count;
-            public long LastUse;
+            public long LastRequest;
         }
 
         struct RegionRequest
@@ -370,7 +368,7 @@ namespace GameOfLife
 
         partial struct Core
         {
-            const long RetainedRegionAccesses = 8192;
+            const long RetainedRegionRequests = 64;
             public TimelineState Time;
             public NativeList<WorldEpoch> Epochs;
             public NativeParallelHashMap<int, int> EpochSlots;
@@ -519,6 +517,7 @@ namespace GameOfLife
             public void StartRegionRequest(int owner, LifeSnapshot snapshot, LifeRegion bounds, bool full)
             {
                 CancelRegionRequest(owner);
+                Time.RequestClock++;
                 WorldEpoch epoch = Epoch(snapshot.Epoch);
                 if (epoch.Kind == 0 && snapshot.Generation == epoch.BaseGeneration)
                 {
@@ -975,24 +974,15 @@ namespace GameOfLife
                 RegionFrontier frontier;
                 if (!Frontiers.TryGetValue(key.Space, out frontier))
                 {
-                    frontier = new RegionFrontier { Count = 1, Latest = key.Generation };
+                    frontier = new RegionFrontier { Latest = key.Generation };
                     if (Time.PrunePhase == 1)
                         NewFrontierKeys.Add(key.Space);
                     else
                         FrontierKeys.Add(key.Space);
                 }
                 else if (key.Generation > frontier.Latest)
-                {
-                    frontier.Previous = frontier.Latest;
                     frontier.Latest = key.Generation;
-                    frontier.Count = 2;
-                }
-                else if (key.Generation < frontier.Latest && (frontier.Count == 1 || key.Generation > frontier.Previous))
-                {
-                    frontier.Previous = key.Generation;
-                    frontier.Count = 2;
-                }
-                frontier.LastUse = ++Time.CacheClock;
+                frontier.LastRequest = Time.RequestClock;
                 Frontiers[key.Space] = frontier;
                 WorldEpoch epoch = Epoch(key.Space.Epoch);
                 epoch.MaxCachedLevel = math.max(epoch.MaxCachedLevel, key.Space.Level);
@@ -1011,7 +1001,7 @@ namespace GameOfLife
                     probe.Space.Y = key.Space.Y & -side;
                     if (!Regions.TryGetValue(probe, out root) || !Frontiers.TryGetValue(probe.Space, out RegionFrontier frontier))
                         continue;
-                    frontier.LastUse = ++Time.CacheClock;
+                    frontier.LastRequest = Time.RequestClock;
                     Frontiers[probe.Space] = frontier;
                     for (int childLevel = level - 1; childLevel >= key.Space.Level; childLevel--)
                     {
@@ -1224,7 +1214,7 @@ namespace GameOfLife
                     {
                         SpatialKey key = FrontierKeys[Time.PruneRead++];
                         RegionFrontier frontier = Frontiers[key];
-                        if (Epoch(key.Epoch).Mark == State.CollectionEpoch && Time.CacheClock - frontier.LastUse <= RetainedRegionAccesses)
+                        if (Epoch(key.Epoch).Mark == State.CollectionEpoch && Time.RequestClock - frontier.LastRequest <= RetainedRegionRequests)
                             FrontierKeys[Time.PruneWrite++] = key;
                         else
                             Frontiers.Remove(key);
@@ -1243,8 +1233,9 @@ namespace GameOfLife
                     if (Time.PruneRead < Time.RegionLimit)
                     {
                         RegionKey key = RegionKeys[Time.PruneRead++];
+                        long baseGeneration = Epoch(key.Space.Epoch).BaseGeneration;
                         if (Frontiers.TryGetValue(key.Space, out RegionFrontier frontier)
-                            && (key.Generation == frontier.Latest || (frontier.Count == 2 && key.Generation == frontier.Previous)))
+                            && IsTimeAncestor(key.Generation - baseGeneration, frontier.Latest - baseGeneration))
                         {
                             Mark(Regions[key]);
                             RegionKeys[Time.PruneWrite++] = key;
@@ -1279,6 +1270,9 @@ namespace GameOfLife
                 }
                 Time.PrunePhase = 0;
             }
+
+            static bool IsTimeAncestor(long ancestor, long descendant) =>
+                (descendant & -(ancestor & -ancestor)) == ancestor;
         }
     }
 }

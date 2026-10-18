@@ -25,5 +25,6 @@ namespace GameOfLife
         [FieldOffset(16)] public LifeBits Bits;
         // 分支缓存使用叶子位图的闲置空间，叶节点不读取此字段。
         [FieldOffset(32)] public ulong CachedExponents;
+        [FieldOffset(40)] public long LastAdvanceCollection;
     }
 }

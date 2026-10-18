@@ -274,6 +274,7 @@ namespace GameOfLife
 
         partial struct Core
         {
+            const int RetainedAdvanceCollections = 2;
             public WorldState State;
             public NativeList<LifeNode> Nodes;
             public NativeParallelHashMap<LifeBits, int> Leaves;
@@ -784,6 +785,8 @@ namespace GameOfLife
                     LifeNode node = Nodes[frame.Node];
                     if ((node.CachedExponents & (1UL << frame.Exponent)) != 0)
                     {
+                        node.LastAdvanceCollection = State.CollectionEpoch;
+                        Nodes[frame.Node] = node;
                         State.CacheHits++;
                         Finish(Cache[key]);
                         return;
@@ -872,6 +875,7 @@ namespace GameOfLife
                     Cache[key] = result;
                 LifeNode node = Nodes[key.Node];
                 node.CachedExponents |= 1UL << key.Exponent;
+                node.LastAdvanceCollection = State.CollectionEpoch;
                 Nodes[key.Node] = node;
             }
 
@@ -1021,7 +1025,17 @@ namespace GameOfLife
                     }
                     if (State.CollectionPhase == 1)
                     {
+                        if (State.SweepCursor < State.SweepLimit)
+                        {
+                            int id = State.SweepCursor++;
+                            LifeNode node = Nodes[id];
+                            if (node.Level > 4 && node.CachedExponents != 0
+                                && State.CollectionEpoch - node.LastAdvanceCollection <= RetainedAdvanceCollections)
+                                Mark(id);
+                            continue;
+                        }
                         State.CollectionPhase = 2;
+                        State.SweepCursor = 0;
                         continue;
                     }
                     if (State.CollectionPhase == 2)
