@@ -16,6 +16,10 @@ public static class ObserveLifeFrames
         public int frame;
         public double gapMs;
         public long generation;
+        public long population;
+        public uint revision;
+        public float speed;
+        public double accumulator;
         public bool running;
         public int nodes;
         public int cacheEntries;
@@ -43,6 +47,9 @@ public static class ObserveLifeFrames
         readonly ProfilerRecorder[] recorders;
         readonly double seconds;
         readonly string path;
+        readonly long initialGeneration;
+        readonly long initialPopulation;
+        readonly bool historyEnabledAtStart;
         readonly Stopwatch watch = Stopwatch.StartNew();
         long previous;
         int lastFrame = -1;
@@ -52,6 +59,9 @@ public static class ObserveLifeFrames
         {
             this.seconds = seconds;
             path = "Temp/LifeBenchmarks/life-frames-" + label + ".json";
+            initialGeneration = controller.State.Generation;
+            initialPopulation = system.Simulation.Population;
+            historyEnabledAtStart = UnityEditorInternal.ProfilerDriver.enabled;
             var options = ProfilerRecorderOptions.Default | ProfilerRecorderOptions.CollectOnlyOnCurrentThread;
             string[] names = {
                 "PlayerLoop", "Default World GameOfLife.LifeSimulationSystem",
@@ -98,11 +108,13 @@ public static class ObserveLifeFrames
                 return;
             }
             var world = system.Simulation;
+            var state = controller.State;
             var allocation = recorders[10];
             frames[count++] = new Frame {
                 frame = lastFrame, gapMs = (now - previous) * 1000d / Stopwatch.Frequency,
-                generation = controller.State.Generation, nodes = world.NodeCount,
-                running = controller.State.IsRunning,
+                generation = state.Generation, population = world.Population,
+                revision = state.Revision, speed = controller.Speed, accumulator = state.Accumulator,
+                nodes = world.NodeCount, running = state.IsRunning,
                 cacheEntries = world.CacheCount, collecting = world.IsCollecting,
                 advancing = world.IsAdvancing, playerLoopMs = Milliseconds(0),
                 simulationMs = Milliseconds(1), advanceMs = Milliseconds(2), collectionMs = Milliseconds(3),
@@ -130,6 +142,8 @@ public static class ObserveLifeFrames
                 completedAtUtc = DateTime.UtcNow.ToString("O"), reason, markersValid,
                 elapsedSeconds = watch.Elapsed.TotalSeconds, warmupSeconds = WarmupSeconds, speed = controller.Speed,
                 population = system.Simulation.Population, sampleCount = count, frames = captured,
+                initialGeneration, initialPopulation, historyEnabledAtStart,
+                historyEnabledAtEnd = UnityEditorInternal.ProfilerDriver.enabled,
                 markerSamples,
                 scope = "目标 Editor 当前 Play 的被动主线程采样；帧间隔包含 Editor 等待，Profiler 指标对应最近完成帧，可能与状态读数相差一帧。GC.Alloc 仅记录事件数，不表示字节；此工具不改变棋盘或速度。"
             };

@@ -1,0 +1,63 @@
+{
+  "recordedAtUtc": "2026-10-18T03:33:29.279480+00:00",
+  "baseCommit": "bd772ac80af0bb66afa6ddd5d92fc62a00490145",
+  "workspaceClean": false,
+  "files": [
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeSimulationSystem.cs",
+      "bytes": 13496,
+      "sha256": "aeab5b21aed6f15327be219989ec4730be6de3f6358b3ba22069dac791348b5b"
+    },
+    {
+      "path": "Assets/GameOfLife/Runtime/LifeWorld.cs",
+      "bytes": 45611,
+      "sha256": "6635bcba0e096d2a474194b56871f2b1e2d46614dba92e08e59648ea5435032e"
+    },
+    {
+      "path": "Assets/StreamingAssets/LifePatterns/hexadecimal.rle",
+      "bytes": 5438166,
+      "sha256": "272d7727e944e89b6fa82b394966b9405f9969cc62c3c44c8fb77cb63cc58742"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeStepCosts.cs",
+      "bytes": 7912,
+      "sha256": "0509003492c483ed0b1470d4d770aafc5f589fa0fea6b6eaa8718444b90f7800"
+    },
+    {
+      "path": "Tools/Benchmarks/MeasureLifeCadence.cs",
+      "bytes": 13519,
+      "sha256": "52dca4fde85cb68af6de1dcea8790ddb5e028abc7abedd4abb61fef073231a0c"
+    },
+    {
+      "path": "Tools/Benchmarks/ObserveLifeFrames.cs",
+      "bytes": 7162,
+      "sha256": "ab31a117b5eee481a8a281728955570211ca22ed9cfb8a01d1c75d391a38f7c9"
+    },
+    {
+      "path": "Tools/Benchmarks/ReferenceLife.cjs",
+      "bytes": 2620,
+      "sha256": "b1f286570a11375f3dd89968606e327c04af69a21e83d9856e48bee0647c9c1d"
+    },
+    {
+      "path": "Temp/LifeBenchmarks/hex-22071-tiles.bin",
+      "bytes": 14801404,
+      "sha256": "bd9b9b35348a193ab09155771eff467a95ef6dc8fc50e00045946faffb5f0853"
+    },
+    {
+      "path": "Temp/LifeBenchmarks/life-reference.js",
+      "bytes": 28719,
+      "sha256": "638cabc197b4b36601a08bb24a10f1b68431f3443d59648f742b4a829996da43"
+    },
+    {
+      "path": "Temp/LifeBenchmarks/formats-reference.js",
+      "bytes": 14678,
+      "sha256": "537d15b7bb3c64c0b3423ad8b610fbdd3b1a5f4bc1d3414728eeddb15f584819"
+    }
+  ],
+  "scope": [
+    "Hashes describe final core and benchmark sources, not a clean checkout of baseCommit. The System includes the UI author's pending accumulator cap; that hunk is excluded from this core commit.",
+    "The five-run System result used this final System source. Real Play used the same logic with a redundant explicitStep=false assignment in the automatic-start branch, removed afterward and recompiled.",
+    "The direct LifeWorld step comparison does not execute LifeSimulationSystem. UI and loading sources were concurrently edited; their exact measured source bytes were not archived here.",
+    "The RLE is supplied by the other author's pending map-library changes. The temporary binary is reproducible with MeasureLifeStepCosts and is not committed."
+  ]
+}

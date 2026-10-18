@@ -1,0 +1,302 @@
+{
+  "generatedAtUtc": "2026-10-18T03:33:28.622944+00:00",
+  "stepComparison": [
+    {
+      "step": 1,
+      "runs": 5,
+      "totalServiceMs": {
+        "median": 16714.8835,
+        "minimum": 15598.9344,
+        "maximum": 17430.068900000002
+      },
+      "firstPublicationServiceMs": {
+        "median": 21.0246,
+        "minimum": 20.0323,
+        "maximum": 27.2162
+      }
+    },
+    {
+      "step": 8,
+      "runs": 5,
+      "totalServiceMs": {
+        "median": 1651.1465,
+        "minimum": 1592.3079,
+        "maximum": 2279.0304
+      },
+      "firstPublicationServiceMs": {
+        "median": 25.4691,
+        "minimum": 22.4296,
+        "maximum": 46.069700000000005
+      }
+    },
+    {
+      "step": 32,
+      "runs": 5,
+      "totalServiceMs": {
+        "median": 497.8872,
+        "minimum": 408.64340000000004,
+        "maximum": 675.8972
+      },
+      "firstPublicationServiceMs": {
+        "median": 32.2184,
+        "minimum": 29.1123,
+        "maximum": 53.3389
+      }
+    },
+    {
+      "step": 512,
+      "runs": 5,
+      "totalServiceMs": {
+        "median": 318.4542,
+        "minimum": 310.4091,
+        "maximum": 405.5187
+      },
+      "firstPublicationServiceMs": {
+        "median": 318.4542,
+        "minimum": 310.4091,
+        "maximum": 405.5187
+      }
+    }
+  ],
+  "scheduler": {
+    "runs": 5,
+    "failures": 0,
+    "totalServiceMs": {
+      "median": 412.93760000000003,
+      "minimum": 393.1936,
+      "maximum": 509.39450000000005
+    },
+    "firstPublicationServiceMs": {
+      "median": 32.2196,
+      "minimum": 32.1662,
+      "maximum": 40.5587
+    },
+    "maximumUpdateMs": 10.1209,
+    "publicationCounts": [
+      9,
+      10,
+      10,
+      10,
+      11
+    ],
+    "advanceAllocationEvents": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ],
+    "brushServiceMs": {
+      "median": 2.255,
+      "minimum": 2.2246,
+      "maximum": 7.7628
+    },
+    "brushUpdates": [
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "brushAllocationEvents": [
+      3,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "playbackBefore": {
+    "file": "life-frames-current-stutter.json",
+    "reason": "completed",
+    "sampleCount": 2078,
+    "allRunning": true,
+    "generationRange": [
+      22071,
+      26167
+    ],
+    "targetSpeed": 20480.0,
+    "publicationChanges": 11,
+    "observedGenerationSteps": [
+      256,
+      512
+    ],
+    "sameGenerationAssignedGapMs": {
+      "median": 1762.0267,
+      "minimum": 72.3875,
+      "maximum": 2679.4778,
+      "p99": 2650.913352
+    },
+    "longestSameGenerationGroups": [
+      {
+        "generation": 24631,
+        "firstFrame": 40812,
+        "lastFrame": 41086,
+        "frames": 275,
+        "assignedGapMs": 2679.4778,
+        "betweenObservedSamplesMs": 2669.4103,
+        "advancingFrames": 274,
+        "collectingFrames": 71,
+        "boundaryTruncated": false
+      },
+      {
+        "generation": 26167,
+        "firstFrame": 41540,
+        "lastFrame": 41777,
+        "frames": 238,
+        "assignedGapMs": 2419.801,
+        "betweenObservedSamplesMs": 2409.733,
+        "advancingFrames": 237,
+        "collectingFrames": 73,
+        "boundaryTruncated": true
+      },
+      {
+        "generation": 22327,
+        "firstFrame": 39709,
+        "lastFrame": 39953,
+        "frames": 245,
+        "assignedGapMs": 2356.1782,
+        "betweenObservedSamplesMs": 2347.1259,
+        "advancingFrames": 244,
+        "collectingFrames": 67,
+        "boundaryTruncated": false
+      },
+      {
+        "generation": 25399,
+        "firstFrame": 41185,
+        "lastFrame": 41438,
+        "frames": 254,
+        "assignedGapMs": 2245.1131,
+        "betweenObservedSamplesMs": 2234.1516,
+        "advancingFrames": 253,
+        "collectingFrames": 65,
+        "boundaryTruncated": false
+      },
+      {
+        "generation": 23095,
+        "firstFrame": 40091,
+        "lastFrame": 40300,
+        "frames": 210,
+        "assignedGapMs": 2047.872,
+        "betweenObservedSamplesMs": 2037.4166,
+        "advancingFrames": 209,
+        "collectingFrames": 22,
+        "boundaryTruncated": false
+      }
+    ],
+    "frameGapMs": {
+      "median": 9.4153,
+      "minimum": 6.393,
+      "maximum": 19.8887,
+      "p99": 14.26941
+    },
+    "maximumSimulationMs": 2.1117,
+    "endingPopulation": 3359950,
+    "historyEnabledAtStart": null,
+    "historyEnabledAtEnd": null
+  },
+  "playbackAfter": {
+    "file": "life-frames-hex-cadence-live.json",
+    "reason": "completed",
+    "sampleCount": 1019,
+    "allRunning": true,
+    "generationRange": [
+      23564,
+      31708
+    ],
+    "targetSpeed": 20480.0,
+    "publicationChanges": 155,
+    "observedGenerationSteps": [
+      16,
+      32,
+      64,
+      128
+    ],
+    "sameGenerationAssignedGapMs": {
+      "median": 113.67155,
+      "minimum": 24.7315,
+      "maximum": 405.1621,
+      "p99": 392.69798499999996
+    },
+    "longestSameGenerationGroups": [
+      {
+        "generation": 29260,
+        "firstFrame": 1917,
+        "lastFrame": 1938,
+        "frames": 22,
+        "assignedGapMs": 405.1621,
+        "betweenObservedSamplesMs": 378.6595,
+        "advancingFrames": 22,
+        "collectingFrames": 18,
+        "boundaryTruncated": false
+      },
+      {
+        "generation": 24860,
+        "firstFrame": 1371,
+        "lastFrame": 1391,
+        "frames": 21,
+        "assignedGapMs": 394.2442,
+        "betweenObservedSamplesMs": 375.0381,
+        "advancingFrames": 21,
+        "collectingFrames": 16,
+        "boundaryTruncated": false
+      },
+      {
+        "generation": 27452,
+        "firstFrame": 1664,
+        "lastFrame": 1684,
+        "frames": 21,
+        "assignedGapMs": 391.4329,
+        "betweenObservedSamplesMs": 363.7808,
+        "advancingFrames": 21,
+        "collectingFrames": 16,
+        "boundaryTruncated": false
+      },
+      {
+        "generation": 30092,
+        "firstFrame": 2018,
+        "lastFrame": 2038,
+        "frames": 21,
+        "assignedGapMs": 366.4296,
+        "betweenObservedSamplesMs": 337.1804,
+        "advancingFrames": 21,
+        "collectingFrames": 17,
+        "boundaryTruncated": false
+      },
+      {
+        "generation": 26204,
+        "firstFrame": 1519,
+        "lastFrame": 1538,
+        "frames": 20,
+        "assignedGapMs": 346.8617,
+        "betweenObservedSamplesMs": 327.3448,
+        "advancingFrames": 20,
+        "collectingFrames": 15,
+        "boundaryTruncated": false
+      }
+    ],
+    "frameGapMs": {
+      "median": 18.146,
+      "minimum": 15.2283,
+      "maximum": 40.5179,
+      "p99": 31.652269999999977
+    },
+    "maximumSimulationMs": 8.5332,
+    "endingPopulation": 3122350,
+    "historyEnabledAtStart": false,
+    "historyEnabledAtEnd": false
+  },
+  "definitions": {
+    "serviceTime": "Stopwatch elapsed time inside the measured processing loop, including collection and possible OS scheduling; excludes frame pacing, UI, raster, preparation and fingerprints.",
+    "sameGenerationAssignedGapMs": "Group consecutive samples with equal generation and sum gapMs assigned to every sample, including the first. The first interval begins at the preceding sample, whose generation may differ; this is a sampled duration estimate, not exact publication latency. Edge groups are truncated.",
+    "betweenObservedSamplesMs": "Elapsed gaps strictly between the first and last observed samples in the same-generation group, excluding the first sample gap.",
+    "publicationChanges": "Changes visible to the observer; multiple publications in one System Update are observed as one change.",
+    "percentile": "Sorted linear interpolation at (count-1)*fraction."
+  },
+  "limits": [
+    "The user identified the baseline map as Hexadecimal; its full live world was not saved. Step comparison rebuilds generation 22071 from the RLE and checks it against an independent engine.",
+    "Play recordings have different evolution ranges, caches and concurrently edited UI; no controlled speedup or frame-rate claim.",
+    "The latest Play end state was checked by population only. The fixed-input core and System scenarios check population and two full-coordinate fingerprints.",
+    "The 8 ms budget is soft. Real Play still contains visible update gaps near 0.4 seconds."
+  ]
+}
