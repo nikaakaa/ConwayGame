@@ -519,6 +519,11 @@ namespace GameOfLife
             {
                 if (Nodes[source.Root].Population == 0)
                     return;
+                if (Nodes[target.Root].Population == 0)
+                {
+                    target = source;
+                    return;
+                }
                 long side = 1L << Nodes[source.Root].Level;
                 EnsureContains(ref target, source.X, source.Y, source.X + side, source.Y + side);
                 target.Root = Merge(target.Root, target.X, target.Y, source.Root, source.X, source.Y);
