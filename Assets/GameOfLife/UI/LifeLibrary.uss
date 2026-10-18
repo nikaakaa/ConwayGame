@@ -1,0 +1,142 @@
+/* 结构库：与主界面同一套语言。没有边框和文字按钮，图标与缩略图只有暗灰与白两种状态，名称与操作在底部状态栏。
+   图标按钮直接复用主界面的 .life-dock__item 样式。 */
+
+.life-lib-backdrop {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+.life-lib {
+    width: 820px;
+    height: 500px;
+    padding: 8px 12px 16px 12px;
+    background-color: rgb(0, 0, 0);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.18);
+    color: rgb(255, 255, 255);
+}
+
+/* 标题像终端提示符一样暗，只用来分辨结构、存档与地图。 */
+.life-lib__title {
+    margin: 0 8px 0 6px;
+    padding: 0;
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.life-lib__empty {
+    width: 100%;
+    height: 200px;
+    margin: 0;
+    padding: 0;
+    font-size: 15px;
+    letter-spacing: 4px;
+    -unity-text-align: middle-center;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.life-lib__header {
+    flex-direction: row;
+    align-items: center;
+    height: 48px;
+    margin-bottom: 8px;
+}
+
+.life-lib__spacer {
+    flex-grow: 1;
+}
+
+.life-lib .life-lib__search {
+    width: 260px;
+    margin: 0 0 0 4px;
+}
+
+.life-lib .life-lib__search > .unity-base-field__input,
+.life-lib .life-lib__rename > .unity-base-field__input {
+    height: 32px;
+    padding: 0 10px;
+    border-width: 0 0 1px 0;
+    border-radius: 0;
+    border-color: rgba(255, 255, 255, 0.6);
+    background-color: rgba(0, 0, 0, 0);
+    color: rgb(255, 255, 255);
+    font-size: 15px;
+}
+
+.life-lib .life-lib__search .unity-text-element,
+.life-lib .life-lib__rename .unity-text-element {
+    color: rgb(255, 255, 255);
+}
+
+.life-lib__grid {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+/* 底部状态栏：一条细线隔开网格，左边名称，右边对选中项的操作。 */
+.life-lib__footer {
+    flex-direction: row;
+    align-items: center;
+    height: 48px;
+    margin-top: 8px;
+    padding-left: 6px;
+    border-top-width: 1px;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.life-lib__name {
+    margin: 0;
+    padding: 0;
+    font-size: 15px;
+    color: rgb(255, 255, 255);
+}
+
+.life-lib .life-lib__rename {
+    width: 320px;
+    margin: 0;
+}
+
+.life-lib__actions {
+    flex-direction: row;
+}
+
+/* 缩略图格子：没有边框和名字，靠亮度表示悬停与选中。 */
+.life-lib__tile {
+    width: 112px;
+    height: 96px;
+    margin: 4px;
+    padding: 8px;
+}
+
+.life-lib__thumb {
+    flex-grow: 1;
+    -unity-background-scale-mode: scale-to-fit;
+    -unity-background-image-tint-color: rgba(255, 255, 255, 0.4);
+}
+
+.life-lib__tile:hover > .life-lib__thumb,
+.life-lib__tile--current > .life-lib__thumb {
+    -unity-background-image-tint-color: rgb(255, 255, 255);
+}
+
+/* 选中格只多一条底线，名称显示在底部状态栏。 */
+.life-lib__tile--current {
+    border-bottom-width: 2px;
+    border-color: rgb(255, 255, 255);
+}
+
+.life-lib__tip {
+    position: absolute;
+    margin: 0;
+    padding: 3px 8px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(0, 0, 0, 0.9);
+}

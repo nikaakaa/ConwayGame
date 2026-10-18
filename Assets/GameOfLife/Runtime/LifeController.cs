@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Unity.Entities;
@@ -27,22 +28,26 @@ namespace GameOfLife
         public bool KeyboardShortcutsEnabled { get; set; } = true;
 
         public LifeBrushMode Brush { get; private set; } = LifeBrushMode.Cell;
-        public LifePattern SelectedPattern { get; private set; } = LifePatterns.Items[0];
+        public LifePattern SelectedPattern { get; private set; }
         public LifeState State => manager.GetComponentData<LifeState>(boardEntity);
         public float Speed => manager.GetComponentData<LifeSettings>(boardEntity).GenerationsPerSecond;
         public LifePopulationSample PopulationSample => simulation.Simulation.PopulationSample;
         public LifePatternStore Store { get; private set; }
         public string PatternsDirectory { get; private set; }
-        public string PatternName { get; set; } = "新结构";
+        /// <summary>存档与地图：载入时替换整个世界。</summary>
+        public LifeWorldStore Worlds { get; private set; }
+        /// <summary>当前世界所属的存档；新世界或地图为 null，保存时新建存档。</summary>
+        public LifePattern CurrentSave { get; private set; }
 
         /// <summary>选区为闭区间世界坐标；只有框选工具下才存在。</summary>
         public bool HasSelection { get; private set; }
+        /// <summary>正在拖出选区；松手前不显示选区操作。</summary>
+        public bool IsSelecting { get; private set; }
         public int2 SelectionMin => math.min(selectionAnchor, selectionEnd);
         public int2 SelectionMax => math.max(selectionAnchor, selectionEnd);
 
         /// <summary>需要提示用户的结果，例如复制成功或剪贴板无法识别。</summary>
         public event Action<string> Notified;
-        public event Action PatternsChanged;
 
         EntityManager manager;
         Entity boardEntity;
@@ -59,11 +64,17 @@ namespace GameOfLife
         int2 selectionAnchor;
         int2 selectionEnd;
         bool selectionMoved;
+        // 盖章之前使用的画笔或框选，Esc 取消盖章时回到它。
+        LifeBrushMode previousTool = LifeBrushMode.Cell;
+        // 换世界（新建或载入）时递增，后台保存完成时据此判断当前世界是否仍是保存的那个。
+        int worldVersion;
 
         void Awake()
         {
             PatternsDirectory = Path.Combine(Application.persistentDataPath, "Patterns");
             Store = new LifePatternStore(PatternsDirectory);
+            SelectedPattern = Store.Patterns[0];
+            Worlds = new LifeWorldStore(Path.Combine(Application.persistentDataPath, "Saves"));
         }
 
         void Start()
@@ -96,13 +107,8 @@ namespace GameOfLife
                 UseSelectTool();
             if (keyboard.deleteKey.wasPressedThisFrame || keyboard.backspaceKey.wasPressedThisFrame)
                 DeleteSelection();
-            if (keyboard.escapeKey.wasPressedThisFrame)
-                ClearSelection();
             if (keyboard.digit0Key.wasPressedThisFrame)
                 UseCellBrush();
-            for (int i = 0; i < LifePatterns.Items.Length; i++)
-                if (keyboard[(Key)((int)Key.Digit1 + i)].wasPressedThisFrame)
-                    SelectPattern(LifePatterns.Items[i]);
 
             if (keyboard.spaceKey.wasPressedThisFrame)
                 ToggleRunning();
@@ -135,10 +141,21 @@ namespace GameOfLife
 
         public void UseSelectTool() => SetBrush(LifeBrushMode.Select);
 
+        /// <summary>Esc：先取消选区；没有选区时退出盖章（包括 Ctrl+V 导入后的盖章），回到之前的工具。</summary>
+        public void Cancel()
+        {
+            if (HasSelection)
+                ClearSelection();
+            else if (Brush == LifeBrushMode.Pattern)
+                SetBrush(previousTool);
+        }
+
         void SetBrush(LifeBrushMode brush)
         {
             if (brush != LifeBrushMode.Select)
                 ClearSelection();
+            if (brush != LifeBrushMode.Pattern)
+                previousTool = brush;
             Brush = brush;
             hasPreviousCell = false;
             View.SetGhost(brush != LifeBrushMode.Select, brush == LifeBrushMode.Pattern
@@ -148,6 +165,7 @@ namespace GameOfLife
         public void ClearSelection()
         {
             HasSelection = false;
+            IsSelecting = false;
             View.SetSelection(false, default, default);
         }
 
@@ -162,9 +180,8 @@ namespace GameOfLife
                 return null;
             }
             LifePattern pattern = Store.Save(name, cells);
-            simulation.LoadPatterns(Store.Patterns);
-            PatternsChanged?.Invoke();
-            Notify("已保存 " + pattern.Name);
+            PatternsChanged();
+            Notify("已存入 " + cells.Length + " 格");
             return pattern;
         }
 
@@ -183,7 +200,6 @@ namespace GameOfLife
         IEnumerator CopySnapshot()
         {
             bool selected = HasSelection;
-            string name = PatternName;
             Notify(selected ? "正在收集选区" : "正在收集世界快照");
             Task<int2[]> capture = simulation.Simulation.CollectCellsAsync(selected, SelectionMin, SelectionMax);
             while (!capture.IsCompleted)
@@ -194,22 +210,68 @@ namespace GameOfLife
                 Notify(selected ? "选区内没有活细胞" : "棋盘是空的");
                 yield break;
             }
-            GUIUtility.systemCopyBuffer = LifePatternText.ToRle(name, cells);
+            GUIUtility.systemCopyBuffer = LifePatternText.ToRle(string.Empty, cells);
             Notify("已复制 " + cells.Length + " 格");
         }
 
-        public void PasteFromClipboard()
+        /// <summary>从剪贴板导入结构并设为盖章笔刷；无法识别时返回 null。</summary>
+        public LifePattern PasteFromClipboard()
         {
             if (!LifePatternText.TryParse(GUIUtility.systemCopyBuffer, "导入", out LifePattern parsed, out string error))
             {
                 Notify(error);
-                return;
+                return null;
             }
             LifePattern pattern = Store.Import(parsed);
-            simulation.LoadPatterns(Store.Patterns);
-            PatternsChanged?.Invoke();
+            PatternsChanged();
             SelectPattern(pattern);
             Notify("已导入 " + pattern.Name);
+            return pattern;
+        }
+
+        /// <summary>
+        /// 结构列表变化后重建盖章形状。模拟只认已加载的结构，当前结构若已不在库中，
+        /// 按名称找回（重新读取或改名后对象会替换），找不到时改用第一个。
+        /// </summary>
+        void PatternsChanged(LifePattern replacement = null)
+        {
+            simulation.LoadPatterns(Store.Patterns);
+            if (replacement != null)
+                SelectedPattern = replacement;
+            else if (!Contains(SelectedPattern))
+            {
+                LifePattern match = Store.Patterns[0];
+                foreach (LifePattern pattern in Store.Patterns)
+                    if (pattern.Name == SelectedPattern.Name)
+                    {
+                        match = pattern;
+                        break;
+                    }
+                SelectedPattern = match;
+            }
+            SetBrush(Brush);
+        }
+
+        bool Contains(LifePattern pattern)
+        {
+            foreach (LifePattern candidate in Store.Patterns)
+                if (candidate == pattern)
+                    return true;
+            return false;
+        }
+
+        /// <summary>目录在外部发生变化时才重新读取，打开结构库时调用。</summary>
+        public void ReloadPatternsIfChanged()
+        {
+            try
+            {
+                if (Store.ReloadIfChanged())
+                    PatternsChanged();
+            }
+            catch (FormatException exception)
+            {
+                Notify(exception.Message);
+            }
         }
 
         public void ReloadPatterns()
@@ -223,9 +285,35 @@ namespace GameOfLife
                 Notify(exception.Message);
                 return;
             }
-            simulation.LoadPatterns(Store.Patterns);
-            PatternsChanged?.Invoke();
-            SelectPattern(Store.Patterns[0]);
+            PatternsChanged();
+        }
+
+        /// <summary>结构库中复制单个结构的 RLE。</summary>
+        public void CopyPattern(LifePattern pattern)
+        {
+            GUIUtility.systemCopyBuffer = LifePatternText.ToRle(pattern);
+            Notify("已复制 " + pattern.Name);
+        }
+
+        public void DeletePattern(LifePattern pattern)
+        {
+            if (!Store.CanDelete(pattern))
+            {
+                Notify("库中至少保留一个结构");
+                return;
+            }
+            Store.Delete(pattern);
+            PatternsChanged();
+            Notify("已删除 " + pattern.Name);
+        }
+
+        /// <summary>改名并返回替换后的结构；若正被选中，选中项随之替换。</summary>
+        public LifePattern RenamePattern(LifePattern pattern, string name)
+        {
+            LifePattern renamed = Store.Rename(pattern, name);
+            if (renamed != pattern)
+                PatternsChanged(SelectedPattern == pattern ? renamed : null);
+            return renamed;
         }
 
         void Notify(string message) => Notified?.Invoke(message);
@@ -238,6 +326,89 @@ namespace GameOfLife
         public void Step() => Submit(new LifeCommand { Kind = LifeCommandKind.Step });
 
         public void Clear() => Submit(new LifeCommand { Kind = LifeCommandKind.Clear });
+
+        /// <summary>空棋盘：清空、暂停、代数归零，视野回到原点。</summary>
+        public void NewWorld()
+        {
+            ClearSelection();
+            Submit(new LifeCommand { Kind = LifeCommandKind.Clear });
+            View.ResetWindow();
+            CurrentSave = null;
+            worldVersion++;
+        }
+
+        /// <summary>
+        /// 用 <see cref="LifeWorldStore.LoadAsync"/> 解析出的完整世界替换当前世界。结构临时加入盖章形状集合，
+        /// 等待中的盖章指令会被回收器视为根，应用前不会被回收。视野以载入位置为中心，代数从零开始。
+        /// </summary>
+        /// <param name="save">来自存档时为该存档的列表项，之后保存会覆盖它；地图为 null。</param>
+        public void LoadWorld(LifePattern world, int2 anchor, LifePattern save)
+        {
+            var retained = new List<LifePattern>(Store.Patterns) { world };
+            simulation.LoadPatterns(retained);
+            ClearSelection();
+            DynamicBuffer<LifeCommand> commands = manager.GetBuffer<LifeCommand>(boardEntity);
+            commands.EnsureCapacity(commands.Length + 2);
+            commands.Add(new LifeCommand { Kind = LifeCommandKind.Clear });
+            commands.Add(new LifeCommand { Kind = LifeCommandKind.PatternStroke,
+                Shape = simulation.PatternShape(world), Position = anchor, End = anchor });
+            View.ResetWindow();
+            View.Pan(anchor);
+            hasPreviousCell = false;
+            CurrentSave = save;
+            worldVersion++;
+            // 形状集合已重建，刷新当前笔刷的预览形状。
+            SetBrush(Brush);
+        }
+
+        public Task<string> SaveWorldAsync(out SaveTicket ticket)
+        {
+            string name = CurrentSave != null ? CurrentSave.Name : "存档 " + DateTime.Now.ToString("MM-dd HH:mm");
+            ticket = new SaveTicket { Name = name, WorldVersion = worldVersion };
+            Notify("保存中 " + name);
+            return SaveSnapshotAsync(simulation.Simulation.CollectCellsAsync(false, default, default), name, CurrentSave);
+        }
+
+        async Task<string> SaveSnapshotAsync(Task<int2[]> capture, string name, LifePattern overwrite)
+        {
+            int2[] cells = await capture;
+            if (cells.Length == 0)
+            {
+                Notify("棋盘是空的");
+                return null;
+            }
+            return await Worlds.SaveAsync(name, cells, overwrite);
+        }
+
+        /// <summary>后台保存完成：刷新存档列表；保存期间没有换世界时，当前世界归属这个存档。</summary>
+        public void CompleteSave(SaveTicket ticket, string filePath)
+        {
+            Worlds.ReloadSaves();
+            if (ticket.WorldVersion == worldVersion)
+                CurrentSave = Worlds.FindSave(filePath);
+            Notify("已保存 " + ticket.Name);
+        }
+
+        public struct SaveTicket
+        {
+            public string Name;
+            public int WorldVersion;
+        }
+
+        public void DeleteSave(LifePattern save)
+        {
+            Worlds.DeleteSave(save);
+            if (CurrentSave == save)
+                CurrentSave = null;
+        }
+
+        public LifePattern RenameSave(LifePattern save, string name)
+        {
+            LifePattern renamed = Worlds.RenameSave(save, name);
+            if (CurrentSave == save)
+                CurrentSave = renamed;
+            return renamed;
+        }
 
         public void ResetPattern()
         {
@@ -284,6 +455,7 @@ namespace GameOfLife
                     selectionAnchor = selectionEnd = cell;
                     selectionMoved = false;
                     HasSelection = true;
+                    IsSelecting = true;
                     View.SetSelection(true, SelectionMin, SelectionMax);
                 }
             }
@@ -296,6 +468,7 @@ namespace GameOfLife
             if (eventData.button != activeButton)
                 return;
             hasPreviousCell = false;
+            IsSelecting = false;
             // 单击不拖动视为取消选区。
             if (activeButton == PointerEventData.InputButton.Left && Brush == LifeBrushMode.Select && !selectionMoved)
                 ClearSelection();

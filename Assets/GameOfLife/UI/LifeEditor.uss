@@ -1,253 +1,230 @@
-/* 黑白、方格、细线：与棋盘同一套语言。工程使用线性色彩空间，低透明度在屏幕上会偏亮。 */
+/* 逐层展开的极简界面：图标与棋盘同为方块，只有暗灰与白两种状态，没有边框。
+   工程使用线性色彩空间，低透明度在屏幕上会偏亮，数值按截图调整。 */
 
-.life-toolbar {
+.life-cell-icon {
+    --cell-color: rgba(255, 255, 255, 0.55);
+}
+
+.life-dock {
     position: absolute;
-    left: 14px;
-    top: 14px;
-    width: 280px;
+    left: 10px;
+    top: 10px;
+    flex-direction: row;
+    align-items: center;
+}
+
+.life-dock__level {
+    flex-direction: row;
+    margin-left: 6px;
+}
+
+.life-dock__item {
+    width: 48px;
+    height: 48px;
     padding: 12px;
-    background-color: rgba(0, 0, 0, 0.92);
-    border-width: 1px;
-    border-color: rgba(255, 255, 255, 0.12);
-    color: rgb(255, 255, 255);
-    font-size: 12px;
 }
 
-.life-header {
-    flex-direction: row;
-    align-items: center;
-    padding-bottom: 12px;
-    margin-bottom: 12px;
-    border-bottom-width: 1px;
-    border-color: rgba(255, 255, 255, 0.08);
-}
-
-.life-row {
-    flex-direction: row;
-    align-items: center;
-    margin-bottom: 6px;
-}
-
-.life-toolbar > .life-row:last-child {
-    margin-bottom: 0;
-}
-
-.life-spacer {
+.life-dock__icon {
     flex-grow: 1;
 }
 
-/* 3×3 滑翔机，随代数播放四个相位。 */
-.life-glider {
-    flex-shrink: 0;
+.life-dock__item:hover > .life-cell-icon,
+.life-dock__item--on > .life-cell-icon,
+.life-dock__item--open > .life-cell-icon {
+    --cell-color: rgb(255, 255, 255);
 }
 
-.life-glider-row {
-    flex-direction: row;
+/* 滑翔机是常驻标识：暂停时半亮，运行时全亮。 */
+.life-dock__glider > .life-cell-icon {
+    --cell-color: rgba(255, 255, 255, 0.7);
 }
 
-.life-glider-cell {
-    width: 5px;
-    height: 5px;
-    margin: 0 1px 1px 0;
-    background-color: rgba(255, 255, 255, 0.025);
+.life-dock__glider.life-dock__item--on > .life-cell-icon,
+.life-dock__glider:hover > .life-cell-icon {
+    --cell-color: rgb(255, 255, 255);
 }
 
-.life-glider-cell--alive {
-    background-color: rgb(255, 255, 255);
-}
-
-.life-generation {
-    margin: 0 0 0 10px;
-    padding: 0;
-    font-size: 20px;
-}
-
-/* 细胞数前的小方块即“细胞”。 */
-.life-population-cell {
-    width: 5px;
-    height: 5px;
-    margin-right: 6px;
+/* 有二级的图标右下角一个小点，点它或右键可固定展开。 */
+.life-dock__dot {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    width: 3px;
+    height: 3px;
     background-color: rgba(255, 255, 255, 0.35);
 }
 
-.life-population {
-    margin: 0 12px 0 0;
-    padding: 0;
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.35);
+.life-dock__status {
+    flex-direction: row;
+    align-items: center;
+    margin-left: 8px;
+    font-size: 15px;
+    color: rgb(255, 255, 255);
 }
 
-/* 按钮：细线方框；悬停加亮；选中或运行中反白。 */
-.life-toolbar .unity-button {
-    height: 26px;
-    margin: 0 6px 0 0;
-    padding: 0 8px;
-    min-width: 0;
-    border-width: 1px;
-    border-radius: 0;
-    border-color: rgba(255, 255, 255, 0.1);
-    background-color: rgba(0, 0, 0, 0);
+.life-dock__status-key {
+    margin: 0 6px 0 8px;
+    padding: 0;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.life-dock__toast {
+    margin: 0 0 0 12px;
+    padding: 0;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* 悬停提示与操作结果共用图标行末尾的位置，从不出现在光标下方。 */
+.life-dock__hint {
+    margin: 0 0 0 12px;
+    padding: 0;
+    font-size: 14px;
     color: rgba(255, 255, 255, 0.75);
-    -unity-text-align: middle-center;
-    font-size: 12px;
 }
 
-.life-toolbar .unity-button:hover {
-    border-color: rgba(255, 255, 255, 0.6);
-    color: rgb(255, 255, 255);
+.life-dock__sub {
+    position: absolute;
+    flex-direction: row;
+    align-items: center;
+    padding: 0 2px;
+    background-color: rgba(0, 0, 0, 0.88);
 }
 
-.life-toolbar .unity-button:active {
-    background-color: rgba(255, 255, 255, 0.06);
-}
-
-.life-toolbar .unity-button.life-button--on {
-    border-color: rgb(255, 255, 255);
-    background-color: rgb(255, 255, 255);
-    color: rgb(0, 0, 0);
-    -unity-font-style: bold;
-}
-
-.life-toolbar .unity-button:disabled {
-    border-color: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.15);
-    opacity: 1;
-}
-
-.life-button--grow {
-    flex-grow: 1;
-    flex-basis: 0;
-}
-
-.life-button--square {
-    width: 26px;
-    padding: 0;
-}
-
-.life-header > .unity-button {
-    height: 22px;
-    width: 22px;
+.life-dock__speed {
+    min-width: 56px;
     margin: 0;
-    border-color: rgba(0, 0, 0, 0);
-    color: rgba(255, 255, 255, 0.35);
-}
-
-.life-row > .unity-button:last-child {
-    margin-right: 0;
-}
-
-/* 输入框与下拉：同样的细线方框。 */
-.life-toolbar .unity-base-field {
-    margin: 0 6px 0 0;
-    min-width: 0;
-}
-
-.life-toolbar .unity-base-field__input {
-    height: 26px;
-    padding: 0 8px;
-    border-width: 1px;
-    border-radius: 0;
-    border-color: rgba(255, 255, 255, 0.1);
-    background-color: rgba(0, 0, 0, 0);
-    color: rgb(255, 255, 255);
-    font-size: 12px;
-}
-
-.life-toolbar .unity-base-field:hover > .unity-base-field__input {
-    border-color: rgba(255, 255, 255, 0.6);
-}
-
-.life-toolbar .unity-base-field .unity-text-element {
-    color: rgb(255, 255, 255);
-}
-
-.life-toolbar .unity-base-popup-field__arrow {
-    -unity-background-image-tint-color: rgba(255, 255, 255, 0.5);
-    width: 8px;
-    height: 8px;
-}
-
-.life-speed {
-    width: 52px;
-    flex-shrink: 0;
-}
-
-.life-speed .unity-base-field__input {
+    padding: 0 4px;
+    font-size: 15px;
     -unity-text-align: middle-center;
+    color: rgb(255, 255, 255);
+}
+
+.life-dock__tip {
+    position: absolute;
+    margin: 0;
+    padding: 3px 8px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(0, 0, 0, 0.88);
+}
+
+/* 选区操作条浮在选区右下角；棋盘上可能是白色细胞，所以给黑底和一圈细线。 */
+.life-dock__selection {
+    position: absolute;
+    flex-direction: row;
+    background-color: rgba(0, 0, 0, 0.92);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+/* 快捷键帮助：居中浮层，两列键位。 */
+.life-help-backdrop {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.55);
+}
+
+.life-help {
+    padding: 20px 26px 16px 26px;
+    background-color: rgb(0, 0, 0);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+.life-help__row {
+    flex-direction: row;
+    height: 30px;
+    align-items: center;
+}
+
+.life-help__key {
+    width: 96px;
+    margin: 0;
     padding: 0;
+    font-size: 15px;
+    color: rgb(255, 255, 255);
 }
 
-/* 隐藏工具栏后左上角只留滑翔机，点击恢复。 */
-.life-chip {
-    position: absolute;
-    left: 14px;
-    top: 14px;
-    padding: 9px 8px 8px 9px;
-    background-color: rgba(0, 0, 0, 0.92);
-    border-width: 1px;
-    border-color: rgba(255, 255, 255, 0.12);
-}
-
-.life-chip:hover {
-    border-color: rgba(255, 255, 255, 0.6);
-}
-
-/* 操作结果的短提示，浮在工具栏下方，约 2 秒后消失。 */
-.life-toast {
-    position: absolute;
-    top: 100%;
-    left: -1px;
-    margin-top: 6px;
-    padding: 5px 10px;
-    background-color: rgba(0, 0, 0, 0.92);
-    border-width: 1px;
-    border-color: rgba(255, 255, 255, 0.12);
-    border-left-width: 2px;
-    border-left-color: rgb(255, 255, 255);
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 12px;
-}
-
-/* 结构下拉菜单挂在面板根节点上，不在 .life-toolbar 内，单独设置为同一套黑白样式。 */
-.unity-base-dropdown__container-outer {
-    background-color: rgb(0, 0, 0);
-    border-width: 1px;
-    border-radius: 0;
-    border-color: rgba(255, 255, 255, 0.25);
-    padding: 4px 0;
-}
-
-.unity-base-dropdown__container-inner {
-    background-color: rgb(0, 0, 0);
-    border-width: 0;
-    border-radius: 0;
-}
-
-.unity-base-dropdown__item {
-    height: 24px;
-    padding: 0 10px 0 4px;
-    background-color: rgb(0, 0, 0);
+.life-help__text {
+    width: 180px;
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
     color: rgba(255, 255, 255, 0.7);
 }
 
-.unity-base-dropdown__item:hover {
+.life-help__footer {
+    margin: 14px 0 0 0;
+    padding: 0;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+/* 开始界面：全屏黑底，背景是暗处演化的枪，中间滑翔机标志与菜单，选中项反白。 */
+.life-start {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgb(0, 0, 0);
+}
+
+.life-start__background {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    -unity-background-scale-mode: scale-and-crop;
+    -unity-background-image-tint-color: rgba(255, 255, 255, 0.08);
+}
+
+.life-start__center {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+}
+
+.life-start__logo {
+    width: 84px;
+    height: 84px;
+    margin-bottom: 36px;
+    --cell-color: rgb(255, 255, 255);
+}
+
+.life-start__menu {
+    min-width: 200px;
+}
+
+.life-start__item {
+    height: 38px;
+    margin: 2px 0;
+    padding: 0 24px;
+    font-size: 17px;
+    letter-spacing: 3px;
+    -unity-text-align: middle-center;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.life-start__item--on {
     background-color: rgb(255, 255, 255);
     color: rgb(0, 0, 0);
 }
 
-.unity-base-dropdown__item .unity-base-dropdown__label {
-    color: inherit;
-    font-size: 12px;
-}
-
-.unity-base-dropdown__checkmark {
-    -unity-background-image-tint-color: rgb(255, 255, 255);
-}
-
-.unity-base-dropdown__item:hover .unity-base-dropdown__checkmark {
-    -unity-background-image-tint-color: rgb(0, 0, 0);
-}
-
-.unity-base-dropdown__container-outer .unity-scroller--horizontal {
-    display: none;
+/* 载入时替换菜单的一行字，与菜单项同高，避免标志上下跳动。 */
+.life-start__loading {
+    height: 38px;
+    margin: 2px 0;
+    padding: 0;
+    font-size: 15px;
+    letter-spacing: 6px;
+    -unity-text-align: middle-center;
+    color: rgba(255, 255, 255, 0.45);
 }

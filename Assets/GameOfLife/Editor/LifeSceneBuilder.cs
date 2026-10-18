@@ -84,6 +84,7 @@ namespace GameOfLife.Editor
                 AssetDatabase.CreateAsset(settings, PanelSettingsPath);
             }
             settings.themeStyleSheet = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(ThemePath);
+            // 运行时由工具栏按窗口高度放大（不小于 1 倍），这里只设基准像素尺寸。
             settings.scaleMode = PanelScaleMode.ConstantPixelSize;
             settings.scale = 1;
             settings.sortingOrder = 10;

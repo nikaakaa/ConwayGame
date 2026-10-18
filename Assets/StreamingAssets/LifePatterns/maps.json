@@ -1,0 +1,100 @@
+{
+  "maps": [
+    {
+      "file": "breeder1.rle",
+      "name": "Breeder 1 繁殖器",
+      "width": 749,
+      "height": 338
+    },
+    {
+      "file": "c5greyship.rle",
+      "name": "c/5 大型灰船",
+      "width": 286,
+      "height": 199
+    },
+    {
+      "file": "caterpillar.rle",
+      "name": "Caterpillar 巨型毛毛虫",
+      "width": 4195,
+      "height": 330721
+    },
+    {
+      "file": "demonoid-c512.rle",
+      "name": "Demonoid 自构造飞船（c/512 变体）",
+      "width": 272449,
+      "height": 268312
+    },
+    {
+      "file": "gemini.rle",
+      "name": "Gemini 双子座自构造飞船",
+      "width": 4217807,
+      "height": 4220191
+    },
+    {
+      "file": "gunstar.rle",
+      "name": "Gunstar 四向滑翔机枪",
+      "width": 149,
+      "height": 149
+    },
+    {
+      "file": "hexadecimal.rle",
+      "name": "Hexadecimal 十六进制显示器",
+      "width": 32768,
+      "height": 20480
+    },
+    {
+      "file": "linear-propagator.rle",
+      "name": "Linear propagator 线性复制器",
+      "width": 14826990,
+      "height": 14826908
+    },
+    {
+      "file": "metaglider-0e0p.rle.gz",
+      "name": "0E0P 自构造宏滑翔机",
+      "width": 786129,
+      "height": 786129
+    },
+    {
+      "file": "metapixel-galaxy.rle",
+      "name": "Life in Life：OTCA 银河（15×15）",
+      "width": 30720,
+      "height": 30720
+    },
+    {
+      "file": "p690-cordership-gun.rle",
+      "name": "P690 三引擎飞船工厂",
+      "width": 517,
+      "height": 471
+    },
+    {
+      "file": "pi-calculator.rle",
+      "name": "π 圆周率计算机",
+      "width": 117573,
+      "height": 155887
+    },
+    {
+      "file": "primer.rle",
+      "name": "Primer 素数筛",
+      "width": 440,
+      "height": 294
+    },
+    {
+      "file": "spacefiller.rle",
+      "name": "Spacefiller 空间填充器",
+      "width": 49,
+      "height": 26
+    },
+    {
+      "file": "turingmachine.rle",
+      "name": "图灵机 Turing machine",
+      "width": 1714,
+      "height": 1647
+    },
+    {
+      "file": "waterbear.rle",
+      "name": "Waterbear 水熊飞船",
+      "width": 13295,
+      "height": 28010
+    }
+  ]
+}
