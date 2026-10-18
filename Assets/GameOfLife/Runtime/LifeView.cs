@@ -21,11 +21,13 @@ namespace GameOfLife
         public LifeRegion TextureBounds { get; private set; }
 
         public const int TextureSize = 1024;
+        public const int BoardTextureSize = TextureSize * 7 / 2;
         Texture2D texture;
         Texture2D backTexture;
         Texture2D overlayTexture;
         RawImage boardSurface;
         RawImage overlayImage;
+        LifeSelectionGraphic selectionBorder;
         static readonly ProfilerMarker BoardRaster = new ProfilerMarker("LifeView.BoardRaster");
         static readonly ProfilerMarker BoardUpload = new ProfilerMarker("LifeView.BoardUpload");
         static readonly ProfilerMarker OverlayRaster = new ProfilerMarker("LifeView.OverlayRaster");
@@ -55,23 +57,26 @@ namespace GameOfLife
             drawStack = new NativeList<LifeDrawTask>(256, Allocator.Persistent);
             overlayStack = new NativeList<LifeDrawTask>(256, Allocator.Persistent);
             rasterProgress = new NativeArray<LifeRasterProgress>(1, Allocator.Persistent);
-            texture = CreateTexture("Life board");
-            backTexture = CreateTexture("Life board back buffer");
-            overlayTexture = CreateTexture("Life overlays");
+            texture = CreateTexture("Life board", BoardTextureSize);
+            backTexture = CreateTexture("Life board back buffer", BoardTextureSize);
+            overlayTexture = CreateTexture("Life overlays", TextureSize);
             BoardImage.texture = null;
             BoardImage.color = Color.black;
-            boardSurface = CreateLayer("Life board surface", texture);
-            boardSurface.transform.SetSiblingIndex(0);
-            overlayImage = CreateLayer("Life overlays", overlayTexture);
-            overlayImage.transform.SetSiblingIndex(1);
+            overlayImage = CreateLayer<RawImage>("Life overlays");
+            overlayImage.texture = overlayTexture;
+            overlayImage.transform.SetSiblingIndex(0);
+            boardSurface = CreateLayer<RawImage>("Life board surface");
+            boardSurface.texture = texture;
+            boardSurface.transform.SetSiblingIndex(1);
+            selectionBorder = CreateLayer<LifeSelectionGraphic>("Life selection border");
+            selectionBorder.transform.SetSiblingIndex(2);
         }
 
-        RawImage CreateLayer(string name, Texture2D layerTexture)
+        T CreateLayer<T>(string name) where T : Graphic
         {
-            var layer = new GameObject(name, typeof(RectTransform), typeof(RawImage));
+            var layer = new GameObject(name, typeof(RectTransform), typeof(T));
             layer.transform.SetParent(BoardImage.transform, false);
-            var image = layer.GetComponent<RawImage>();
-            image.texture = layerTexture;
+            T image = layer.GetComponent<T>();
             image.raycastTarget = false;
             image.enabled = false;
             RectTransform rect = image.rectTransform;
@@ -82,7 +87,7 @@ namespace GameOfLife
             return image;
         }
 
-        static Texture2D CreateTexture(string name) => new Texture2D(TextureSize, TextureSize, TextureFormat.RGBA32, false)
+        static Texture2D CreateTexture(string name, int size) => new Texture2D(size, size, TextureFormat.RGBA32, false)
         {
             name = name,
             filterMode = FilterMode.Point,
@@ -137,6 +142,7 @@ namespace GameOfLife
                             Stack = drawStack,
                             Progress = rasterProgress,
                             WorkBudget = 64,
+                            TextureSize = BoardTextureSize,
                             Origin = new int2((int)rasterFrame.ValidBounds.MinX, (int)rasterFrame.ValidBounds.MinY),
                             VisibleCells = (int)(rasterFrame.ValidBounds.MaxX - rasterFrame.ValidBounds.MinX)
                         }.Run();
@@ -156,7 +162,6 @@ namespace GameOfLife
                     rasterActive = false;
                     simulation.SetRenderRoot(0);
                     PresentSurface();
-                    overlayChanged = true;
                 }
             }
             if (!overlayChanged)
@@ -172,8 +177,6 @@ namespace GameOfLife
                     new LifeOverlayRasterJob
                     {
                         Nodes = simulation.Nodes,
-                        BoardPixels = texture.GetRawTextureData<Color32>(),
-                        BoardBounds = TextureBounds,
                         Pixels = overlayTexture.GetRawTextureData<Color32>(),
                         Stack = overlayStack,
                         Origin = Origin,
@@ -238,6 +241,9 @@ namespace GameOfLife
             selectionMin = minimum;
             selectionMax = maximum;
             overlayChanged = true;
+            if (visible)
+                selectionBorder.SetFrame(Origin, VisibleCells, selectionMin, selectionMax);
+            selectionBorder.enabled = visible;
         }
 
         public void Pan(int2 offset)
@@ -273,6 +279,8 @@ namespace GameOfLife
             if (hovering)
                 hoverCell = Origin + (int2)math.floor(hoverNormalized * VisibleCells);
             overlayChanged = true;
+            if (hasSelection)
+                selectionBorder.SetFrame(Origin, VisibleCells, selectionMin, selectionMax);
             PresentSurface();
         }
 

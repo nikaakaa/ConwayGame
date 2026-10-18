@@ -395,7 +395,7 @@ using (var progress = new Unity.Collections.NativeArray<GameOfLife.LifeRasterPro
             const int rasterWorkBudget = 128;
             var job = new GameOfLife.LifeRasterJob {
                 Nodes = world.Nodes, Pixels = pixels, Stack = stack, Progress = progress,
-                WorkBudget = rasterWorkBudget, Origin = origin, VisibleCells = visible
+                WorkBudget = rasterWorkBudget, TextureSize = 1024, Origin = origin, VisibleCells = visible
             };
             job.Progress[0] = default;
             var stopwatch = new System.Diagnostics.Stopwatch();

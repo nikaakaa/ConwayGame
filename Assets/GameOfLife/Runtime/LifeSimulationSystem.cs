@@ -78,8 +78,7 @@ namespace GameOfLife
             DynamicBuffer<LifeCommand> commands = EntityManager.GetBuffer<LifeCommand>(board);
             long frameBudget = (long)(policy.BeginFrame(viewport.FrameSeconds) * Stopwatch.Frequency);
             long deadline = Stopwatch.GetTimestamp() + frameBudget;
-            if (!explicitStep)
-                Simulation.SetViewport(viewport.Origin, viewport.VisibleCells);
+            Simulation.SetViewport(viewport.PreloadOrigin, viewport.PreloadCells);
             int stepExponent = LifeSimulationPolicy.StepExponent(viewport.VisibleCells, settings.GenerationsPerSecond);
             long step = 1L << stepExponent;
             if (state.IsRunning)

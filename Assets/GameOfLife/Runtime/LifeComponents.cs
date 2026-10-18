@@ -13,6 +13,9 @@ namespace GameOfLife
         public int2 Origin;
         public int VisibleCells;
         public double FrameSeconds;
+
+        public int2 PreloadOrigin => (Origin & ~(VisibleCells / 4 - 1)) - VisibleCells * 5 / 4;
+        public int PreloadCells => VisibleCells * 7 / 2;
     }
 
     public struct LifeState : IComponentData
